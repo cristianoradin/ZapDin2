@@ -156,42 +156,73 @@
     .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
 
-    /* ── QR Modal ── */
-    .modal-overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,.7);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 360px;
-      width: 90%;
-      text-align: center;
-    }
-    .modal h3 { margin-bottom: 1rem; }
-    .modal img { max-width: 260px; border-radius: 8px; }
-    .modal p { font-size: .85rem; color: var(--text-mid); margin-top: .75rem; }
-
+    /* ── Sessão cards ── */
     .sessao-card {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: .75rem;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: border-color .2s;
     }
-    .sessao-info { display: flex; flex-direction: column; gap: .2rem; }
-    .sessao-nome { font-weight: 600; }
-    .sessao-actions { display: flex; gap: .5rem; }
+    .sessao-card.status-connected { border-color: var(--green); }
+    .sessao-card.status-qr        { border-color: #d29922; }
+    .sessao-card.status-error     { border-color: #f85149; }
+    .sessao-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: .25rem;
+    }
+    .sessao-nome { font-weight: 700; font-size: 1rem; }
+    .sessao-meta { font-size: .78rem; color: var(--text-mid); margin-bottom: .75rem; }
+    .sessao-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+    /* ── QR inline ── */
+    .qr-area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    .qr-area.visible { display: flex; }
+    .qr-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      width: 220px; height: 220px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .qr-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
+    .qr-box .qr-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+      color: #999; font-size: .85rem;
+    }
+    .qr-spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #ddd; border-top-color: var(--green);
+      border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .qr-instrucoes {
+      font-size: .82rem; color: var(--text-mid);
+      text-align: center; line-height: 1.6; max-width: 280px;
+    }
+    .qr-instrucoes strong { color: var(--text); }
+    .qr-connected-msg {
+      display: none; flex-direction: column; align-items: center; gap: .5rem;
+      padding: 1.25rem;
+      background: rgba(157,219,48,.08);
+      border: 1px solid rgba(157,219,48,.3);
+      border-radius: 10px; text-align: center;
+      margin-top: 1.25rem; padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    .qr-connected-msg.visible { display: flex; }
+    .qr-connected-icon { font-size: 2.5rem; }
+    .qr-connected-msg p { font-size: .875rem; color: var(--green); font-weight: 600; }
+    .qr-connected-msg span { font-size: .78rem; color: var(--text-mid); }
 
     .alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; }
     .alert-success { background: rgba(157,219,48,.1); border: 1px solid rgba(157,219,48,.3); color: var(--green); }
@@ -277,17 +308,28 @@
 
     <!-- WhatsApp -->
     <div class="page" id="page-whatsapp">
-      <div class="card">
-        <h2>📱 Sessões WhatsApp</h2>
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <div>
+            <h2 style="margin-bottom:.25rem">📱 Números WhatsApp</h2>
+            <p style="font-size:.85rem;color:var(--text-mid)">Cada sessão representa um número conectado para envio de mensagens.</p>
+          </div>
+        </div>
         <div class="alert" id="alertWA"></div>
-        <div id="listaSessoes" style="margin-bottom:1rem"></div>
-        <div style="display:flex;gap:.75rem;align-items:flex-end">
+        <div id="listaSessoes"></div>
+        <div style="display:flex;gap:.75rem;align-items:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
           <div class="form-group" style="flex:1;margin-bottom:0">
             <label>Nome da nova sessão</label>
-            <input type="text" id="inputNovaSessao" placeholder="ex: Sessão Principal" />
+            <input type="text" id="inputNovaSessao" placeholder="ex: Número Principal, Vendas, Suporte…" />
           </div>
           <button class="btn btn-primary" id="btnAddSessao">+ Adicionar</button>
         </div>
+      </div>
+      <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.7;padding:1rem 1.25rem">
+        <strong style="color:var(--text)">Como conectar:</strong>
+        Clique em <strong style="color:var(--green)">Mostrar QR</strong> na sessão → Abra o WhatsApp no celular
+        → toque em <strong style="color:var(--text)">⋮ Menu → Aparelhos conectados → Conectar aparelho</strong>
+        → aponte a câmera para o QR Code.
       </div>
     </div>
 
@@ -354,15 +396,6 @@
   </div>
 </div>
 
-<!-- QR Modal -->
-<div class="modal-overlay" id="qrModal">
-  <div class="modal">
-    <h3>Escanear QR Code</h3>
-    <img id="qrImg" src="" alt="QR Code" />
-    <p>Abra o WhatsApp no celular → Menu → Aparelhos conectados → Conectar aparelho</p>
-    <button class="btn btn-ghost" style="margin-top:1rem" id="btnFecharQR">Fechar</button>
-  </div>
-</div>
 
 <script>
   // ── Nav ──────────────────────────────────────────────────────────────────────
@@ -472,27 +505,126 @@
   });
 
   // ── WhatsApp Sessions ─────────────────────────────────────────────────────────
+  const STATUS_LABEL = {
+    connected: '✅ Conectado', qr: '📷 Aguardando QR',
+    connecting: '⏳ Conectando…', disconnected: '⭕ Desconectado', error: '❌ Erro',
+  };
+  const STATUS_CHIP = {
+    connected: 'chip-green', qr: 'chip-yellow',
+    connecting: 'chip-yellow', disconnected: 'chip-gray', error: 'chip-red',
+  };
+
+  let _waRefresh = null;
+  const _qrPollers = {};   // sessao_id → intervalId
+
+  function _stopQrPoller(id) {
+    if (_qrPollers[id]) { clearInterval(_qrPollers[id]); delete _qrPollers[id]; }
+  }
+
+  async function _fetchQR(id) {
+    try {
+      const res = await fetch('/api/sessoes/qr/' + id);
+      if (!res.ok) return null;
+      const d = await res.json();
+      return d.qr || null;
+    } catch { return null; }
+  }
+
+  function _renderSessao(s) {
+    const label = STATUS_LABEL[s.status] || s.status;
+    const chip  = STATUS_CHIP[s.status] || 'chip-gray';
+    return `
+      <div class="sessao-card status-${s.status}" id="card-${s.id}">
+        <div class="sessao-header">
+          <span class="sessao-nome">${s.nome}</span>
+          <div class="sessao-actions">
+            <span class="chip ${chip}">${label}</span>
+            ${s.status !== 'connected'
+              ? `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">📷 Mostrar QR</button>`
+              : `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">📱 Ver info</button>`}
+            <button class="btn btn-danger btn-sm" onclick="deleteSessao('${s.id}')">Remover</button>
+          </div>
+        </div>
+        <div class="sessao-meta">ID: ${s.id}${s.phone ? ' · 📞 ' + s.phone : ''}</div>
+
+        ${s.status === 'connected' ? `
+        <div class="qr-connected-msg visible" id="conn-${s.id}">
+          <div class="qr-connected-icon">✅</div>
+          <p>WhatsApp conectado e pronto para enviar mensagens!</p>
+          ${s.phone ? `<span>Número: ${s.phone}</span>` : ''}
+        </div>` : `
+        <div class="qr-area" id="qrarea-${s.id}">
+          <div class="qr-box" id="qrbox-${s.id}">
+            <div class="qr-placeholder"><div class="qr-spinner"></div><span>Aguardando QR…</span></div>
+          </div>
+          <div class="qr-instrucoes">
+            <strong>Como conectar:</strong><br>
+            Abra o WhatsApp no celular →<br>
+            <strong>⋮ Menu → Aparelhos conectados → Conectar aparelho</strong><br>
+            Aponte a câmera para o QR acima.
+          </div>
+        </div>`}
+      </div>`;
+  }
+
   async function loadSessoes() {
     const res = await fetch('/api/sessoes');
     if (!res.ok) return;
     const sessoes = await res.json();
     const cont = document.getElementById('listaSessoes');
     if (sessoes.length === 0) {
-      cont.innerHTML = '<p style="color:var(--text-mid);font-size:.875rem">Nenhuma sessão criada.</p>';
+      cont.innerHTML = '<p style="color:var(--text-mid);font-size:.875rem;padding:.5rem 0">Nenhuma sessão. Adicione um número abaixo para começar.</p>';
       return;
     }
-    cont.innerHTML = sessoes.map(s => `
-      <div class="sessao-card">
-        <div class="sessao-info">
-          <span class="sessao-nome">${s.nome}</span>
-          <span style="font-size:.78rem;color:var(--text-mid)">ID: ${s.id} · ${s.phone || 'sem telefone'}</span>
-        </div>
-        <div class="sessao-actions">
-          <span class="chip ${s.status === 'connected' ? 'chip-green' : s.status === 'qr' ? 'chip-yellow' : 'chip-gray'}">${s.status}</span>
-          ${s.status === 'qr' ? `<button class="btn btn-ghost btn-sm" onclick="openQR('${s.id}')">📷 QR</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="deleteSessao('${s.id}')">Remover</button>
-        </div>
-      </div>`).join('');
+    // Preserva quais QRs estão abertos antes de re-renderizar
+    const abertos = new Set(Object.keys(_qrPollers));
+    // Para todos os pollers — vão ser reiniciados se ainda abertos
+    Object.keys(_qrPollers).forEach(_stopQrPoller);
+    cont.innerHTML = sessoes.map(_renderSessao).join('');
+    // Reabre pollers que estavam visíveis
+    abertos.forEach(id => {
+      const area = document.getElementById('qrarea-' + id);
+      if (area) { area.classList.add('visible'); _startQrPoller(id); }
+    });
+  }
+
+  async function toggleQR(id) {
+    const area = document.getElementById('qrarea-' + id);
+    if (!area) return;
+    if (area.classList.contains('visible')) {
+      area.classList.remove('visible');
+      _stopQrPoller(id);
+    } else {
+      area.classList.add('visible');
+      _startQrPoller(id);
+      // Carrega imediatamente
+      const qr = await _fetchQR(id);
+      if (qr) _setQrImg(id, qr);
+    }
+  }
+
+  function _setQrImg(id, qrDataUrl) {
+    const box = document.getElementById('qrbox-' + id);
+    if (!box) return;
+    box.innerHTML = `<img src="${qrDataUrl}" alt="QR Code WhatsApp" />`;
+  }
+
+  function _startQrPoller(id) {
+    _stopQrPoller(id);
+    _qrPollers[id] = setInterval(async () => {
+      const qr = await _fetchQR(id);
+      if (qr) _setQrImg(id, qr);
+    }, 4000);
+  }
+
+  // Auto-refresh do status das sessões a cada 5s enquanto na página
+  function _iniciarRefreshWA() {
+    _pararRefreshWA();
+    _waRefresh = setInterval(loadSessoes, 5000);
+  }
+  function _pararRefreshWA() {
+    if (_waRefresh) { clearInterval(_waRefresh); _waRefresh = null; }
+    Object.keys(_qrPollers).forEach(_stopQrPoller);
   }
 
   document.getElementById('btnAddSessao').addEventListener('click', async () => {
@@ -501,39 +633,25 @@
     const res = await api('POST', '/api/sessoes', { nome });
     if (res.ok) {
       document.getElementById('inputNovaSessao').value = '';
-      showAlert('alertWA', 'Sessão criada! Aguarde o QR Code.');
-      loadSessoes();
+      showAlert('alertWA', 'Sessão criada! Clique em "Mostrar QR" para escanear.');
+      await loadSessoes();
+      // Abre automaticamente o QR da nova sessão
+      const id = res.id;
+      if (id) {
+        const area = document.getElementById('qrarea-' + id);
+        if (area) { area.classList.add('visible'); _startQrPoller(id); }
+      }
     } else {
       showAlert('alertWA', 'Erro ao criar sessão', 'error');
     }
   });
 
   async function deleteSessao(id) {
-    if (!confirm('Remover esta sessão?')) return;
+    if (!confirm('Remover esta sessão WhatsApp?')) return;
+    _stopQrPoller(id);
     await fetch('/api/sessoes/' + id, { method: 'DELETE' });
     loadSessoes();
   }
-
-  // ── QR Modal ──────────────────────────────────────────────────────────────────
-  let qrPoll;
-  async function openQR(id) {
-    const modal = document.getElementById('qrModal');
-    modal.classList.add('open');
-    document.getElementById('qrImg').src = '';
-    qrPoll = setInterval(async () => {
-      const res = await fetch('/api/qr/' + id);
-      if (res.ok) {
-        const d = await res.json();
-        if (d.qr) document.getElementById('qrImg').src = d.qr;
-      }
-    }, 3000);
-    await fetch('/api/qr/' + id).then(r => r.ok ? r.json() : null).then(d => { if (d?.qr) document.getElementById('qrImg').src = d.qr; });
-  }
-
-  document.getElementById('btnFecharQR').addEventListener('click', () => {
-    clearInterval(qrPoll);
-    document.getElementById('qrModal').classList.remove('open');
-  });
 
   // ── Token ─────────────────────────────────────────────────────────────────────
   async function loadToken() {
@@ -571,9 +689,11 @@
 
   // ── Page loader ───────────────────────────────────────────────────────────────
   function onPageLoad(page) {
+    // Para o refresh de WA ao sair da página
+    if (page !== 'whatsapp') _pararRefreshWA();
     if (page === 'dashboard') loadStats();
     else if (page === 'mensagem') loadMensagem();
-    else if (page === 'whatsapp') loadSessoes();
+    else if (page === 'whatsapp') { loadSessoes(); _iniciarRefreshWA(); }
     else if (page === 'token') loadToken();
     else if (page === 'arquivo') loadArquivos();
   }
