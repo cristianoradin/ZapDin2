@@ -801,19 +801,19 @@
   document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModalTeste(); });
 
   document.getElementById('btnEnviarTexto').addEventListener('click', async () => {
-    const phone = document.getElementById('testePhone').value.trim();
+    const phone = '55' + document.getElementById('testePhone').value.trim().replace(/\D/g, '');
     const msg   = document.getElementById('testeMsg').value.trim();
-    if (!phone || !msg) { _setModalResult('error', 'Preencha o número e a mensagem.'); return; }
+    if (phone.length < 12 || !msg) { _setModalResult('error', 'Preencha o número (DDD + número) e a mensagem.'); return; }
     const res = await api('POST', `/api/sessoes/${_modalSessaoId}/send-text`, { phone, message: msg });
     if (res.ok) _setModalResult('ok', 'Mensagem enviada com sucesso!');
     else _setModalResult('error', res.detail || res.error || 'Erro ao enviar mensagem.');
   });
 
   document.getElementById('btnEnviarArquivo').addEventListener('click', async () => {
-    const phone   = document.getElementById('testePhoneArq').value.trim();
+    const phone   = '55' + document.getElementById('testePhoneArq').value.trim().replace(/\D/g, '');
     const caption = document.getElementById('testeCaption').value.trim();
     const fileInput = document.getElementById('testeFile');
-    if (!phone || !fileInput.files.length) { _setModalResult('error', 'Preencha o número e selecione um arquivo.'); return; }
+    if (phone.length < 12 || !fileInput.files.length) { _setModalResult('error', 'Preencha o número (DDD + número) e selecione um arquivo.'); return; }
 
     const form = new FormData();
     form.append('phone', phone);
@@ -851,7 +851,10 @@
     <div class="modal-panel active" id="panel-texto">
       <div class="form-group" style="margin-bottom:0">
         <label>Número de destino</label>
-        <input type="text" id="testePhone" placeholder="5511999998888 (só números, com DDD e DDI)" />
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
+          <input type="text" id="testePhone" placeholder="11999998888 (DDD + número)" style="flex:1" />
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Mensagem</label>
@@ -864,7 +867,10 @@
     <div class="modal-panel" id="panel-arquivo">
       <div class="form-group" style="margin-bottom:0">
         <label>Número de destino</label>
-        <input type="text" id="testePhoneArq" placeholder="5511999998888 (só números, com DDD e DDI)" />
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
+          <input type="text" id="testePhoneArq" placeholder="11999998888 (DDD + número)" style="flex:1" />
+        </div>
       </div>
       <div class="form-group" style="margin-bottom:0">
         <label>Arquivo</label>
