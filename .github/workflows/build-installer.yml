@@ -80,17 +80,53 @@ jobs:
             zapdin-monitor.zip
             zapdin.ico
 
-  # ── Job 2: Windows — compile Inno Setup installers ───────────────────────────
-  build-installers:
+  # ── Job 2: Windows — launchers .exe + Inno Setup installers ─────────────────
+  build-windows:
     runs-on: windows-latest
     needs: prepare-release
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
       - name: Download ICO from release
         run: |
-          curl -L https://github.com/cristianoradin/zapdin2/releases/download/v${{ needs.prepare-release.outputs.version }}/zapdin.ico -o zapdin.ico
+          curl -L "https://github.com/cristianoradin/ZapDin2/releases/download/v${{ needs.prepare-release.outputs.version }}/zapdin.ico" -o zapdin.ico 2>$null
+          if (-not (Test-Path "zapdin.ico")) { New-Item -ItemType File -Name "zapdin.ico" }
+        shell: pwsh
+
+      - name: Build ZapDin-App.exe launcher
+        run: |
+          pyinstaller app/launcher.py `
+            --onefile --noconsole `
+            --name ZapDin-App `
+            --icon zapdin.ico `
+            --distpath dist
+        shell: pwsh
+
+      - name: Build ZapDin-Monitor.exe launcher
+        run: |
+          pyinstaller monitor/launcher.py `
+            --onefile --noconsole `
+            --name ZapDin-Monitor `
+            --icon zapdin.ico `
+            --distpath dist
+        shell: pwsh
+
+      - name: Upload launchers to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.version }}
+          files: |
+            dist/ZapDin-App.exe
+            dist/ZapDin-Monitor.exe
 
       - name: Compile setup_app.iss
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
