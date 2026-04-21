@@ -568,7 +568,7 @@
   }
 
   async function loadSessoes() {
-    const res = await fetch('/api/sessoes');
+    const res = await fetch('/api/sessoes/live-status');
     if (!res.ok) return;
     const sessoes = await res.json();
     const cont = document.getElementById('listaSessoes');

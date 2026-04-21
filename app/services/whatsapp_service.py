@@ -32,19 +32,34 @@ class WhatsAppSession:
         user_data = os.path.join(SESSION_BASE, self.session_id)
         os.makedirs(user_data, exist_ok=True)
 
-        self._pw = await async_playwright().start()
-        self._browser = await self._pw.chromium.launch_persistent_context(
-            user_data_dir=user_data,
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-            ],
-        )
-        self._page = self._browser.pages[0] if self._browser.pages else await self._browser.new_page()
-        self.status = "connecting"
-        asyncio.create_task(self._monitor_loop())
+        try:
+            self._pw = await async_playwright().start()
+            self._browser = await self._pw.chromium.launch_persistent_context(
+                user_data_dir=user_data,
+                headless=True,
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-blink-features=AutomationControlled",
+                ],
+                ignore_default_args=["--enable-automation"],
+            )
+            self._page = self._browser.pages[0] if self._browser.pages else await self._browser.new_page()
+            # Remove rastros de automação
+            await self._page.add_init_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+            )
+            self.status = "connecting"
+            asyncio.create_task(self._monitor_loop())
+        except Exception as exc:
+            logger.error("Sessão %s falhou ao iniciar: %s", self.session_id, exc)
+            self.status = "error"
 
     async def stop(self) -> None:
         self.status = "disconnected"
@@ -63,47 +78,44 @@ class WhatsAppSession:
             while True:
                 await asyncio.sleep(3)
                 try:
-                    # Check if already logged in
-                    logged_in = await self._page.query_selector('[data-testid="default-user"]')
+                    # Conectado: header do chat principal visível
+                    logged_in = await self._page.query_selector(
+                        '[data-testid="default-user"], '
+                        '[data-testid="chat-list-title"], '
+                        '#side, '
+                        'div[aria-label="Lista de conversas"]'
+                    )
                     if logged_in:
+                        if self.status != "connected":
+                            logger.info("Sessão %s conectada", self.session_id)
                         self.status = "connected"
                         self.qr_data = None
-                        # Try to get phone number from profile
-                        try:
-                            title = await self._page.title()
-                            if "WhatsApp" in title:
-                                pass
-                        except Exception:
-                            pass
-                        await asyncio.sleep(30)
+                        await asyncio.sleep(15)
                         continue
 
-                    # Check for QR canvas
-                    qr_canvas = await self._page.query_selector('canvas[aria-label="Scan me!"]')
+                    # QR Code — seletor da nova interface do WhatsApp Web
+                    qr_canvas = await self._page.query_selector('div[data-ref] canvas, canvas[aria-label="Scan me!"]')
                     if qr_canvas:
                         self.status = "qr"
                         try:
                             qr_b64 = await self._page.evaluate(
                                 "(canvas) => canvas.toDataURL('image/png')", qr_canvas
                             )
-                            self.qr_data = qr_b64
-                        except Exception:
-                            pass
+                            if len(qr_b64) > 1000:   # descarta placeholders vazios
+                                self.qr_data = qr_b64
+                        except Exception as e:
+                            logger.debug("Erro ao capturar QR: %s", e)
                         continue
 
-                    # Check for loading / pairing
-                    loading = await self._page.query_selector('[data-testid="intro-md-beta-logo-dark"]')
-                    if loading:
-                        self.status = "connecting"
-                        continue
+                    self.status = "connecting"
 
                 except Exception as inner:
-                    logger.debug("Monitor inner error: %s", inner)
+                    logger.debug("Monitor inner error [%s]: %s", self.session_id, inner)
 
         except asyncio.CancelledError:
             pass
         except Exception as exc:
-            logger.error("Session %s monitor crashed: %s", self.session_id, exc)
+            logger.error("Sessão %s monitor crashed: %s", self.session_id, exc)
             self.status = "error"
 
     async def send_text(self, phone: str, message: str) -> Tuple[bool, Optional[str]]:

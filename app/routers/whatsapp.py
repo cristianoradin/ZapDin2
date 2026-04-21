@@ -52,6 +52,11 @@ async def delete_sessao(
     await db.commit()
 
 
+@router.get("/live-status")
+async def live_status(_: dict = Depends(get_current_user)):
+    return wa_manager.get_status()
+
+
 @router.get("/qr/{sessao_id}")
 async def get_qr(sessao_id: str, _: dict = Depends(get_current_user)):
     qr = wa_manager.get_qr(sessao_id)
