@@ -4,21 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZapDin — Painel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --green: #9DDB30;
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #21262d;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-mid: #8b949e;
-      --sidebar-w: 240px;
-    }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; min-height: 100vh; }
 
-    /* ── Sidebar ── */
+    :root {
+      /* Palette */
+      --accent:      #3d7f1f;
+      --accent-soft: #f0f7eb;
+      --accent-mid:  #d4edba;
+      --bg:          #f7f8fa;
+      --surface:     #ffffff;
+      --surface2:    #f2f3f5;
+      --border:      #e4e6ea;
+      --border-soft: #eef0f3;
+      --text:        #111318;
+      --text-mid:    #6b7280;
+      --text-light:  #9ca3af;
+      --red:         #dc2626;
+      --red-soft:    #fef2f2;
+      --yellow:      #b45309;
+      --yellow-soft: #fffbeb;
+      --sidebar-w:   224px;
+      --radius:      10px;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:   0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Sidebar ─────────────────────────────────────────────────────────── */
     .sidebar {
       width: var(--sidebar-w);
       background: var(--surface);
@@ -30,38 +56,69 @@
       z-index: 100;
       overflow-y: auto;
     }
+
     .sidebar-logo {
-      padding: 1.25rem 1rem;
+      padding: 1.5rem 1.25rem 1.25rem;
       display: flex;
       align-items: center;
-      gap: .75rem;
-      border-bottom: 1px solid var(--border);
+      gap: .625rem;
     }
-    .sidebar-logo img { width: 36px; height: 36px; object-fit: contain; }
-    .sidebar-logo span { font-size: 1.1rem; font-weight: 700; color: var(--text); }
-    .sidebar-section { padding: .5rem 1rem .2rem; font-size: .7rem; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .08em; margin-top: .5rem; }
+    .sidebar-logo img { width: 28px; height: 28px; object-fit: contain; }
+    .sidebar-logo span {
+      font-size: .9375rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--text);
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 1.25rem .75rem;
+    }
+
+    .sidebar-section {
+      padding: .75rem 1.25rem .3rem;
+      font-size: .6875rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
     .nav-item {
-      display: flex;
-      align-items: center;
-      gap: .6rem;
-      padding: .55rem 1rem;
-      margin: .1rem .5rem;
-      border-radius: 8px;
+      display: block;
+      padding: .5rem 1rem;
+      margin: .125rem .75rem;
+      border-radius: 7px;
       cursor: pointer;
-      font-size: .9rem;
+      font-size: .875rem;
+      font-weight: 400;
       color: var(--text-mid);
-      transition: background .15s, color .15s;
+      letter-spacing: -.01em;
+      transition: background .12s, color .12s;
+      user-select: none;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(157,219,48,.12); color: var(--green); font-weight: 600; }
-    .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+    .nav-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
 
-    /* ── Main ── */
-    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    /* ─── Main ────────────────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
     .topbar {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: .75rem 1.5rem;
+      padding: .875rem 2rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -69,114 +126,205 @@
       top: 0;
       z-index: 50;
     }
-    .topbar-title { font-size: 1rem; font-weight: 600; }
+    .topbar-title {
+      font-size: .9375rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+      color: var(--text);
+    }
     .topbar-right { display: flex; align-items: center; gap: .75rem; }
-    .badge { background: var(--green); color: #0d1117; border-radius: 20px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; }
+
+    .badge {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: .2rem .65rem;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+
     .btn-logout {
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text-mid);
-      border-radius: 6px;
-      padding: .3rem .8rem;
+      border-radius: 7px;
+      padding: .35rem .85rem;
       cursor: pointer;
-      font-size: .85rem;
-      transition: border-color .2s, color .2s;
+      font-size: .8125rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: border-color .15s, color .15s;
     }
-    .btn-logout:hover { border-color: #f85149; color: #f85149; }
-    .content { padding: 1.5rem; flex: 1; }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
 
-    /* ── Cards ── */
-    .page { display: none; }
-    .page.active { display: block; }
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .content { padding: 2rem; flex: 1; max-width: 1100px; }
+
+    /* ─── Stat grid ───────────────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.2rem;
-      border-left: 3px solid var(--green);
+      border-radius: var(--radius);
+      padding: 1.375rem 1.5rem;
+      box-shadow: var(--shadow-sm);
     }
-    .stat-card .label { font-size: .75rem; color: var(--text-mid); margin-bottom: .4rem; }
-    .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--text); }
+    .stat-card .label {
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: .5rem;
+    }
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.03em;
+    }
+
+    /* ─── Cards ───────────────────────────────────────────────────────────── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-sm);
     }
-    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+      color: var(--text);
+      margin-bottom: 1.25rem;
+    }
+    .card h3 {
+      font-size: .9375rem;
+      font-weight: 600;
+      letter-spacing: -.01em;
+      color: var(--text);
+    }
+
+    /* ─── Tables ──────────────────────────────────────────────────────────── */
     table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-    th { color: var(--text-mid); text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
-    td { padding: .6rem .75rem; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: middle; }
+    th {
+      color: var(--text-light);
+      text-align: left;
+      padding: .625rem .875rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    td {
+      padding: .75rem .875rem;
+      border-bottom: 1px solid var(--border-soft);
+      vertical-align: middle;
+      color: var(--text);
+    }
     tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface2); }
+
+    /* ─── Chips / badges ──────────────────────────────────────────────────── */
     .chip {
       display: inline-flex;
       align-items: center;
-      gap: .3rem;
-      padding: .2rem .6rem;
+      padding: .2rem .65rem;
       border-radius: 20px;
       font-size: .75rem;
       font-weight: 600;
+      letter-spacing: .01em;
     }
-    .chip-green { background: rgba(157,219,48,.15); color: var(--green); }
-    .chip-red { background: rgba(248,81,73,.15); color: #f85149; }
-    .chip-yellow { background: rgba(210,153,34,.15); color: #d2a007; }
-    .chip-gray { background: rgba(139,148,158,.15); color: var(--text-mid); }
+    .chip-green  { background: var(--accent-soft);  color: var(--accent); }
+    .chip-red    { background: var(--red-soft);      color: var(--red); }
+    .chip-yellow { background: var(--yellow-soft);   color: var(--yellow); }
+    .chip-gray   { background: var(--surface2);      color: var(--text-mid); }
 
-    /* ── Forms ── */
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-size: .8rem; color: var(--text-mid); margin-bottom: .3rem; }
-    .form-group input, .form-group textarea, .form-group select {
+    /* ─── Forms ───────────────────────────────────────────────────────────── */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-group label {
+      display: block;
+      font-size: .8125rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      margin-bottom: .375rem;
+      letter-spacing: -.01em;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
       width: 100%;
-      background: var(--surface2);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: .6rem .9rem;
+      padding: .625rem 1rem;
       color: var(--text);
-      font-size: .9rem;
-      outline: none;
-      transition: border-color .2s;
+      font-size: .875rem;
       font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
     }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--green); }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(61,127,31,.08);
+    }
     .form-group textarea { resize: vertical; min-height: 100px; }
+
+    /* ─── Buttons ─────────────────────────────────────────────────────────── */
     .btn {
-      padding: .55rem 1.2rem;
+      padding: .575rem 1.25rem;
       border-radius: 8px;
       border: none;
       cursor: pointer;
-      font-size: .9rem;
+      font-size: .875rem;
+      font-family: inherit;
       font-weight: 600;
-      transition: opacity .2s;
+      letter-spacing: -.01em;
+      transition: opacity .15s, box-shadow .15s;
     }
-    .btn:hover { opacity: .85; }
-    .btn-primary { background: var(--green); color: #0d1117; }
-    .btn-danger { background: #f85149; color: #fff; }
-    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+    .btn:hover { opacity: .88; }
+    .btn:active { opacity: 1; transform: scale(.99); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(61,127,31,.25);
+    }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-ghost   {
+      background: var(--surface);
+      color: var(--text-mid);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); opacity: 1; }
+    .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
 
-    /* ── Sessão cards ── */
+    /* ─── Session cards ───────────────────────────────────────────────────── */
     .sessao-card {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
       margin-bottom: 1rem;
-      transition: border-color .2s;
+      transition: border-color .2s, box-shadow .2s;
     }
-    .sessao-card.status-connected { border-color: var(--green); }
-    .sessao-card.status-qr        { border-color: #d29922; }
-    .sessao-card.status-error     { border-color: #f85149; }
-    .sessao-header {
-      display: flex; align-items: center;
-      justify-content: space-between; margin-bottom: .25rem;
-    }
-    .sessao-nome { font-weight: 700; font-size: 1rem; }
-    .sessao-meta { font-size: .78rem; color: var(--text-mid); margin-bottom: .75rem; }
+    .sessao-card.status-connected { border-color: var(--accent);  box-shadow: 0 0 0 1px var(--accent-mid); }
+    .sessao-card.status-qr        { border-color: #d97706;        box-shadow: 0 0 0 1px #fde68a; }
+    .sessao-card.status-error     { border-color: var(--red);     box-shadow: 0 0 0 1px #fecaca; }
+    .sessao-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .25rem; }
+    .sessao-nome   { font-weight: 700; font-size: .9375rem; letter-spacing: -.01em; }
+    .sessao-meta   { font-size: .78rem; color: var(--text-light); margin-bottom: .75rem; }
     .sessao-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
-    /* ── QR inline ── */
+    /* ─── QR area ─────────────────────────────────────────────────────────── */
     .qr-area {
       display: none;
       flex-direction: column;
@@ -189,54 +337,49 @@
     .qr-area.visible { display: flex; }
     .qr-box {
       background: #fff;
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       padding: 14px;
       width: 220px; height: 220px;
       display: flex; align-items: center; justify-content: center;
+      box-shadow: var(--shadow-sm);
     }
     .qr-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
-    .qr-box .qr-placeholder {
-      display: flex; flex-direction: column; align-items: center; gap: .5rem;
-      color: #999; font-size: .85rem;
-    }
+    .qr-box .qr-placeholder { display: flex; flex-direction: column; align-items: center; gap: .5rem; color: var(--text-light); font-size: .85rem; }
     .qr-spinner {
-      width: 32px; height: 32px;
-      border: 3px solid #ddd; border-top-color: var(--green);
+      width: 28px; height: 28px;
+      border: 2.5px solid var(--border); border-top-color: var(--accent);
       border-radius: 50%; animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .qr-instrucoes {
-      font-size: .82rem; color: var(--text-mid);
-      text-align: center; line-height: 1.6; max-width: 280px;
-    }
+    .qr-instrucoes { font-size: .82rem; color: var(--text-mid); text-align: center; line-height: 1.6; max-width: 280px; }
     .qr-instrucoes strong { color: var(--text); }
     .qr-connected-msg {
       display: none; flex-direction: column; align-items: center; gap: .5rem;
-      padding: 1.25rem;
-      background: rgba(157,219,48,.08);
-      border: 1px solid rgba(157,219,48,.3);
-      border-radius: 10px; text-align: center;
-      margin-top: 1.25rem; padding-top: 1.25rem;
-      border-top: 1px solid var(--border);
+      padding: 1.25rem; background: var(--accent-soft);
+      border: 1px solid var(--accent-mid); border-radius: var(--radius);
+      text-align: center; margin-top: 1.25rem;
     }
     .qr-connected-msg.visible { display: flex; }
-    .qr-connected-icon { font-size: 2.5rem; }
-    .qr-connected-msg p { font-size: .875rem; color: var(--green); font-weight: 600; }
+    .qr-connected-icon { font-size: 2rem; }
+    .qr-connected-msg p   { font-size: .875rem; color: var(--accent); font-weight: 600; }
     .qr-connected-msg span { font-size: .78rem; color: var(--text-mid); }
 
+    /* ─── Alerts ──────────────────────────────────────────────────────────── */
     .alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; }
-    .alert-success { background: rgba(157,219,48,.1); border: 1px solid rgba(157,219,48,.3); color: var(--green); }
-    .alert-error { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: #f85149; }
+    .alert-success { background: var(--accent-soft); border: 1px solid var(--accent-mid); color: var(--accent); }
+    .alert-error   { background: var(--red-soft);    border: 1px solid #fecaca;           color: var(--red); }
     .alert { display: none; }
 
-    .vars-hint { font-size: .78rem; color: var(--text-mid); margin-top: .4rem; }
-    .vars-hint code { background: var(--surface2); padding: .1rem .3rem; border-radius: 4px; color: var(--green); }
+    .vars-hint { font-size: .8rem; color: var(--text-mid); margin-top: .5rem; line-height: 1.8; }
+    .vars-hint code { background: var(--surface2); padding: .1rem .35rem; border-radius: 4px; color: var(--accent); font-size: .8em; }
 
-    /* ── Modal Teste de Envio ── */
+    /* ─── Modal ───────────────────────────────────────────────────────────── */
     .modal-overlay {
       display: none;
       position: fixed; inset: 0;
-      background: rgba(0,0,0,.65);
+      background: rgba(0,0,0,.35);
+      backdrop-filter: blur(3px);
       z-index: 500;
       align-items: center;
       justify-content: center;
@@ -245,61 +388,63 @@
     .modal-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.75rem;
+      border-radius: 14px;
+      padding: 2rem;
       width: 100%;
       max-width: 500px;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 1.5rem;
+      box-shadow: var(--shadow-md);
     }
     .modal-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 700;
+      letter-spacing: -.02em;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .modal-close {
-      background: none;
-      border: none;
-      color: var(--text-mid);
-      font-size: 1.4rem;
-      cursor: pointer;
-      line-height: 1;
+      background: none; border: none;
+      color: var(--text-light); font-size: 1.25rem;
+      cursor: pointer; line-height: 1; padding: .2rem;
+      border-radius: 4px; transition: color .12s;
     }
     .modal-close:hover { color: var(--text); }
     .modal-tabs {
       display: flex;
-      gap: .5rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: .75rem;
+      gap: .25rem;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: .25rem;
     }
     .modal-tab {
-      padding: .35rem .85rem;
+      flex: 1;
+      padding: .4rem .75rem;
       border-radius: 6px;
-      border: 1px solid var(--border);
+      border: none;
       background: none;
       color: var(--text-mid);
       cursor: pointer;
-      font-size: .875rem;
-      transition: all .15s;
+      font-size: .8125rem;
+      font-family: inherit;
+      font-weight: 500;
+      transition: background .12s, color .12s;
+      text-align: center;
     }
-    .modal-tab.active, .modal-tab:hover {
-      background: var(--green);
-      color: #000;
-      border-color: var(--green);
+    .modal-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
     }
+    .modal-tab:hover:not(.active) { color: var(--text); }
     .modal-panel { display: none; flex-direction: column; gap: 1rem; }
     .modal-panel.active { display: flex; }
-    .modal-result {
-      padding: .75rem 1rem;
-      border-radius: 8px;
-      font-size: .85rem;
-      display: none;
-    }
-    .modal-result.ok  { display: block; background: #1a2e1a; color: #9DDB30; border: 1px solid #2d4a2d; }
-    .modal-result.err { display: block; background: #2e1a1a; color: #f85149; border: 1px solid #4a2d2d; }
+    .modal-result { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; display: none; }
+    .modal-result.ok  { display: block; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-mid); }
+    .modal-result.err { display: block; background: var(--red-soft); color: var(--red); border: 1px solid #fecaca; }
   </style>
 </head>
 <body>
@@ -310,19 +455,20 @@
     <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin" onerror="this.style.display='none'" />
     <span>ZapDin</span>
   </div>
+  <div class="sidebar-divider"></div>
 
   <div class="sidebar-section">Principal</div>
-  <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Dashboard</div>
-  <div class="nav-item" data-page="mensagem"><span class="icon">✏️</span> Configurar Mensagem</div>
-  <div class="nav-item" data-page="whatsapp"><span class="icon">📱</span> Conectar WhatsApp</div>
+  <div class="nav-item active" data-page="dashboard">Dashboard</div>
+  <div class="nav-item" data-page="mensagem">Configurar Mensagem</div>
+  <div class="nav-item" data-page="whatsapp">Conectar WhatsApp</div>
 
   <div class="sidebar-section">Integrações</div>
-  <div class="nav-item" data-page="token"><span class="icon">🔑</span> Token API</div>
-  <div class="nav-item" data-page="arquivo"><span class="icon">📎</span> Envio de Arquivo</div>
-  <div class="nav-item" data-page="docs"><span class="icon">📚</span> Documentações</div>
+  <div class="nav-item" data-page="token">Token API</div>
+  <div class="nav-item" data-page="arquivo">Envio de Arquivo</div>
+  <div class="nav-item" data-page="docs">Documentações</div>
 
   <div class="sidebar-section">Outros</div>
-  <div class="nav-item" data-page="telegram"><span class="icon">✈️</span> Telegram</div>
+  <div class="nav-item" data-page="telegram">Telegram</div>
 </nav>
 
 <!-- Main -->
@@ -357,7 +503,7 @@
     <!-- Configurar Mensagem -->
     <div class="page" id="page-mensagem">
       <div class="card">
-        <h2 style="margin-bottom:.25rem">✏️ Configurar Mensagem Padrão</h2>
+        <h2 style="margin-bottom:.25rem">Configurar Mensagem Padrão</h2>
         <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:1.25rem">Monte o layout da mensagem que será enviada ao cliente após cada venda. Use as variáveis abaixo para incluir dados dinâmicos do ERP.</p>
         <div class="alert" id="alertMensagem"></div>
         <div class="form-group">
@@ -386,7 +532,7 @@
       <div class="card" style="margin-bottom:1rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
           <div>
-            <h2 style="margin-bottom:.25rem">📱 Números WhatsApp</h2>
+            <h2 style="margin-bottom:.25rem">Números WhatsApp</h2>
             <p style="font-size:.85rem;color:var(--text-mid)">Cada sessão representa um número conectado para envio de mensagens.</p>
           </div>
         </div>
@@ -402,7 +548,7 @@
       </div>
       <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.7;padding:1rem 1.25rem">
         <strong style="color:var(--text)">Como conectar:</strong>
-        Clique em <strong style="color:var(--green)">Mostrar QR</strong> na sessão → Abra o WhatsApp no celular
+        Clique em <strong style="color:var(--accent)">Mostrar QR</strong> na sessão → Abra o WhatsApp no celular
         → toque em <strong style="color:var(--text)">⋮ Menu → Aparelhos conectados → Conectar aparelho</strong>
         → aponte a câmera para o QR Code.
       </div>
@@ -412,8 +558,8 @@
     <div class="page" id="page-token">
       <!-- Token -->
       <div class="card" style="margin-bottom:1rem">
-        <h2 style="margin-bottom:.25rem">🔑 Token API (ERP)</h2>
-        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1.25rem">Este token deve ser enviado pelo ERP no header <code style="color:var(--green)">x-token</code> em todas as chamadas à API.</p>
+        <h2 style="margin-bottom:.25rem">Token API (ERP)</h2>
+        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1.25rem">Este token deve ser enviado pelo ERP no header <code style="color:var(--accent)">x-token</code> em todas as chamadas à API.</p>
         <div class="alert" id="alertToken"></div>
         <div class="form-group">
           <label>Token atual</label>
@@ -431,7 +577,7 @@
       <!-- Status da conexão ERP -->
       <div class="card" style="margin-bottom:1rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h3 style="font-size:.95rem;margin:0">📡 Status da Conexão ERP</h3>
+          <h3 style="font-size:.95rem;margin:0">Status da Conexão ERP</h3>
           <button class="btn btn-ghost btn-sm" id="btnAtualizarErpStatus">↻ Atualizar</button>
         </div>
         <div id="erpStatusCard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
@@ -460,7 +606,7 @@
 
       <!-- Campos que o ERP deve enviar -->
       <div class="card">
-        <h3 style="font-size:.95rem;margin-bottom:1rem">📋 Campos enviados pelo ERP</h3>
+        <h3 style="font-size:.95rem;margin-bottom:1rem">Campos enviados pelo ERP</h3>
         <table>
           <thead><tr><th>Campo JSON</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
           <tbody>
@@ -479,7 +625,7 @@
     <!-- Envio de Arquivo -->
     <div class="page" id="page-arquivo">
       <div class="card">
-        <h2>📎 Arquivos Enviados</h2>
+        <h2>Arquivos Enviados</h2>
         <table>
           <thead><tr><th>Arquivo</th><th>Destinatário</th><th>Status</th><th>Data</th></tr></thead>
           <tbody id="tbodyArquivos"><tr><td colspan="4" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
@@ -490,27 +636,27 @@
     <!-- Docs -->
     <div class="page" id="page-docs">
       <div class="card">
-        <h2 style="margin-bottom:.25rem">📚 Documentação da API</h2>
+        <h2 style="margin-bottom:.25rem">Documentação da API</h2>
         <p style="color:var(--text-mid);margin-bottom:1rem;font-size:.875rem">
-          Todos os endpoints abaixo exigem o header <code style="color:var(--green)">x-token: SEU_TOKEN</code>.<br>
+          Todos os endpoints abaixo exigem o header <code style="color:var(--accent)">x-token: SEU_TOKEN</code>.<br>
           O token é gerado em <strong>Integrações → Token API</strong>.
         </p>
-        <div style="background:#1a2e1a;border:1px solid #2d4a2d;border-radius:8px;padding:.75rem 1rem;font-size:.84rem;color:#9DDB30;margin-bottom:1.25rem">
-          📎 <strong>Documento completo para o integrador ERP:</strong>
-          <a href="/doc-integracao-erp.html" target="_blank" style="color:#9DDB30;font-weight:700;margin-left:.3rem">Abrir / Imprimir como PDF →</a>
+        <div style="background:var(--accent-soft);border:1px solid var(--accent-mid);border-radius:8px;padding:.75rem 1rem;font-size:.84rem;color:var(--accent);margin-bottom:1.25rem">
+          <strong>Documento completo para o integrador ERP:</strong>
+          <a href="/doc-integracao-erp.html" target="_blank" style="color:var(--accent);font-weight:700;margin-left:.3rem">Abrir / Imprimir como PDF →</a>
         </div>
-        <div style="background:var(--surface2);border-left:3px solid #d29922;border-radius:0 8px 8px 0;padding:.65rem 1rem;font-size:.84rem;margin-bottom:1.5rem">
+        <div style="background:var(--yellow-soft);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:.65rem 1rem;font-size:.84rem;margin-bottom:1.5rem">
           ⚠️ <strong>Campo telefone:</strong> envie apenas <strong>DDD + número</strong> (sem o DDI 55).
-          O sistema adiciona o <code style="color:var(--green)">55</code> automaticamente.<br>
-          Exemplo: envie <code style="color:var(--green)">"11999990000"</code> — o sistema usa <code style="color:var(--green)">"5511999990000"</code>.
+          O sistema adiciona o <code style="color:var(--accent)">55</code> automaticamente.<br>
+          Exemplo: envie <code style="color:var(--accent)">"11999990000"</code> — o sistema usa <code style="color:var(--accent)">"5511999990000"</code>.
         </div>
 
         <!-- Autenticação -->
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--green)">🔐 Autenticação</h3>
+          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--accent)">Autenticação</h3>
           <div style="background:var(--surface2);border-radius:8px;padding:1rem;font-size:.85rem;line-height:1.8">
             Todas as requisições ao ERP devem incluir o token no header HTTP:<br>
-            <code style="color:var(--green)">x-token: rYq1OWgra44Nx_nlaSWF...</code><br><br>
+            <code style="color:var(--accent)">x-token: rYq1OWgra44Nx_nlaSWF...</code><br><br>
             O token é gerado automaticamente em <strong>Token API → ⚡ Gerar Novo Token</strong>.<br>
             Respostas de erro possíveis: <code>401 Token inválido</code> · <code>503 Sem sessão WhatsApp ativa</code>
           </div>
@@ -518,7 +664,7 @@
 
         <!-- Endpoints -->
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--green)">📋 Endpoints</h3>
+          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--accent)">Endpoints</h3>
           <table>
             <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
             <tbody>
@@ -533,7 +679,7 @@
 
         <!-- POST /api/erp/venda -->
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">POST /api/erp/venda</h3>
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">POST /api/erp/venda</h3>
           <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Recebe os dados da venda e envia mensagem WhatsApp ao cliente usando o template configurado.</p>
           <table style="margin-bottom:.75rem">
             <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
@@ -557,7 +703,7 @@
             </tbody>
           </table>
           <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.4rem">Exemplo completo:</p>
-          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">POST /api/erp/venda
+          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--text)">POST /api/erp/venda
 x-token: SEU_TOKEN
 Content-Type: application/json
 
@@ -572,12 +718,12 @@ Content-Type: application/json
   "valor_total": "281,60",
   "data": "21/04/2026"
 }</pre>
-          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Resposta de sucesso: <code style="color:var(--green)">200 {"ok": true, "sessao": "a1b2c3d4"}</code></p>
+          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Resposta de sucesso: <code style="color:var(--accent)">200 {"ok": true, "sessao": "a1b2c3d4"}</code></p>
         </div>
 
         <!-- POST /api/erp/arquivo -->
         <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">POST /api/erp/arquivo</h3>
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">POST /api/erp/arquivo</h3>
           <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Envia um arquivo ao cliente via WhatsApp. O conteúdo deve ser enviado em base64.</p>
           <table style="margin-bottom:.75rem">
             <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
@@ -588,7 +734,7 @@ Content-Type: application/json
               <tr><td><code>mensagem</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Legenda do arquivo</td></tr>
             </tbody>
           </table>
-          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">POST /api/erp/arquivo
+          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--text)">POST /api/erp/arquivo
 x-token: SEU_TOKEN
 Content-Type: application/json
 
@@ -602,7 +748,7 @@ Content-Type: application/json
 
         <!-- Variáveis do template -->
         <div>
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">✏️ Variáveis do Template de Mensagem</h3>
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">Variáveis do Template de Mensagem</h3>
           <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Configure o layout da mensagem em <strong>Configurar Mensagem</strong> usando estas variáveis:</p>
           <table>
             <thead><tr><th>Variável</th><th>Substituído por</th></tr></thead>
@@ -675,11 +821,11 @@ Content-Type: application/json
       <!-- Como configurar -->
       <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.9">
         <strong style="color:var(--text);font-size:.9rem">Como criar um Bot no Telegram:</strong><br>
-        1. Abra o Telegram e busque <strong style="color:var(--green)">@BotFather</strong><br>
-        2. Envie <code style="color:var(--green);background:var(--surface2);padding:.1rem .3rem;border-radius:4px">/newbot</code> e siga as instruções<br>
+        1. Abra o Telegram e busque <strong style="color:var(--accent)">@BotFather</strong><br>
+        2. Envie <code style="color:var(--accent);background:var(--surface2);padding:.1rem .3rem;border-radius:4px">/newbot</code> e siga as instruções<br>
         3. Copie o <strong>Token</strong> gerado e cole no campo acima<br>
         4. Adicione o bot ao grupo/canal desejado e envie uma mensagem<br>
-        5. Use <strong style="color:var(--green)">@userinfobot</strong> ou a API do Telegram para obter o <strong>Chat ID</strong><br>
+        5. Use <strong style="color:var(--accent)">@userinfobot</strong> ou a API do Telegram para obter o <strong>Chat ID</strong><br>
         6. Cole o Chat ID, salve e clique em <strong>Testar Conexão</strong>
       </div>
     </div>
@@ -979,7 +1125,7 @@ Content-Type: application/json
       statusEl.style.color = 'var(--text-mid)';
     } else if (s.status === 'ok') {
       statusEl.innerHTML = '✅ Conectado';
-      statusEl.style.color = 'var(--green)';
+      statusEl.style.color = 'var(--accent)';
     } else {
       statusEl.innerHTML = '❌ Erro';
       statusEl.style.color = '#f85149';
@@ -1061,9 +1207,10 @@ Content-Type: application/json
     const el = document.getElementById('tgStatus');
     if (!type) { el.style.display = 'none'; return; }
     el.style.display = 'block';
-    el.style.background = type === 'ok' ? '#1a2e1a' : '#2e1a1a';
-    el.style.color      = type === 'ok' ? '#9DDB30'  : '#f85149';
-    el.style.border     = type === 'ok' ? '1px solid #2d4a2d' : '1px solid #4a2d2d';
+    const s = getComputedStyle(document.documentElement);
+    el.style.background = type === 'ok' ? s.getPropertyValue('--accent-soft').trim() : s.getPropertyValue('--red-soft').trim();
+    el.style.color      = type === 'ok' ? s.getPropertyValue('--accent').trim()      : s.getPropertyValue('--red').trim();
+    el.style.border     = type === 'ok' ? '1px solid ' + s.getPropertyValue('--accent-mid').trim() : '1px solid #fecaca';
     el.textContent = msg;
   }
 
