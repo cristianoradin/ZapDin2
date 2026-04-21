@@ -1,0 +1,113 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "monitor/**"
+      - "setup_app.iss"
+      - "setup_monitor.iss"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Job 1: Ubuntu — prepare zips and release ─────────────────────────────────
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.versao }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        run: echo "versao=$(python3 -c "import json; print(json.load(open('app/versao.json'))['versao'])")" >> $GITHUB_OUTPUT
+
+      - name: Install Pillow for ICO conversion
+        run: pip install Pillow
+
+      - name: Convert logo PNG to ICO
+        run: |
+          python3 - <<'EOF'
+          from PIL import Image
+          import os
+          src = "app/static/logo/Zapdin-removebg-preview.png"
+          if os.path.exists(src):
+              img = Image.open(src)
+              img.save("zapdin.ico", format="ICO", sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+              print("ICO created")
+          else:
+              print("Logo not found, skipping ICO")
+          EOF
+
+      - name: Create app zip
+        run: |
+          cd app
+          zip -r ../zapdin-app.zip . \
+            --exclude "**/__pycache__/*" \
+            --exclude "**/*.pyc" \
+            --exclude ".env" \
+            --exclude "data/*" \
+            --exclude "logs/*"
+          cd ..
+
+      - name: Create monitor zip
+        run: |
+          cd monitor
+          zip -r ../zapdin-monitor.zip . \
+            --exclude "**/__pycache__/*" \
+            --exclude "**/*.pyc" \
+            --exclude ".env" \
+            --exclude "data/*" \
+            --exclude "logs/*"
+          cd ..
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.versao }}
+          name: "ZapDin v${{ steps.version.outputs.versao }}"
+          draft: false
+          prerelease: false
+          files: |
+            zapdin-app.zip
+            zapdin-monitor.zip
+            zapdin.ico
+
+  # ── Job 2: Windows — compile Inno Setup installers ───────────────────────────
+  build-installers:
+    runs-on: windows-latest
+    needs: prepare-release
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download ICO from release
+        run: |
+          curl -L https://github.com/cristianoradin/zapdin2/releases/download/v${{ needs.prepare-release.outputs.version }}/zapdin.ico -o zapdin.ico
+
+      - name: Compile setup_app.iss
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+        with:
+          path: setup_app.iss
+          options: /O"output"
+
+      - name: Compile setup_monitor.iss
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+        with:
+          path: setup_monitor.iss
+          options: /O"output"
+
+      - name: Upload installers to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.prepare-release.outputs.version }}
+          files: |
+            output/setup_zapdin_app.exe
+            output/setup_zapdin_monitor.exe

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZapDin Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #9DDB30;
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-mid: #8b949e;
+      --sidebar-w: 240px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 1.25rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .sidebar-logo-text { display: flex; flex-direction: column; }
+    .sidebar-logo-text span { font-size: 1rem; font-weight: 700; }
+    .sidebar-logo-text small { font-size: .7rem; color: var(--text-mid); }
+    .sidebar-section { padding: .5rem 1rem .2rem; font-size: .7rem; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .08em; margin-top: .5rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .55rem 1rem;
+      margin: .1rem .5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .9rem;
+      color: var(--text-mid);
+      transition: background .15s, color .15s;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(157,219,48,.12); color: var(--green); font-weight: 600; }
+    .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-title { font-size: 1rem; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+    .badge { background: var(--green); color: #0d1117; border-radius: 20px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; }
+    .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-mid); border-radius: 6px; padding: .3rem .8rem; cursor: pointer; font-size: .85rem; transition: border-color .2s, color .2s; }
+    .btn-logout:hover { border-color: #f85149; color: #f85149; }
+    .content { padding: 1.5rem; flex: 1; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; border-left: 3px solid var(--green); }
+    .stat-card .label { font-size: .75rem; color: var(--text-mid); margin-bottom: .4rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+
+    .posto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .posto-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      position: relative;
+      border-left: 4px solid var(--border);
+      transition: border-color .3s;
+    }
+    .posto-card.online { border-left-color: var(--green); }
+    .posto-card.offline { border-left-color: #f85149; }
+    .posto-nome { font-weight: 600; font-size: .95rem; }
+    .posto-detalhe { font-size: .8rem; color: var(--text-mid); }
+    .posto-status { position: absolute; top: 1rem; right: 1rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+    .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-red { background: #f85149; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th { color: var(--text-mid); text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+    td { padding: .6rem .75rem; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+
+    .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .chip-green { background: rgba(157,219,48,.15); color: var(--green); }
+    .chip-red { background: rgba(248,81,73,.15); color: #f85149; }
+    .chip-gray { background: rgba(139,148,158,.15); color: var(--text-mid); }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .8rem; color: var(--text-mid); margin-bottom: .3rem; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: .6rem .9rem; color: var(--text); font-size: .9rem; outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--green); }
+    .btn { padding: .55rem 1.2rem; border-radius: 8px; border: none; cursor: pointer; font-size: .9rem; font-weight: 600; transition: opacity .2s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--green); color: #0d1117; }
+    .btn-danger { background: #f85149; color: #fff; }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+
+    .alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; display: none; }
+    .alert-success { background: rgba(157,219,48,.1); border: 1px solid rgba(157,219,48,.3); color: var(--green); }
+    .alert-error { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: #f85149; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; max-width: 480px; width: 90%; }
+    .modal h3 { margin-bottom: 1rem; font-size: 1rem; }
+    .modal-footer { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+    .token-box { background: var(--surface2); border: 1px solid var(--green); border-radius: 8px; padding: .75rem 1rem; font-family: monospace; font-size: .9rem; color: var(--green); word-break: break-all; margin-top: .5rem; }
+  </style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin" onerror="this.style.display='none'" />
+    <div class="sidebar-logo-text">
+      <span>ZapDin</span>
+      <small>Monitor Central</small>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Painel</div>
+  <div class="nav-item active" data-page="monitor"><span class="icon">🖥️</span> Monitor</div>
+  <div class="nav-item" data-page="clientes"><span class="icon">🏪</span> Postos / Clientes</div>
+
+  <div class="sidebar-section">Configurações</div>
+  <div class="nav-item" data-page="versao"><span class="icon">🚀</span> Versões</div>
+</nav>
+
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="pageTitle">Monitor</span>
+    <div class="topbar-right">
+      <span class="badge" id="userBadge">…</span>
+      <button class="btn-logout" id="btnLogout">Sair</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Monitor -->
+    <div class="page active" id="page-monitor">
+      <div class="stat-grid">
+        <div class="stat-card"><div class="label">Postos online</div><div class="value" id="cntOnline">—</div></div>
+        <div class="stat-card" style="border-left-color:#f85149"><div class="label">Postos offline</div><div class="value" id="cntOffline">—</div></div>
+        <div class="stat-card" style="border-left-color:#d2a007"><div class="label">Total postos</div><div class="value" id="cntTotal">—</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h2 style="margin:0">Status em Tempo Real</h2>
+          <button class="btn btn-ghost btn-sm" id="btnRefreshMonitor">↻ Atualizar</button>
+        </div>
+        <div class="posto-grid" id="postoGrid">
+          <p style="color:var(--text-mid)">Carregando…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clientes -->
+    <div class="page" id="page-clientes">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h2 style="margin:0">🏪 Postos / Clientes</h2>
+          <button class="btn btn-primary btn-sm" id="btnNovoCliente">+ Novo</button>
+        </div>
+        <div class="alert" id="alertClientes"></div>
+        <table>
+          <thead><tr><th>Nome</th><th>CNPJ</th><th>Cidade/UF</th><th>Versão</th><th>Status</th><th>Token</th><th></th></tr></thead>
+          <tbody id="tbodyClientes"><tr><td colspan="7" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Versao -->
+    <div class="page" id="page-versao">
+      <div class="card">
+        <h2>🚀 Gerenciar Versão do App WhatsApp</h2>
+        <div class="alert" id="alertVersao"></div>
+        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1rem">
+          Os postos consultam esta versão a cada 15 minutos. Se a versão for maior que a instalada, o posto atualiza automaticamente.
+        </p>
+        <div id="versaoAtual" style="margin-bottom:1.5rem;font-size:.9rem;color:var(--text-mid)">Carregando…</div>
+        <div class="form-group">
+          <label>Nova versão</label>
+          <input type="text" id="inputVersao" placeholder="ex: 1.2.0" />
+        </div>
+        <div class="form-group">
+          <label>URL de download (opcional)</label>
+          <input type="text" id="inputVersaoUrl" placeholder="https://github.com/.../releases/download/..." />
+        </div>
+        <div class="form-group">
+          <label>Notas da versão</label>
+          <textarea id="inputVersaoNotas" rows="3"></textarea>
+        </div>
+        <button class="btn btn-primary" id="btnSalvarVersao">Publicar Versão</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Novo Cliente -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal">
+    <h3 id="modalClienteTitulo">Novo Posto / Cliente</h3>
+    <div class="form-group"><label>Nome *</label><input type="text" id="cNome" /></div>
+    <div class="form-group"><label>CNPJ</label><input type="text" id="cCnpj" /></div>
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:.75rem">
+      <div class="form-group"><label>Cidade</label><input type="text" id="cCidade" /></div>
+      <div class="form-group"><label>UF</label><input type="text" id="cUf" maxlength="2" /></div>
+    </div>
+    <div id="tokenGerado" style="display:none">
+      <label style="font-size:.8rem;color:var(--text-mid)">Token gerado (anote!)</label>
+      <div class="token-box" id="tokenBox"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btnCancelCliente">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmCliente">Criar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Nav ───────────────────────────────────────────────────────────────────────
+  const pageTitles = { monitor: 'Monitor', clientes: 'Postos / Clientes', versao: 'Versões' };
+
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const p = item.dataset.page;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('page-' + p).classList.add('active');
+      document.getElementById('pageTitle').textContent = pageTitles[p] || p;
+      onPageLoad(p);
+    });
+  });
+
+  // ── Auth ──────────────────────────────────────────────────────────────────────
+  async function checkAuth() {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      const d = await res.json();
+      document.getElementById('userBadge').textContent = d.username;
+    } catch { window.location.href = '/login'; }
+  }
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  });
+
+  // ── Monitor ───────────────────────────────────────────────────────────────────
+  async function loadMonitor() {
+    try {
+      const res = await fetch('/api/monitor');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      const postos = await res.json();
+      const online = postos.filter(p => p.ativo).length;
+      const offline = postos.length - online;
+      document.getElementById('cntOnline').textContent = online;
+      document.getElementById('cntOffline').textContent = offline;
+      document.getElementById('cntTotal').textContent = postos.length;
+
+      const grid = document.getElementById('postoGrid');
+      if (postos.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-mid)">Nenhum posto cadastrado.</p>';
+        return;
+      }
+      grid.innerHTML = postos.map(p => `
+        <div class="posto-card ${p.ativo ? 'online' : 'offline'}">
+          <div class="posto-status"><span class="dot ${p.ativo ? 'dot-green' : 'dot-red'}"></span></div>
+          <div class="posto-nome">${p.nome}</div>
+          <div class="posto-detalhe">${p.cnpj || '—'}</div>
+          <div class="posto-detalhe">${[p.cidade, p.uf].filter(Boolean).join('/') || '—'}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.25rem">
+            <span style="font-size:.78rem;color:var(--text-mid)">v${p.versao_instalada || '?'}</span>
+            <span class="chip ${p.ativo ? 'chip-green' : 'chip-red'}">${p.ativo ? 'Online' : 'Offline'}</span>
+          </div>
+          ${p.ultimo_ping ? `<div class="posto-detalhe">Último ping: ${new Date(p.ultimo_ping + 'Z').toLocaleString('pt-BR')}</div>` : ''}
+          ${p.ultimo_ip ? `<div class="posto-detalhe">IP: ${p.ultimo_ip}</div>` : ''}
+        </div>`).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  document.getElementById('btnRefreshMonitor').addEventListener('click', loadMonitor);
+
+  // ── Clientes ──────────────────────────────────────────────────────────────────
+  async function loadClientes() {
+    const res = await fetch('/api/clientes');
+    if (!res.ok) return;
+    const clientes = await res.json();
+    const tbody = document.getElementById('tbodyClientes');
+    if (clientes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-mid);text-align:center">Nenhum cliente</td></tr>';
+      return;
+    }
+    tbody.innerHTML = clientes.map(c => `
+      <tr>
+        <td>${c.nome}</td>
+        <td style="color:var(--text-mid)">${c.cnpj || '—'}</td>
+        <td style="color:var(--text-mid)">${[c.cidade, c.uf].filter(Boolean).join('/') || '—'}</td>
+        <td><span class="chip chip-gray">v${c.versao_instalada || '?'}</span></td>
+        <td><span class="chip ${c.ativo ? 'chip-green' : 'chip-red'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td><code style="font-size:.75rem;color:var(--text-mid)">${c.token}</code></td>
+        <td>
+          <button class="btn btn-danger btn-sm" onclick="deleteCliente(${c.id})">Remover</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function deleteCliente(id) {
+    if (!confirm('Remover este cliente?')) return;
+    await fetch('/api/clientes/' + id, { method: 'DELETE' });
+    loadClientes();
+  }
+
+  // Modal cliente
+  document.getElementById('btnNovoCliente').addEventListener('click', () => {
+    document.getElementById('cNome').value = '';
+    document.getElementById('cCnpj').value = '';
+    document.getElementById('cCidade').value = '';
+    document.getElementById('cUf').value = '';
+    document.getElementById('tokenGerado').style.display = 'none';
+    document.getElementById('btnConfirmCliente').textContent = 'Criar';
+    document.getElementById('btnConfirmCliente').disabled = false;
+    document.getElementById('modalCliente').classList.add('open');
+  });
+
+  document.getElementById('btnCancelCliente').addEventListener('click', () => {
+    document.getElementById('modalCliente').classList.remove('open');
+    loadClientes();
+  });
+
+  document.getElementById('btnConfirmCliente').addEventListener('click', async () => {
+    const nome = document.getElementById('cNome').value.trim();
+    if (!nome) { alert('Nome obrigatório'); return; }
+    const body = {
+      nome,
+      cnpj: document.getElementById('cCnpj').value.trim() || null,
+      cidade: document.getElementById('cCidade').value.trim() || null,
+      uf: document.getElementById('cUf').value.trim().toUpperCase() || null,
+    };
+    const res = await fetch('/api/clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      document.getElementById('tokenBox').textContent = d.token;
+      document.getElementById('tokenGerado').style.display = 'block';
+      document.getElementById('btnConfirmCliente').textContent = 'Fechar';
+      document.getElementById('btnConfirmCliente').onclick = () => {
+        document.getElementById('modalCliente').classList.remove('open');
+        loadClientes();
+        document.getElementById('btnConfirmCliente').onclick = null;
+      };
+    } else {
+      const d = await res.json();
+      alert(d.detail || 'Erro ao criar cliente');
+    }
+  });
+
+  // ── Versao ────────────────────────────────────────────────────────────────────
+  async function loadVersao() {
+    const res = await fetch('/api/versao/whatsapp');
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById('versaoAtual').innerHTML =
+      `Versão atual publicada: <strong style="color:var(--green)">${d.versao}</strong>` +
+      (d.notas ? `<br><span style="font-size:.8rem">${d.notas}</span>` : '');
+    document.getElementById('inputVersao').value = d.versao;
+    document.getElementById('inputVersaoUrl').value = d.url_download || '';
+    document.getElementById('inputVersaoNotas').value = d.notas || '';
+  }
+
+  document.getElementById('btnSalvarVersao').addEventListener('click', async () => {
+    const body = {
+      versao: document.getElementById('inputVersao').value.trim(),
+      url_download: document.getElementById('inputVersaoUrl').value.trim() || null,
+      notas: document.getElementById('inputVersaoNotas').value.trim() || null,
+    };
+    if (!body.versao) { alert('Versão obrigatória'); return; }
+    const res = await fetch('/api/versao/whatsapp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      showAlert('alertVersao', 'Versão publicada com sucesso!');
+      loadVersao();
+    } else {
+      showAlert('alertVersao', 'Erro ao publicar', 'error');
+    }
+  });
+
+  function showAlert(id, msg, type = 'success') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert alert-${type}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  // ── Page loader ───────────────────────────────────────────────────────────────
+  function onPageLoad(p) {
+    if (p === 'monitor') loadMonitor();
+    else if (p === 'clientes') loadClientes();
+    else if (p === 'versao') loadVersao();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  checkAuth().then(() => {
+    loadMonitor();
+    setInterval(loadMonitor, 30_000);
+  });
+</script>
+</body>
+</html>

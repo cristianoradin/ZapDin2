@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# Env files
+.env
+!.env.example
+
+# Data & logs
+app/data/
+monitor/data/
+*/data/
+*/logs/
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+output/
+*.exe
+zapdin-app.zip
+zapdin-monitor.zip
+zapdin.ico
+
+# Playwright
+playwright/.local-browsers/

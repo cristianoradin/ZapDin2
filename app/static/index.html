@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZapDin — Painel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #9DDB30;
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-mid: #8b949e;
+      --sidebar-w: 240px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 1.25rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .sidebar-logo span { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .sidebar-section { padding: .5rem 1rem .2rem; font-size: .7rem; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .08em; margin-top: .5rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .55rem 1rem;
+      margin: .1rem .5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .9rem;
+      color: var(--text-mid);
+      transition: background .15s, color .15s;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(157,219,48,.12); color: var(--green); font-weight: 600; }
+    .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-title { font-size: 1rem; font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+    .badge { background: var(--green); color: #0d1117; border-radius: 20px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+      border-radius: 6px;
+      padding: .3rem .8rem;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: border-color .2s, color .2s;
+    }
+    .btn-logout:hover { border-color: #f85149; color: #f85149; }
+    .content { padding: 1.5rem; flex: 1; }
+
+    /* ── Cards ── */
+    .page { display: none; }
+    .page.active { display: block; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.2rem;
+      border-left: 3px solid var(--green);
+    }
+    .stat-card .label { font-size: .75rem; color: var(--text-mid); margin-bottom: .4rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: var(--text); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th { color: var(--text-mid); text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+    td { padding: .6rem .75rem; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: .3rem;
+      padding: .2rem .6rem;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .chip-green { background: rgba(157,219,48,.15); color: var(--green); }
+    .chip-red { background: rgba(248,81,73,.15); color: #f85149; }
+    .chip-yellow { background: rgba(210,153,34,.15); color: #d2a007; }
+    .chip-gray { background: rgba(139,148,158,.15); color: var(--text-mid); }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .8rem; color: var(--text-mid); margin-bottom: .3rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6rem .9rem;
+      color: var(--text);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--green); }
+    .form-group textarea { resize: vertical; min-height: 100px; }
+    .btn {
+      padding: .55rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--green); color: #0d1117; }
+    .btn-danger { background: #f85149; color: #fff; }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+
+    /* ── QR Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal h3 { margin-bottom: 1rem; }
+    .modal img { max-width: 260px; border-radius: 8px; }
+    .modal p { font-size: .85rem; color: var(--text-mid); margin-top: .75rem; }
+
+    .sessao-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .75rem;
+    }
+    .sessao-info { display: flex; flex-direction: column; gap: .2rem; }
+    .sessao-nome { font-weight: 600; }
+    .sessao-actions { display: flex; gap: .5rem; }
+
+    .alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; }
+    .alert-success { background: rgba(157,219,48,.1); border: 1px solid rgba(157,219,48,.3); color: var(--green); }
+    .alert-error { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: #f85149; }
+    .alert { display: none; }
+
+    .vars-hint { font-size: .78rem; color: var(--text-mid); margin-top: .4rem; }
+    .vars-hint code { background: var(--surface2); padding: .1rem .3rem; border-radius: 4px; color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin" onerror="this.style.display='none'" />
+    <span>ZapDin</span>
+  </div>
+
+  <div class="sidebar-section">Principal</div>
+  <div class="nav-item active" data-page="dashboard"><span class="icon">📊</span> Dashboard</div>
+  <div class="nav-item" data-page="mensagem"><span class="icon">✏️</span> Configurar Mensagem</div>
+  <div class="nav-item" data-page="whatsapp"><span class="icon">📱</span> Conectar WhatsApp</div>
+
+  <div class="sidebar-section">Integrações</div>
+  <div class="nav-item" data-page="token"><span class="icon">🔑</span> Token API</div>
+  <div class="nav-item" data-page="arquivo"><span class="icon">📎</span> Envio de Arquivo</div>
+  <div class="nav-item" data-page="docs"><span class="icon">📚</span> Documentações</div>
+
+  <div class="sidebar-section">Outros</div>
+  <div class="nav-item" data-page="telegram"><span class="icon">✈️</span> Telegram</div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <header class="topbar">
+    <span class="topbar-title" id="pageTitle">Dashboard</span>
+    <div class="topbar-right">
+      <span class="badge" id="userBadge">…</span>
+      <button class="btn-logout" id="btnLogout">Sair</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="stat-grid" id="statsGrid">
+        <div class="stat-card"><div class="label">Mensagens hoje</div><div class="value" id="statHoje">—</div></div>
+        <div class="stat-card"><div class="label">Total enviadas</div><div class="value" id="statEnviadas">—</div></div>
+        <div class="stat-card"><div class="label">Falhas</div><div class="value" id="statFalhas">—</div></div>
+        <div class="stat-card"><div class="label">Sessões ativas</div><div class="value" id="statSessoes">—</div></div>
+      </div>
+      <div class="card">
+        <h2>Mensagens recentes</h2>
+        <table>
+          <thead><tr><th>Destinatário</th><th>Mensagem</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody id="tbodyRecentes"><tr><td colspan="4" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Configurar Mensagem -->
+    <div class="page" id="page-mensagem">
+      <div class="card">
+        <h2>✏️ Configurar Mensagem Padrão</h2>
+        <div class="alert" id="alertMensagem"></div>
+        <div class="form-group">
+          <label>Template da mensagem</label>
+          <textarea id="inputMensagem" rows="6"></textarea>
+          <div class="vars-hint">
+            Variáveis disponíveis:
+            <code>{nome}</code> <code>{valor}</code> <code>{data}</code>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Preview</label>
+          <div id="previewMensagem" style="background:var(--surface2);padding:.75rem 1rem;border-radius:8px;min-height:60px;font-size:.9rem;white-space:pre-wrap;"></div>
+        </div>
+        <button class="btn btn-primary" id="btnSalvarMensagem">Salvar</button>
+      </div>
+    </div>
+
+    <!-- WhatsApp -->
+    <div class="page" id="page-whatsapp">
+      <div class="card">
+        <h2>📱 Sessões WhatsApp</h2>
+        <div class="alert" id="alertWA"></div>
+        <div id="listaSessoes" style="margin-bottom:1rem"></div>
+        <div style="display:flex;gap:.75rem;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label>Nome da nova sessão</label>
+            <input type="text" id="inputNovaSessao" placeholder="ex: Sessão Principal" />
+          </div>
+          <button class="btn btn-primary" id="btnAddSessao">+ Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token API -->
+    <div class="page" id="page-token">
+      <div class="card">
+        <h2>🔑 Token API (ERP)</h2>
+        <div class="alert" id="alertToken"></div>
+        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1rem">Este token deve ser enviado no header <code style="color:var(--green)">x-token</code> em todas as chamadas da integração ERP.</p>
+        <div class="form-group">
+          <label>Token atual</label>
+          <input type="text" id="inputToken" placeholder="Insira o token" />
+        </div>
+        <button class="btn btn-primary" id="btnSalvarToken">Salvar Token</button>
+      </div>
+    </div>
+
+    <!-- Envio de Arquivo -->
+    <div class="page" id="page-arquivo">
+      <div class="card">
+        <h2>📎 Arquivos Enviados</h2>
+        <table>
+          <thead><tr><th>Arquivo</th><th>Destinatário</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody id="tbodyArquivos"><tr><td colspan="4" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Docs -->
+    <div class="page" id="page-docs">
+      <div class="card">
+        <h2>📚 Documentação da API</h2>
+        <p style="color:var(--text-mid);margin-bottom:1rem;font-size:.875rem">Endpoints disponíveis para integração com o ERP.</p>
+        <table>
+          <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/venda</code></td><td>Envia mensagem de venda via WhatsApp</td></tr>
+            <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/arquivo</code></td><td>Envia arquivo PDF em base64</td></tr>
+            <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/arquivos</code></td><td>Lista arquivos enviados</td></tr>
+            <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/stats</code></td><td>Estatísticas do painel</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:1.5rem">
+          <h3 style="font-size:.95rem;margin-bottom:.75rem">Exemplo — POST /api/erp/venda</h3>
+          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">{
+  "telefone": "5511999990000",
+  "nome": "João Silva",
+  "valor": "R$ 150,00",
+  "data": "20/04/2026"
+}</pre>
+          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Header obrigatório: <code style="color:var(--green)">x-token: SEU_TOKEN</code></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="page" id="page-telegram">
+      <div class="card">
+        <h2>✈️ Telegram</h2>
+        <p style="color:var(--text-mid)">Integração com Telegram em desenvolvimento.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <h3>Escanear QR Code</h3>
+    <img id="qrImg" src="" alt="QR Code" />
+    <p>Abra o WhatsApp no celular → Menu → Aparelhos conectados → Conectar aparelho</p>
+    <button class="btn btn-ghost" style="margin-top:1rem" id="btnFecharQR">Fechar</button>
+  </div>
+</div>
+
+<script>
+  // ── Nav ──────────────────────────────────────────────────────────────────────
+  const pages = {
+    dashboard: 'Dashboard',
+    mensagem: 'Configurar Mensagem',
+    whatsapp: 'Conectar WhatsApp',
+    token: 'Token API',
+    arquivo: 'Envio de Arquivo',
+    docs: 'Documentações',
+    telegram: 'Telegram',
+  };
+
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const p = item.dataset.page;
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+      item.classList.add('active');
+      document.getElementById('page-' + p).classList.add('active');
+      document.getElementById('pageTitle').textContent = pages[p] || p;
+      onPageLoad(p);
+    });
+  });
+
+  // ── Auth check ───────────────────────────────────────────────────────────────
+  async function checkAuth() {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      const data = await res.json();
+      document.getElementById('userBadge').textContent = data.username;
+    } catch { window.location.href = '/login'; }
+  }
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  });
+
+  // ── API helpers ───────────────────────────────────────────────────────────────
+  async function api(method, url, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    return res;
+  }
+
+  function showAlert(id, msg, type = 'success') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `alert alert-${type}`;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stats');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      const d = await res.json();
+      document.getElementById('statHoje').textContent = d.hoje ?? 0;
+      document.getElementById('statEnviadas').textContent = d.enviadas ?? 0;
+      document.getElementById('statFalhas').textContent = d.falhas ?? 0;
+      document.getElementById('statSessoes').textContent = d.sessoes_ativas ?? 0;
+      const tbody = document.getElementById('tbodyRecentes');
+      if (!d.recentes || d.recentes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mid);text-align:center">Nenhuma mensagem</td></tr>';
+        return;
+      }
+      tbody.innerHTML = d.recentes.map(r => `
+        <tr>
+          <td>${r.destinatario}</td>
+          <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.mensagem || '—'}</td>
+          <td><span class="chip ${r.status === 'sent' ? 'chip-green' : r.status === 'failed' ? 'chip-red' : 'chip-yellow'}">${r.status}</span></td>
+          <td style="color:var(--text-mid);font-size:.8rem">${r.created_at}</td>
+        </tr>`).join('');
+    } catch(e) { console.error(e); }
+  }
+
+  // ── Mensagem ─────────────────────────────────────────────────────────────────
+  async function loadMensagem() {
+    const res = await fetch('/api/config');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    const tmpl = cfg.mensagem_padrao || '';
+    document.getElementById('inputMensagem').value = tmpl;
+    updatePreview(tmpl);
+  }
+
+  function updatePreview(tmpl) {
+    const preview = tmpl
+      .replace(/{nome}/g, 'João Silva')
+      .replace(/{valor}/g, 'R$ 150,00')
+      .replace(/{data}/g, '20/04/2026');
+    document.getElementById('previewMensagem').textContent = preview;
+  }
+
+  document.getElementById('inputMensagem').addEventListener('input', e => updatePreview(e.target.value));
+
+  document.getElementById('btnSalvarMensagem').addEventListener('click', async () => {
+    const val = document.getElementById('inputMensagem').value;
+    const res = await api('POST', '/api/config', { mensagem_padrao: val });
+    if (res.ok) showAlert('alertMensagem', 'Mensagem salva com sucesso!');
+    else showAlert('alertMensagem', 'Erro ao salvar', 'error');
+  });
+
+  // ── WhatsApp Sessions ─────────────────────────────────────────────────────────
+  async function loadSessoes() {
+    const res = await fetch('/api/sessoes');
+    if (!res.ok) return;
+    const sessoes = await res.json();
+    const cont = document.getElementById('listaSessoes');
+    if (sessoes.length === 0) {
+      cont.innerHTML = '<p style="color:var(--text-mid);font-size:.875rem">Nenhuma sessão criada.</p>';
+      return;
+    }
+    cont.innerHTML = sessoes.map(s => `
+      <div class="sessao-card">
+        <div class="sessao-info">
+          <span class="sessao-nome">${s.nome}</span>
+          <span style="font-size:.78rem;color:var(--text-mid)">ID: ${s.id} · ${s.phone || 'sem telefone'}</span>
+        </div>
+        <div class="sessao-actions">
+          <span class="chip ${s.status === 'connected' ? 'chip-green' : s.status === 'qr' ? 'chip-yellow' : 'chip-gray'}">${s.status}</span>
+          ${s.status === 'qr' ? `<button class="btn btn-ghost btn-sm" onclick="openQR('${s.id}')">📷 QR</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteSessao('${s.id}')">Remover</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('btnAddSessao').addEventListener('click', async () => {
+    const nome = document.getElementById('inputNovaSessao').value.trim();
+    if (!nome) return;
+    const res = await api('POST', '/api/sessoes', { nome });
+    if (res.ok) {
+      document.getElementById('inputNovaSessao').value = '';
+      showAlert('alertWA', 'Sessão criada! Aguarde o QR Code.');
+      loadSessoes();
+    } else {
+      showAlert('alertWA', 'Erro ao criar sessão', 'error');
+    }
+  });
+
+  async function deleteSessao(id) {
+    if (!confirm('Remover esta sessão?')) return;
+    await fetch('/api/sessoes/' + id, { method: 'DELETE' });
+    loadSessoes();
+  }
+
+  // ── QR Modal ──────────────────────────────────────────────────────────────────
+  let qrPoll;
+  async function openQR(id) {
+    const modal = document.getElementById('qrModal');
+    modal.classList.add('open');
+    document.getElementById('qrImg').src = '';
+    qrPoll = setInterval(async () => {
+      const res = await fetch('/api/qr/' + id);
+      if (res.ok) {
+        const d = await res.json();
+        if (d.qr) document.getElementById('qrImg').src = d.qr;
+      }
+    }, 3000);
+    await fetch('/api/qr/' + id).then(r => r.ok ? r.json() : null).then(d => { if (d?.qr) document.getElementById('qrImg').src = d.qr; });
+  }
+
+  document.getElementById('btnFecharQR').addEventListener('click', () => {
+    clearInterval(qrPoll);
+    document.getElementById('qrModal').classList.remove('open');
+  });
+
+  // ── Token ─────────────────────────────────────────────────────────────────────
+  async function loadToken() {
+    const res = await fetch('/api/erp/config');
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById('inputToken').value = d.token || '';
+  }
+
+  document.getElementById('btnSalvarToken').addEventListener('click', async () => {
+    const token = document.getElementById('inputToken').value.trim();
+    const res = await api('POST', '/api/erp/config', { token });
+    if (res.ok) showAlert('alertToken', 'Token salvo!');
+    else showAlert('alertToken', 'Erro ao salvar', 'error');
+  });
+
+  // ── Arquivos ──────────────────────────────────────────────────────────────────
+  async function loadArquivos() {
+    const res = await fetch('/api/arquivos');
+    if (!res.ok) return;
+    const arqs = await res.json();
+    const tbody = document.getElementById('tbodyArquivos');
+    if (arqs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mid);text-align:center">Nenhum arquivo</td></tr>';
+      return;
+    }
+    tbody.innerHTML = arqs.map(a => `
+      <tr>
+        <td>${a.nome_original}</td>
+        <td>${a.destinatario || '—'}</td>
+        <td><span class="chip ${a.status === 'sent' ? 'chip-green' : a.status === 'failed' ? 'chip-red' : 'chip-yellow'}">${a.status}</span></td>
+        <td style="color:var(--text-mid);font-size:.8rem">${a.created_at}</td>
+      </tr>`).join('');
+  }
+
+  // ── Page loader ───────────────────────────────────────────────────────────────
+  function onPageLoad(page) {
+    if (page === 'dashboard') loadStats();
+    else if (page === 'mensagem') loadMensagem();
+    else if (page === 'whatsapp') loadSessoes();
+    else if (page === 'token') loadToken();
+    else if (page === 'arquivo') loadArquivos();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  checkAuth().then(() => {
+    loadStats();
+    setInterval(loadStats, 30_000);
+  });
+</script>
+</body>
+</html>
