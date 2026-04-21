@@ -456,9 +456,66 @@
 
     <!-- Telegram -->
     <div class="page" id="page-telegram">
-      <div class="card">
-        <h2>✈️ Telegram</h2>
-        <p style="color:var(--text-mid)">Integração com Telegram em desenvolvimento.</p>
+      <!-- Config -->
+      <div class="card" style="margin-bottom:1rem">
+        <h2 style="margin-bottom:.25rem">✈️ Integração Telegram</h2>
+        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:1.25rem">Configure um Bot para receber alertas de falhas e relatórios automáticos de status a cada 3 horas.</p>
+        <div class="alert" id="alertTelegram"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Bot Token</label>
+            <input type="password" id="tgBotToken" placeholder="123456789:AABBccDD..." autocomplete="off" />
+            <div style="font-size:.75rem;color:var(--text-mid);margin-top:.3rem">Obtenha em <strong>@BotFather</strong> no Telegram</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Chat ID</label>
+            <input type="text" id="tgChatId" placeholder="-1001234567890" />
+            <div style="font-size:.75rem;color:var(--text-mid);margin-top:.3rem">ID do grupo ou canal. Use <strong>@userinfobot</strong> para descobrir</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnSalvarTelegram">Salvar Configuração</button>
+          <button class="btn btn-ghost" id="btnTestarTelegram">🔔 Testar Conexão</button>
+          <button class="btn btn-ghost" id="btnRelatorioParcial">📊 Enviar Relatório Agora</button>
+        </div>
+
+        <div id="tgStatus" style="margin-top:1rem;padding:.65rem 1rem;border-radius:8px;font-size:.85rem;display:none"></div>
+      </div>
+
+      <!-- Alertas configurados -->
+      <div class="card" style="margin-bottom:1rem">
+        <h3 style="margin-bottom:1rem;font-size:.95rem">🔔 Alertas Automáticos</h3>
+        <div style="display:grid;gap:.6rem">
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
+            <span style="font-size:1.1rem">⚠️</span>
+            <div><strong>Falha no envio</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Notificação imediata quando uma mensagem ou arquivo falhar</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
+            <span style="font-size:1.1rem">🔴</span>
+            <div><strong>Sessão desconectada</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Alerta quando um número cair e precisar escanear o QR novamente</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
+            <span style="font-size:1.1rem">🚨</span>
+            <div><strong>Erro crítico na API</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Alerta quando o serviço interno travar ou crashar</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
+            <span style="font-size:1.1rem">📊</span>
+            <div><strong>Relatório a cada 3 horas</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Status das sessões, mensagens enviadas, arquivos e erros</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Como configurar -->
+      <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.9">
+        <strong style="color:var(--text);font-size:.9rem">Como criar um Bot no Telegram:</strong><br>
+        1. Abra o Telegram e busque <strong style="color:var(--green)">@BotFather</strong><br>
+        2. Envie <code style="color:var(--green);background:var(--surface2);padding:.1rem .3rem;border-radius:4px">/newbot</code> e siga as instruções<br>
+        3. Copie o <strong>Token</strong> gerado e cole no campo acima<br>
+        4. Adicione o bot ao grupo/canal desejado e envie uma mensagem<br>
+        5. Use <strong style="color:var(--green)">@userinfobot</strong> ou a API do Telegram para obter o <strong>Chat ID</strong><br>
+        6. Cole o Chat ID, salve e clique em <strong>Testar Conexão</strong>
       </div>
     </div>
 
@@ -766,7 +823,50 @@
     else if (page === 'whatsapp') { loadSessoes(); _iniciarRefreshWA(); }
     else if (page === 'token') loadToken();
     else if (page === 'arquivo') loadArquivos();
+    else if (page === 'telegram') loadTelegram();
   }
+
+  // ── Telegram ──────────────────────────────────────────────────────────────────
+  async function loadTelegram() {
+    const res = await fetch('/api/telegram/config');
+    if (!res.ok) return;
+    const d = await res.json();
+    document.getElementById('tgBotToken').value = d.bot_token || '';
+    document.getElementById('tgChatId').value   = d.chat_id   || '';
+    _setTgStatus(d.configured ? 'ok' : null, d.configured ? '✅ Telegram configurado e ativo' : '');
+  }
+
+  function _setTgStatus(type, msg) {
+    const el = document.getElementById('tgStatus');
+    if (!type) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.style.background = type === 'ok' ? '#1a2e1a' : '#2e1a1a';
+    el.style.color      = type === 'ok' ? '#9DDB30'  : '#f85149';
+    el.style.border     = type === 'ok' ? '1px solid #2d4a2d' : '1px solid #4a2d2d';
+    el.textContent = msg;
+  }
+
+  document.getElementById('btnSalvarTelegram').addEventListener('click', async () => {
+    const token = document.getElementById('tgBotToken').value.trim();
+    const chatId = document.getElementById('tgChatId').value.trim();
+    if (!token || !chatId) { showAlert('alertTelegram', 'Preencha o Bot Token e o Chat ID.', 'error'); return; }
+    const res = await api('POST', '/api/telegram/config', { bot_token: token, chat_id: chatId });
+    if (res.ok) { showAlert('alertTelegram', 'Configuração salva!'); _setTgStatus('ok', '✅ Telegram configurado e ativo'); }
+    else showAlert('alertTelegram', 'Erro ao salvar', 'error');
+  });
+
+  document.getElementById('btnTestarTelegram').addEventListener('click', async () => {
+    _setTgStatus(null, '');
+    const res = await api('POST', '/api/telegram/test');
+    if (res.ok) _setTgStatus('ok', '✅ Mensagem de teste enviada com sucesso!');
+    else _setTgStatus('err', '❌ ' + (res.detail || 'Falha ao enviar. Verifique o token e chat_id.'));
+  });
+
+  document.getElementById('btnRelatorioParcial').addEventListener('click', async () => {
+    const res = await api('POST', '/api/telegram/report-now');
+    if (res.ok) _setTgStatus('ok', '📊 Relatório enviado com sucesso!');
+    else _setTgStatus('err', '❌ ' + (res.detail || 'Erro ao enviar relatório.'));
+  });
 
   // ── Init ──────────────────────────────────────────────────────────────────────
   checkAuth().then(() => {

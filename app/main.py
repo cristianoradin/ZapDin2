@@ -11,8 +11,8 @@ from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
 from .core.database import init_db, get_db
-from .routers import auth, whatsapp, erp, config_router, arquivos, stats
-from .services import reporter, updater
+from .routers import auth, whatsapp, erp, config_router, arquivos, stats, telegram_router
+from .services import reporter, updater, telegram_service
 from .services.whatsapp_service import wa_manager
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
@@ -34,18 +34,25 @@ async def disconnect(sid):
 async def lifespan(app: FastAPI):
     await init_db()
 
-    # Load existing WA sessions from DB
+    # Load existing WA sessions and Telegram config from DB
     async with aiosqlite.connect(settings.database_url) as db:
         db.row_factory = aiosqlite.Row
         await wa_manager.load_from_db(db)
+        async with db.execute("SELECT key, value FROM config WHERE key IN ('tg_bot_token','tg_chat_id')") as cur:
+            rows = await cur.fetchall()
+        cfg = {r["key"]: r["value"] for r in rows}
+        if cfg.get("tg_bot_token") and cfg.get("tg_chat_id"):
+            telegram_service.configure(cfg["tg_bot_token"], cfg["tg_chat_id"])
 
     reporter.start()
     updater.start()
+    telegram_service.start()
 
     yield
 
     reporter.stop()
     updater.stop()
+    telegram_service.stop()
 
 
 # ── App ────────────────────────────────────────────────────────────────────────
@@ -57,6 +64,7 @@ fastapi_app.include_router(erp.router)
 fastapi_app.include_router(config_router.router)
 fastapi_app.include_router(arquivos.router)
 fastapi_app.include_router(stats.router)
+fastapi_app.include_router(telegram_router.router)
 
 
 @fastapi_app.post("/api/logout")

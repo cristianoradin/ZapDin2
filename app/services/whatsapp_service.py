@@ -73,6 +73,7 @@ class WhatsAppSession:
 
     async def _monitor_loop(self) -> None:
         """Navigate to WhatsApp Web and watch for QR / login state."""
+        from . import telegram_service
         try:
             await self._page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=60_000)
             while True:
@@ -96,6 +97,9 @@ class WhatsAppSession:
                     # QR Code — seletor da nova interface do WhatsApp Web
                     qr_canvas = await self._page.query_selector('div[data-ref] canvas, canvas[aria-label="Scan me!"]')
                     if qr_canvas:
+                        if self.status == "connected":
+                            # Era conectado e caiu para QR — notifica desconexão
+                            asyncio.create_task(telegram_service.notify_disconnected(self.nome))
                         self.status = "qr"
                         try:
                             qr_b64 = await self._page.evaluate(
@@ -117,13 +121,16 @@ class WhatsAppSession:
         except Exception as exc:
             logger.error("Sessão %s monitor crashed: %s", self.session_id, exc)
             self.status = "error"
+            asyncio.create_task(telegram_service.notify_api_error(
+                f"Sessão <b>{self.nome}</b> travou com erro: {exc}"
+            ))
 
     async def send_text(self, phone: str, message: str) -> Tuple[bool, Optional[str]]:
         if self.status != "connected":
             return False, "Sessão não conectada"
         async with self._lock:
             try:
-                # Format number: remove non-digits, add @c.us suffix not needed for URL
+                from . import telegram_service
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}&text="
                 await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
@@ -131,9 +138,12 @@ class WhatsAppSession:
                 await self._page.fill('[data-testid="conversation-compose-box-input"]', message)
                 await self._page.keyboard.press("Enter")
                 await asyncio.sleep(2)
+                telegram_service.record_sent("text")
                 return True, None
             except Exception as exc:
                 logger.error("send_text error: %s", exc)
+                from . import telegram_service
+                asyncio.create_task(telegram_service.notify_send_failure(self.nome, phone, str(exc)))
                 return False, str(exc)
 
     async def send_file(self, phone: str, file_path: str, caption: str = "") -> Tuple[bool, Optional[str]]:
@@ -164,11 +174,15 @@ class WhatsAppSession:
                     if send_btn:
                         await send_btn.click()
                     await asyncio.sleep(2)
+                    from . import telegram_service
+                    telegram_service.record_sent("file")
                     return True, None
 
                 return False, "Input de arquivo não encontrado"
             except Exception as exc:
                 logger.error("send_file error: %s", exc)
+                from . import telegram_service
+                asyncio.create_task(telegram_service.notify_send_failure(self.nome, phone, str(exc)))
                 return False, str(exc)
 
 
