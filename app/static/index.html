@@ -490,26 +490,122 @@
     <!-- Docs -->
     <div class="page" id="page-docs">
       <div class="card">
-        <h2>📚 Documentação da API</h2>
-        <p style="color:var(--text-mid);margin-bottom:1rem;font-size:.875rem">Endpoints disponíveis para integração com o ERP.</p>
-        <table>
-          <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
-          <tbody>
-            <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/venda</code></td><td>Envia mensagem de venda via WhatsApp</td></tr>
-            <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/arquivo</code></td><td>Envia arquivo PDF em base64</td></tr>
-            <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/arquivos</code></td><td>Lista arquivos enviados</td></tr>
-            <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/stats</code></td><td>Estatísticas do painel</td></tr>
-          </tbody>
-        </table>
-        <div style="margin-top:1.5rem">
-          <h3 style="font-size:.95rem;margin-bottom:.75rem">Exemplo — POST /api/erp/venda</h3>
-          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">{
+        <h2 style="margin-bottom:.25rem">📚 Documentação da API</h2>
+        <p style="color:var(--text-mid);margin-bottom:1.5rem;font-size:.875rem">
+          Todos os endpoints abaixo exigem o header <code style="color:var(--green)">x-token: SEU_TOKEN</code>.<br>
+          O token é gerado em <strong>Integrações → Token API</strong>.
+        </p>
+
+        <!-- Autenticação -->
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--green)">🔐 Autenticação</h3>
+          <div style="background:var(--surface2);border-radius:8px;padding:1rem;font-size:.85rem;line-height:1.8">
+            Todas as requisições ao ERP devem incluir o token no header HTTP:<br>
+            <code style="color:var(--green)">x-token: rYq1OWgra44Nx_nlaSWF...</code><br><br>
+            O token é gerado automaticamente em <strong>Token API → ⚡ Gerar Novo Token</strong>.<br>
+            Respostas de erro possíveis: <code>401 Token inválido</code> · <code>503 Sem sessão WhatsApp ativa</code>
+          </div>
+        </div>
+
+        <!-- Endpoints -->
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--green)">📋 Endpoints</h3>
+          <table>
+            <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/venda</code></td><td>Notifica cliente via WhatsApp com dados da venda</td></tr>
+              <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/arquivo</code></td><td>Envia arquivo (PDF, imagem etc.) em base64 via WhatsApp</td></tr>
+              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/erp/status</code></td><td>Retorna status da última conexão do ERP</td></tr>
+              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/arquivos</code></td><td>Lista arquivos enviados</td></tr>
+              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/stats</code></td><td>Estatísticas gerais do painel</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- POST /api/erp/venda -->
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">POST /api/erp/venda</h3>
+          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Recebe os dados da venda e envia mensagem WhatsApp ao cliente usando o template configurado.</p>
+          <table style="margin-bottom:.75rem">
+            <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+            <tbody>
+              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDI + DDD + número (ex: "5511999990000")</td></tr>
+              <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome completo do cliente</td></tr>
+              <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de itens — ver estrutura abaixo</td></tr>
+              <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Soma dos itens (ex: "179,70")</td></tr>
+              <tr><td><code>valor_total</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Total final da compra (com descontos/taxas)</td></tr>
+              <tr><td><code>data</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Data da compra — padrão: data atual</td></tr>
+              <tr><td><code>mensagem_custom</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Substitui o template configurado no painel</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.4rem">Estrutura de cada item em <code>produtos</code>:</p>
+          <table style="margin-bottom:.75rem">
+            <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
+            <tbody>
+              <tr><td><code>nome</code></td><td>string</td><td>Nome do produto/serviço</td></tr>
+              <tr><td><code>quantidade</code></td><td>number</td><td>Quantidade consumida</td></tr>
+              <tr><td><code>valor_unitario</code></td><td>string</td><td>Valor unitário (ex: "5,99")</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.4rem">Exemplo completo:</p>
+          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">POST /api/erp/venda
+x-token: SEU_TOKEN
+Content-Type: application/json
+
+{
   "telefone": "5511999990000",
   "nome": "João Silva",
-  "valor": "R$ 150,00",
-  "data": "20/04/2026"
+  "produtos": [
+    { "nome": "Gasolina Comum", "quantidade": 40, "valor_unitario": "5,99" },
+    { "nome": "Óleo Motor 5W30", "quantidade": 1, "valor_unitario": "42,00" }
+  ],
+  "valor_total_itens": "281,60",
+  "valor_total": "281,60",
+  "data": "21/04/2026"
 }</pre>
-          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Header obrigatório: <code style="color:var(--green)">x-token: SEU_TOKEN</code></p>
+          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Resposta de sucesso: <code style="color:var(--green)">200 {"ok": true, "sessao": "a1b2c3d4"}</code></p>
+        </div>
+
+        <!-- POST /api/erp/arquivo -->
+        <div style="margin-bottom:2rem">
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">POST /api/erp/arquivo</h3>
+          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Envia um arquivo ao cliente via WhatsApp. O conteúdo deve ser enviado em base64.</p>
+          <table style="margin-bottom:.75rem">
+            <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+            <tbody>
+              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDI + DDD + número</td></tr>
+              <tr><td><code>nome_arquivo</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome com extensão (ex: "nota_fiscal.pdf")</td></tr>
+              <tr><td><code>conteudo_base64</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Conteúdo do arquivo codificado em base64</td></tr>
+              <tr><td><code>mensagem</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Legenda do arquivo</td></tr>
+            </tbody>
+          </table>
+          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--green)">POST /api/erp/arquivo
+x-token: SEU_TOKEN
+Content-Type: application/json
+
+{
+  "telefone": "5511999990000",
+  "nome_arquivo": "nota_fiscal_001.pdf",
+  "conteudo_base64": "JVBERi0xLjQKJ...",
+  "mensagem": "Segue sua nota fiscal eletrônica."
+}</pre>
+        </div>
+
+        <!-- Variáveis do template -->
+        <div>
+          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--green)">✏️ Variáveis do Template de Mensagem</h3>
+          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Configure o layout da mensagem em <strong>Configurar Mensagem</strong> usando estas variáveis:</p>
+          <table>
+            <thead><tr><th>Variável</th><th>Substituído por</th></tr></thead>
+            <tbody>
+              <tr><td><code>{nome}</code></td><td>Nome do cliente</td></tr>
+              <tr><td><code>{telefone}</code></td><td>Número de telefone</td></tr>
+              <tr><td><code>{data}</code></td><td>Data da compra</td></tr>
+              <tr><td><code>{produtos}</code></td><td>Lista formatada dos produtos com quantidade e valor unitário</td></tr>
+              <tr><td><code>{valor_total_itens}</code></td><td>Valor total dos itens</td></tr>
+              <tr><td><code>{valor_total}</code></td><td>Valor total da compra</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
