@@ -1,29 +1,26 @@
-from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import Cookie, HTTPException, status, Depends
-from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from passlib.context import CryptContext
+import bcrypt
+from fastapi import Cookie, HTTPException, status
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from .config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _serializer = URLSafeTimedSerializer(settings.secret_key)
 
 SESSION_COOKIE = "zapdin_session"
 
 
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt()).decode()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
 def create_session_token(user_id: int, username: str) -> str:
-    payload = {"uid": user_id, "usr": username}
-    return _serializer.dumps(payload, salt="session")
+    return _serializer.dumps({"uid": user_id, "usr": username}, salt="session")
 
 
 def decode_session_token(token: str) -> Optional[dict]:

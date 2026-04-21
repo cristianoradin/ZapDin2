@@ -72,7 +72,7 @@ async def init_db() -> None:
 
             -- Admin default: cristiano / radin123
             INSERT OR IGNORE INTO usuarios (username, password_hash)
-            VALUES ('cristiano', '$2b$12$q9xb8j.NAfOT3TqXJJhwxOKv6F.xPWG.jBxT0KCJuN0DvHxT4D5pi');
+            VALUES ('cristiano', '$2b$12$Mco23X5AA8/pnXclNHGS7eMqlVEfou.ww4k1XVJQPa8HIL.Bzs30S');
 
             INSERT OR IGNORE INTO versoes (app, versao)
             VALUES ('whatsapp', '1.0.0');

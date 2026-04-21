@@ -61,7 +61,7 @@ async def init_db() -> None:
             );
 
             INSERT OR IGNORE INTO usuarios (username, password_hash)
-            VALUES ('admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4tbCdUWqq.');
+            VALUES ('admin', '$2b$12$Hwep0wwj.dmjNcQ7HEKcsO3gaxCl3Ptuegep21Q7kIxC3f50dhbnm');
 
             INSERT OR IGNORE INTO config (key, value) VALUES
                 ('mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),
