@@ -357,21 +357,27 @@
     <!-- Configurar Mensagem -->
     <div class="page" id="page-mensagem">
       <div class="card">
-        <h2>✏️ Configurar Mensagem Padrão</h2>
+        <h2 style="margin-bottom:.25rem">✏️ Configurar Mensagem Padrão</h2>
+        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:1.25rem">Monte o layout da mensagem que será enviada ao cliente após cada venda. Use as variáveis abaixo para incluir dados dinâmicos do ERP.</p>
         <div class="alert" id="alertMensagem"></div>
         <div class="form-group">
           <label>Template da mensagem</label>
-          <textarea id="inputMensagem" rows="6"></textarea>
-          <div class="vars-hint">
-            Variáveis disponíveis:
-            <code>{nome}</code> <code>{valor}</code> <code>{data}</code>
+          <textarea id="inputMensagem" rows="9" style="font-family:monospace"></textarea>
+          <div class="vars-hint" style="margin-top:.6rem">
+            <strong style="color:var(--text)">Variáveis disponíveis:</strong><br>
+            <code>{nome}</code> Nome do cliente &nbsp;·&nbsp;
+            <code>{telefone}</code> Telefone &nbsp;·&nbsp;
+            <code>{data}</code> Data da compra<br>
+            <code>{produtos}</code> Lista de produtos (nome, qtd, valor unitário)<br>
+            <code>{valor_total_itens}</code> Valor total dos itens &nbsp;·&nbsp;
+            <code>{valor_total}</code> Valor total da compra
           </div>
         </div>
         <div class="form-group">
-          <label>Preview</label>
-          <div id="previewMensagem" style="background:var(--surface2);padding:.75rem 1rem;border-radius:8px;min-height:60px;font-size:.9rem;white-space:pre-wrap;"></div>
+          <label>Preview <span style="font-size:.75rem;color:var(--text-mid)">(com dados de exemplo)</span></label>
+          <div id="previewMensagem" style="background:var(--surface2);padding:.75rem 1rem;border-radius:8px;min-height:80px;font-size:.9rem;white-space:pre-wrap;border:1px solid var(--border)"></div>
         </div>
-        <button class="btn btn-primary" id="btnSalvarMensagem">Salvar</button>
+        <button class="btn btn-primary" id="btnSalvarMensagem">Salvar Template</button>
       </div>
     </div>
 
@@ -404,15 +410,69 @@
 
     <!-- Token API -->
     <div class="page" id="page-token">
-      <div class="card">
-        <h2>🔑 Token API (ERP)</h2>
+      <!-- Token -->
+      <div class="card" style="margin-bottom:1rem">
+        <h2 style="margin-bottom:.25rem">🔑 Token API (ERP)</h2>
+        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1.25rem">Este token deve ser enviado pelo ERP no header <code style="color:var(--green)">x-token</code> em todas as chamadas à API.</p>
         <div class="alert" id="alertToken"></div>
-        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1rem">Este token deve ser enviado no header <code style="color:var(--green)">x-token</code> em todas as chamadas da integração ERP.</p>
         <div class="form-group">
           <label>Token atual</label>
-          <input type="text" id="inputToken" placeholder="Insira o token" />
+          <div style="display:flex;gap:.5rem">
+            <input type="text" id="inputToken" placeholder="Clique em Gerar Token para criar um novo" readonly style="font-family:monospace;flex:1" />
+            <button class="btn btn-ghost" id="btnCopiarToken" title="Copiar token">📋 Copiar</button>
+          </div>
         </div>
-        <button class="btn btn-primary" id="btnSalvarToken">Salvar Token</button>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnGerarToken">⚡ Gerar Novo Token</button>
+          <button class="btn btn-ghost" id="btnSalvarToken" style="display:none">Salvar</button>
+        </div>
+      </div>
+
+      <!-- Status da conexão ERP -->
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h3 style="font-size:.95rem;margin:0">📡 Status da Conexão ERP</h3>
+          <button class="btn btn-ghost btn-sm" id="btnAtualizarErpStatus">↻ Atualizar</button>
+        </div>
+        <div id="erpStatusCard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
+          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
+            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">STATUS</div>
+            <div id="erpStatStatus" style="font-weight:700">—</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
+            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">ÚLTIMA CHAMADA</div>
+            <div id="erpStatTs" style="font-weight:700;font-size:.9rem">—</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
+            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">IP DO ERP</div>
+            <div id="erpStatIp" style="font-weight:700;font-family:monospace">—</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
+            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">ENDPOINT</div>
+            <div id="erpStatEndpoint" style="font-weight:700;font-family:monospace;font-size:.85rem">—</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
+            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">TOTAL DE CHAMADAS</div>
+            <div id="erpStatTotal" style="font-weight:700">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campos que o ERP deve enviar -->
+      <div class="card">
+        <h3 style="font-size:.95rem;margin-bottom:1rem">📋 Campos enviados pelo ERP</h3>
+        <table>
+          <thead><tr><th>Campo JSON</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Número do cliente (DDI+DDD+número)</td></tr>
+            <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome do cliente</td></tr>
+            <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de produtos: <code>nome</code>, <code>quantidade</code>, <code>valor_unitario</code></td></tr>
+            <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Valor total dos itens (ex: "150,00")</td></tr>
+            <tr><td><code>valor_total</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Valor total da compra com taxas/desconto</td></tr>
+            <tr><td><code>data</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Data da compra (padrão: data atual)</td></tr>
+            <tr><td><code>mensagem_custom</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Substitui o template configurado</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -614,10 +674,15 @@
   }
 
   function updatePreview(tmpl) {
+    const produtosEx = '• Gasolina Comum (x30) — R$ 5,99\n• Óleo Motor 5W30 (x1) — R$ 42,00';
     const preview = tmpl
       .replace(/{nome}/g, 'João Silva')
-      .replace(/{valor}/g, 'R$ 150,00')
-      .replace(/{data}/g, '20/04/2026');
+      .replace(/{telefone}/g, '5511999990000')
+      .replace(/{data}/g, '21/04/2026')
+      .replace(/{produtos}/g, produtosEx)
+      .replace(/{valor_total_itens}/g, 'R$ 221,70')
+      .replace(/{valor_total}/g, 'R$ 221,70')
+      .replace(/{valor}/g, 'R$ 221,70');
     document.getElementById('previewMensagem').textContent = preview;
   }
 
@@ -780,19 +845,65 @@
     loadSessoes();
   }
 
-  // ── Token ─────────────────────────────────────────────────────────────────────
+  // ── Token API ─────────────────────────────────────────────────────────────────
   async function loadToken() {
-    const res = await fetch('/api/erp/config');
-    if (!res.ok) return;
-    const d = await res.json();
-    document.getElementById('inputToken').value = d.token || '';
+    const [cfgRes, statRes] = await Promise.all([
+      fetch('/api/erp/config'),
+      fetch('/api/erp/status'),
+    ]);
+    if (cfgRes.ok) {
+      const d = await cfgRes.json();
+      document.getElementById('inputToken').value = d.token || '';
+    }
+    if (statRes.ok) {
+      const s = await statRes.json();
+      _renderErpStatus(s);
+    }
   }
 
-  document.getElementById('btnSalvarToken').addEventListener('click', async () => {
-    const token = document.getElementById('inputToken').value.trim();
-    const res = await api('POST', '/api/erp/config', { token });
-    if (res.ok) showAlert('alertToken', 'Token salvo!');
-    else showAlert('alertToken', 'Erro ao salvar', 'error');
+  function _renderErpStatus(s) {
+    const hasCall = !!s.timestamp;
+    const statusEl = document.getElementById('erpStatStatus');
+    if (!hasCall) {
+      statusEl.textContent = '⭕ Aguardando';
+      statusEl.style.color = 'var(--text-mid)';
+    } else if (s.status === 'ok') {
+      statusEl.innerHTML = '✅ Conectado';
+      statusEl.style.color = 'var(--green)';
+    } else {
+      statusEl.innerHTML = '❌ Erro';
+      statusEl.style.color = '#f85149';
+    }
+    document.getElementById('erpStatTs').textContent       = s.timestamp   || '—';
+    document.getElementById('erpStatIp').textContent       = s.ip          || '—';
+    document.getElementById('erpStatEndpoint').textContent = s.endpoint    || '—';
+    document.getElementById('erpStatTotal').textContent    = s.total_calls != null ? s.total_calls : '—';
+  }
+
+  document.getElementById('btnGerarToken').addEventListener('click', async () => {
+    if (!confirm('Gerar um novo token irá invalidar o token atual. O ERP precisará ser atualizado. Confirma?')) return;
+    const res = await api('POST', '/api/erp/gerar-token');
+    if (res.ok) {
+      document.getElementById('inputToken').value = res.token;
+      showAlert('alertToken', 'Novo token gerado e salvo com sucesso!');
+    } else {
+      showAlert('alertToken', 'Erro ao gerar token', 'error');
+    }
+  });
+
+  document.getElementById('btnCopiarToken').addEventListener('click', () => {
+    const val = document.getElementById('inputToken').value;
+    if (!val) return;
+    navigator.clipboard.writeText(val).then(() => {
+      const btn = document.getElementById('btnCopiarToken');
+      btn.textContent = '✅ Copiado!';
+      setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
+    });
+  });
+
+  document.getElementById('btnAtualizarErpStatus').addEventListener('click', async () => {
+    const res = await fetch('/api/erp/status');
+    if (res.ok) _renderErpStatus(await res.json());
   });
 
   // ── Arquivos ──────────────────────────────────────────────────────────────────
