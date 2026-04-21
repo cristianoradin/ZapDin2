@@ -83,7 +83,15 @@ def _montar_lista_produtos(produtos: List[Produto]) -> str:
     return "\n".join(linhas)
 
 
-def _aplicar_template(template: str, body: VendaPayload) -> str:
+def _normalizar_telefone(telefone: str) -> str:
+    """Garante DDI 55 — ERP envia apenas DDD+número."""
+    digits = "".join(c for c in telefone if c.isdigit())
+    if not digits.startswith("55"):
+        digits = "55" + digits
+    return digits
+
+
+def _aplicar_template(template: str, body: VendaPayload, telefone_normalizado: str) -> str:
     data_str = body.data or datetime.now().strftime("%d/%m/%Y")
     valor_exibir = body.valor_total or body.valor or ""
     produtos_str = _montar_lista_produtos(body.produtos) if body.produtos else ""
@@ -91,7 +99,7 @@ def _aplicar_template(template: str, body: VendaPayload) -> str:
     return (
         template
         .replace("{nome}", body.nome)
-        .replace("{telefone}", body.telefone)
+        .replace("{telefone}", telefone_normalizado)
         .replace("{valor}", valor_exibir)
         .replace("{valor_total}", body.valor_total or body.valor or "")
         .replace("{valor_total_itens}", body.valor_total_itens or "")
@@ -109,28 +117,30 @@ async def receber_venda(
 ):
     await _verify_token(x_token, db)
 
+    telefone = _normalizar_telefone(body.telefone)
+
     async with db.execute("SELECT value FROM config WHERE key = 'mensagem_padrao'") as cur:
         row = await cur.fetchone()
 
     template = row["value"] if row else "Olá {nome}, obrigado pela sua compra de {valor_total} em {data}!"
-    mensagem = body.mensagem_custom or _aplicar_template(template, body)
+    mensagem = body.mensagem_custom or _aplicar_template(template, body, telefone)
 
     sessao_id = wa_manager.pick_session()
     if not sessao_id:
         await db.execute(
             "INSERT INTO mensagens (destinatario, mensagem, status, erro) VALUES (?, ?, 'failed', 'Sem sessão ativa')",
-            (body.telefone, mensagem),
+            (telefone, mensagem),
         )
         await db.commit()
         _record_call(request, "/api/erp/venda", False)
         raise HTTPException(status_code=503, detail="Nenhuma sessão WhatsApp ativa")
 
-    sucesso, erro = await wa_manager.send_text(sessao_id, body.telefone, mensagem)
+    sucesso, erro = await wa_manager.send_text(sessao_id, telefone, mensagem)
     status_msg = "sent" if sucesso else "failed"
 
     await db.execute(
         "INSERT INTO mensagens (sessao_id, destinatario, mensagem, status, erro, sent_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
-        (sessao_id, body.telefone, mensagem, status_msg, erro),
+        (sessao_id, telefone, mensagem, status_msg, erro),
     )
     await db.commit()
     _record_call(request, "/api/erp/venda", sucesso)
@@ -150,6 +160,8 @@ async def receber_arquivo(
 ):
     await _verify_token(x_token, db)
 
+    telefone = _normalizar_telefone(body.telefone)
+
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     ext = os.path.splitext(body.nome_arquivo)[1] or ".pdf"
     nome_salvo = f"{uuid.uuid4().hex}{ext}"
@@ -163,18 +175,18 @@ async def receber_arquivo(
     if not sessao_id:
         await db.execute(
             "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status) VALUES (?, ?, ?, ?, 'failed')",
-            (body.nome_arquivo, nome_salvo, len(conteudo), body.telefone),
+            (body.nome_arquivo, nome_salvo, len(conteudo), telefone),
         )
         await db.commit()
         _record_call(request, "/api/erp/arquivo", False)
         raise HTTPException(status_code=503, detail="Nenhuma sessão WhatsApp ativa")
 
-    sucesso, erro = await wa_manager.send_file(sessao_id, body.telefone, caminho, body.nome_arquivo, body.mensagem)
+    sucesso, erro = await wa_manager.send_file(sessao_id, telefone, caminho, body.nome_arquivo, body.mensagem)
     st = "sent" if sucesso else "failed"
 
     await db.execute(
         "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status) VALUES (?, ?, ?, ?, ?)",
-        (body.nome_arquivo, nome_salvo, len(conteudo), body.telefone, st),
+        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, st),
     )
     await db.commit()
     _record_call(request, "/api/erp/arquivo", sucesso)

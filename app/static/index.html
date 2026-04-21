@@ -464,7 +464,7 @@
         <table>
           <thead><tr><th>Campo JSON</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
           <tbody>
-            <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Número do cliente (DDI+DDD+número)</td></tr>
+            <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número do cliente — <strong>sem o DDI 55</strong>, o sistema insere automaticamente. Ex: <code>"11999990000"</code></td></tr>
             <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome do cliente</td></tr>
             <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de produtos: <code>nome</code>, <code>quantidade</code>, <code>valor_unitario</code></td></tr>
             <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Valor total dos itens (ex: "150,00")</td></tr>
@@ -491,10 +491,19 @@
     <div class="page" id="page-docs">
       <div class="card">
         <h2 style="margin-bottom:.25rem">📚 Documentação da API</h2>
-        <p style="color:var(--text-mid);margin-bottom:1.5rem;font-size:.875rem">
+        <p style="color:var(--text-mid);margin-bottom:1rem;font-size:.875rem">
           Todos os endpoints abaixo exigem o header <code style="color:var(--green)">x-token: SEU_TOKEN</code>.<br>
           O token é gerado em <strong>Integrações → Token API</strong>.
         </p>
+        <div style="background:#1a2e1a;border:1px solid #2d4a2d;border-radius:8px;padding:.75rem 1rem;font-size:.84rem;color:#9DDB30;margin-bottom:1.25rem">
+          📎 <strong>Documento completo para o integrador ERP:</strong>
+          <a href="/doc-integracao-erp.html" target="_blank" style="color:#9DDB30;font-weight:700;margin-left:.3rem">Abrir / Imprimir como PDF →</a>
+        </div>
+        <div style="background:var(--surface2);border-left:3px solid #d29922;border-radius:0 8px 8px 0;padding:.65rem 1rem;font-size:.84rem;margin-bottom:1.5rem">
+          ⚠️ <strong>Campo telefone:</strong> envie apenas <strong>DDD + número</strong> (sem o DDI 55).
+          O sistema adiciona o <code style="color:var(--green)">55</code> automaticamente.<br>
+          Exemplo: envie <code style="color:var(--green)">"11999990000"</code> — o sistema usa <code style="color:var(--green)">"5511999990000"</code>.
+        </div>
 
         <!-- Autenticação -->
         <div style="margin-bottom:2rem">
@@ -529,7 +538,7 @@
           <table style="margin-bottom:.75rem">
             <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
             <tbody>
-              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDI + DDD + número (ex: "5511999990000")</td></tr>
+              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número — <strong>sem DDI</strong>, o sistema insere o 55. Ex: <code>"11999990000"</code></td></tr>
               <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome completo do cliente</td></tr>
               <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de itens — ver estrutura abaixo</td></tr>
               <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Soma dos itens (ex: "179,70")</td></tr>
@@ -553,7 +562,7 @@ x-token: SEU_TOKEN
 Content-Type: application/json
 
 {
-  "telefone": "5511999990000",
+  "telefone": "11999990000",
   "nome": "João Silva",
   "produtos": [
     { "nome": "Gasolina Comum", "quantidade": 40, "valor_unitario": "5,99" },
@@ -573,7 +582,7 @@ Content-Type: application/json
           <table style="margin-bottom:.75rem">
             <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
             <tbody>
-              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDI + DDD + número</td></tr>
+              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número — <strong>sem DDI</strong>, o sistema insere o 55. Ex: <code>"11999990000"</code></td></tr>
               <tr><td><code>nome_arquivo</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome com extensão (ex: "nota_fiscal.pdf")</td></tr>
               <tr><td><code>conteudo_base64</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Conteúdo do arquivo codificado em base64</td></tr>
               <tr><td><code>mensagem</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Legenda do arquivo</td></tr>
@@ -584,7 +593,7 @@ x-token: SEU_TOKEN
 Content-Type: application/json
 
 {
-  "telefone": "5511999990000",
+  "telefone": "11999990000",
   "nome_arquivo": "nota_fiscal_001.pdf",
   "conteudo_base64": "JVBERi0xLjQKJ...",
   "mensagem": "Segue sua nota fiscal eletrônica."

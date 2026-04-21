@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZapDin — Documentação de Integração ERP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #2e7d32;
+      --green-light: #e8f5e9;
+      --blue: #1565c0;
+      --blue-light: #e3f2fd;
+      --gray: #f5f5f5;
+      --border: #e0e0e0;
+      --text: #212121;
+      --text-mid: #616161;
+      --red: #c62828;
+      --red-light: #ffebee;
+      --orange: #e65100;
+      --orange-light: #fff3e0;
+    }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    /* Header */
+    .doc-header {
+      border-bottom: 3px solid var(--green);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .doc-header h1 { font-size: 1.6rem; color: var(--green); margin-bottom: .3rem; }
+    .doc-header p  { color: var(--text-mid); font-size: .9rem; }
+    .doc-version {
+      background: var(--green-light);
+      color: var(--green);
+      border-radius: 6px;
+      padding: .3rem .75rem;
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    /* Sections */
+    h2 {
+      font-size: 1.1rem;
+      color: var(--green);
+      margin: 2rem 0 .75rem;
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h3 { font-size: .95rem; margin: 1.25rem 0 .5rem; color: var(--text); }
+    p  { margin-bottom: .75rem; }
+    /* Code */
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      background: var(--gray);
+      padding: .15rem .4rem;
+      border-radius: 4px;
+      font-size: .85em;
+      color: var(--green);
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      font-size: .82rem;
+      overflow-x: auto;
+      margin: .75rem 0 1rem;
+      line-height: 1.7;
+    }
+    pre .key   { color: #9cdcfe; }
+    pre .str   { color: #ce9178; }
+    pre .num   { color: #b5cea8; }
+    pre .cmt   { color: #6a9955; }
+    pre .verb  { color: #569cd6; font-weight: bold; }
+    pre .url   { color: #4ec9b0; }
+    pre .hdr   { color: #c586c0; }
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin: .75rem 0 1.25rem; font-size: .875rem; }
+    th { background: var(--gray); text-align: left; padding: .55rem .75rem; border: 1px solid var(--border); font-size: .8rem; color: var(--text-mid); text-transform: uppercase; letter-spacing: .04em; }
+    td { padding: .5rem .75rem; border: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: #fafafa; }
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border-radius: 4px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .badge-green  { background: var(--green-light);  color: var(--green); }
+    .badge-blue   { background: var(--blue-light);   color: var(--blue); }
+    .badge-gray   { background: var(--gray);         color: var(--text-mid); }
+    .badge-red    { background: var(--red-light);    color: var(--red); }
+    .badge-orange { background: var(--orange-light); color: var(--orange); }
+    /* Alert boxes */
+    .alert-box {
+      border-left: 4px solid;
+      padding: .75rem 1rem;
+      border-radius: 0 6px 6px 0;
+      margin: 1rem 0;
+      font-size: .875rem;
+    }
+    .alert-info    { border-color: var(--blue);   background: var(--blue-light);   }
+    .alert-warn    { border-color: var(--orange);  background: var(--orange-light); }
+    .alert-success { border-color: var(--green);  background: var(--green-light);  }
+    /* Endpoint block */
+    .endpoint {
+      background: var(--gray);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .65rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      font-family: 'Consolas', monospace;
+      font-size: .9rem;
+    }
+    /* TOC */
+    .toc { background: var(--gray); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+    .toc h4 { margin-bottom: .6rem; font-size: .85rem; color: var(--text-mid); text-transform: uppercase; letter-spacing: .05em; }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { margin-bottom: .2rem; }
+    .toc a  { color: var(--green); text-decoration: none; font-size: .875rem; }
+    .toc a:hover { text-decoration: underline; }
+    /* Footer */
+    .doc-footer {
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: .8rem;
+      color: var(--text-mid);
+      display: flex;
+      justify-content: space-between;
+    }
+    @media print {
+      body { padding: 1rem; }
+      a { color: inherit; }
+      pre { white-space: pre-wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div>
+    <h1>ZapDin — Documentação de Integração ERP</h1>
+    <p>Guia técnico para integração do sistema ERP com a API de envio de mensagens WhatsApp</p>
+  </div>
+  <span class="doc-version">v1.0</span>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h4>Índice</h4>
+  <ol>
+    <li><a href="#visao-geral">Visão Geral</a></li>
+    <li><a href="#autenticacao">Autenticação</a></li>
+    <li><a href="#endpoint-venda">Endpoint: Envio de Mensagem de Venda</a></li>
+    <li><a href="#endpoint-arquivo">Endpoint: Envio de Arquivo</a></li>
+    <li><a href="#template">Template de Mensagem</a></li>
+    <li><a href="#respostas">Códigos de Resposta</a></li>
+    <li><a href="#exemplos">Exemplos Práticos</a></li>
+  </ol>
+</div>
+
+
+<!-- 1. Visão Geral -->
+<h2 id="visao-geral">1. Visão Geral</h2>
+<p>
+  O ZapDin é um sistema de automação de mensagens WhatsApp. Após cada venda no ERP,
+  o sistema pode notificar automaticamente o cliente via WhatsApp com os dados da compra,
+  usando um template configurável, e também enviar arquivos como notas fiscais em PDF.
+</p>
+
+<div class="alert-box alert-info">
+  <strong>Base URL:</strong> fornecida pelo administrador do ZapDin (ex: <code>http://192.168.1.100:4000</code>)<br>
+  Todos os endpoints têm prefixo <code>/api/erp/</code>.
+</div>
+
+<div class="alert-box alert-warn">
+  <strong>Importante:</strong> O campo <code>telefone</code> deve conter apenas o <strong>DDD + número</strong>
+  (sem o DDI 55). O sistema adiciona o DDI automaticamente.<br>
+  Exemplo: envie <code>"11999990000"</code> — o sistema usa <code>"5511999990000"</code>.
+</div>
+
+
+<!-- 2. Autenticação -->
+<h2 id="autenticacao">2. Autenticação</h2>
+<p>
+  Todas as requisições devem incluir um token de autenticação no header HTTP.
+  O token é gerado pelo administrador do ZapDin em <strong>Integrações → Token API</strong>.
+</p>
+
+<table>
+  <thead><tr><th>Header</th><th>Valor</th><th>Obrigatório</th></tr></thead>
+  <tbody>
+    <tr><td><code>x-token</code></td><td>Token fornecido pelo administrador</td><td><span class="badge badge-red">Sim</span></td></tr>
+    <tr><td><code>Content-Type</code></td><td><code>application/json</code></td><td><span class="badge badge-red">Sim</span></td></tr>
+  </tbody>
+</table>
+
+<pre><span class="cmt"># Exemplo de header em toda requisição</span>
+<span class="hdr">x-token:</span> <span class="str">rYq1OWgra44Nx_nlaSWF-VMBzObpfCMJY-5EZx9-MaA</span>
+<span class="hdr">Content-Type:</span> <span class="str">application/json</span></pre>
+
+<div class="alert-box alert-warn">
+  Nunca exponha o token em código-fonte público. Se comprometido, o administrador
+  pode gerar um novo token pelo painel — o token antigo é invalidado imediatamente.
+</div>
+
+
+<!-- 3. Envio de Venda -->
+<h2 id="endpoint-venda">3. Endpoint: Envio de Mensagem de Venda</h2>
+
+<div class="endpoint">
+  <span class="badge badge-green">POST</span>
+  <span>/api/erp/venda</span>
+</div>
+
+<p>
+  Recebe os dados de uma venda e dispara automaticamente uma mensagem WhatsApp
+  ao cliente com as informações formatadas conforme o template configurado no painel.
+</p>
+
+<h3>Campos do body (JSON)</h3>
+<table>
+  <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>telefone</code></td><td>string</td>
+      <td><span class="badge badge-red">Sim</span></td>
+      <td>DDD + número do cliente. <strong>Sem o DDI 55</strong> — o sistema insere automaticamente.<br>
+          Exemplo: <code>"11999990000"</code> ou <code>"1133334444"</code></td>
+    </tr>
+    <tr>
+      <td><code>nome</code></td><td>string</td>
+      <td><span class="badge badge-red">Sim</span></td>
+      <td>Nome completo do cliente</td>
+    </tr>
+    <tr>
+      <td><code>produtos</code></td><td>array</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Lista de produtos/serviços consumidos. Ver estrutura abaixo.</td>
+    </tr>
+    <tr>
+      <td><code>valor_total_itens</code></td><td>string</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Soma dos valores dos itens. Exemplo: <code>"281,60"</code></td>
+    </tr>
+    <tr>
+      <td><code>valor_total</code></td><td>string</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Valor total final da compra (com descontos/taxas). Exemplo: <code>"275,00"</code></td>
+    </tr>
+    <tr>
+      <td><code>data</code></td><td>string</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Data da compra no formato <code>DD/MM/AAAA</code>. Se omitida, usa a data atual.</td>
+    </tr>
+    <tr>
+      <td><code>mensagem_custom</code></td><td>string</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Mensagem personalizada que <strong>substitui</strong> o template configurado no painel.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Estrutura de cada item em <code>produtos</code></h3>
+<table>
+  <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+  <tbody>
+    <tr><td><code>nome</code></td><td>string</td><td><span class="badge badge-red">Sim</span></td><td>Nome do produto ou serviço</td></tr>
+    <tr><td><code>quantidade</code></td><td>number</td><td><span class="badge badge-gray">Não</span></td><td>Quantidade consumida. Padrão: <code>1</code></td></tr>
+    <tr><td><code>valor_unitario</code></td><td>string</td><td><span class="badge badge-gray">Não</span></td><td>Valor por unidade. Exemplo: <code>"5,99"</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Exemplo de requisição</h3>
+<pre><span class="verb">POST</span> <span class="url">/api/erp/venda</span>
+<span class="hdr">x-token:</span> <span class="str">SEU_TOKEN_AQUI</span>
+<span class="hdr">Content-Type:</span> <span class="str">application/json</span>
+
+{
+  <span class="key">"telefone"</span>: <span class="str">"11999990000"</span>,
+  <span class="key">"nome"</span>: <span class="str">"João Silva"</span>,
+  <span class="key">"produtos"</span>: [
+    { <span class="key">"nome"</span>: <span class="str">"Gasolina Comum"</span>, <span class="key">"quantidade"</span>: <span class="num">40</span>, <span class="key">"valor_unitario"</span>: <span class="str">"5,99"</span> },
+    { <span class="key">"nome"</span>: <span class="str">"Óleo Motor 5W30"</span>, <span class="key">"quantidade"</span>: <span class="num">1</span>, <span class="key">"valor_unitario"</span>: <span class="str">"42,00"</span> }
+  ],
+  <span class="key">"valor_total_itens"</span>: <span class="str">"281,60"</span>,
+  <span class="key">"valor_total"</span>: <span class="str">"281,60"</span>,
+  <span class="key">"data"</span>: <span class="str">"21/04/2026"</span>
+}</pre>
+
+<h3>Resposta de sucesso</h3>
+<pre><span class="cmt">HTTP 200 OK</span>
+{ <span class="key">"ok"</span>: <span class="num">true</span>, <span class="key">"sessao"</span>: <span class="str">"a1b2c3d4"</span> }</pre>
+
+
+<!-- 4. Envio de Arquivo -->
+<h2 id="endpoint-arquivo">4. Endpoint: Envio de Arquivo</h2>
+
+<div class="endpoint">
+  <span class="badge badge-green">POST</span>
+  <span>/api/erp/arquivo</span>
+</div>
+
+<p>
+  Envia um arquivo (PDF, imagem, etc.) ao cliente via WhatsApp.
+  O conteúdo deve ser enviado codificado em <strong>base64</strong>.
+</p>
+
+<h3>Campos do body (JSON)</h3>
+<table>
+  <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>telefone</code></td><td>string</td>
+      <td><span class="badge badge-red">Sim</span></td>
+      <td>DDD + número. <strong>Sem o DDI 55</strong> — inserido automaticamente.</td>
+    </tr>
+    <tr>
+      <td><code>nome_arquivo</code></td><td>string</td>
+      <td><span class="badge badge-red">Sim</span></td>
+      <td>Nome do arquivo com extensão. Exemplo: <code>"nota_fiscal_001.pdf"</code></td>
+    </tr>
+    <tr>
+      <td><code>conteudo_base64</code></td><td>string</td>
+      <td><span class="badge badge-red">Sim</span></td>
+      <td>Conteúdo do arquivo codificado em base64 (sem prefixo <code>data:</code>)</td>
+    </tr>
+    <tr>
+      <td><code>mensagem</code></td><td>string</td>
+      <td><span class="badge badge-gray">Não</span></td>
+      <td>Legenda exibida junto ao arquivo no WhatsApp</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Exemplo de requisição</h3>
+<pre><span class="verb">POST</span> <span class="url">/api/erp/arquivo</span>
+<span class="hdr">x-token:</span> <span class="str">SEU_TOKEN_AQUI</span>
+<span class="hdr">Content-Type:</span> <span class="str">application/json</span>
+
+{
+  <span class="key">"telefone"</span>: <span class="str">"11999990000"</span>,
+  <span class="key">"nome_arquivo"</span>: <span class="str">"nota_fiscal_001.pdf"</span>,
+  <span class="key">"conteudo_base64"</span>: <span class="str">"JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoK..."</span>,
+  <span class="key">"mensagem"</span>: <span class="str">"Segue sua nota fiscal eletrônica. Obrigado!"</span>
+}</pre>
+
+<h3>Como gerar o base64 no ERP</h3>
+<pre><span class="cmt">// C# (.NET)</span>
+<span class="key">string</span> base64 = Convert.ToBase64String(File.ReadAllBytes(<span class="str">"nota.pdf"</span>));
+
+<span class="cmt">// Java</span>
+<span class="key">String</span> base64 = Base64.getEncoder().encodeToString(Files.readAllBytes(Paths.get(<span class="str">"nota.pdf"</span>)));
+
+<span class="cmt">// Python</span>
+<span class="key">import</span> base64
+base64_str = base64.b64encode(open(<span class="str">"nota.pdf"</span>, <span class="str">"rb"</span>).read()).decode()</pre>
+
+
+<!-- 5. Template de Mensagem -->
+<h2 id="template">5. Template de Mensagem</h2>
+<p>
+  O layout da mensagem enviada ao cliente é configurável pelo administrador do ZapDin
+  em <strong>Configurar Mensagem</strong>. O template usa variáveis que são substituídas
+  pelos dados enviados pelo ERP:
+</p>
+
+<table>
+  <thead><tr><th>Variável</th><th>Substituído pelo campo</th><th>Exemplo de saída</th></tr></thead>
+  <tbody>
+    <tr><td><code>{nome}</code></td><td><code>nome</code></td><td>João Silva</td></tr>
+    <tr><td><code>{telefone}</code></td><td><code>telefone</code> (com DDI)</td><td>5511999990000</td></tr>
+    <tr><td><code>{data}</code></td><td><code>data</code></td><td>21/04/2026</td></tr>
+    <tr><td><code>{produtos}</code></td><td>Lista formatada do array <code>produtos</code></td><td>• Gasolina (x40) — R$ 5,99<br>• Óleo Motor (x1) — R$ 42,00</td></tr>
+    <tr><td><code>{valor_total_itens}</code></td><td><code>valor_total_itens</code></td><td>R$ 281,60</td></tr>
+    <tr><td><code>{valor_total}</code></td><td><code>valor_total</code></td><td>R$ 281,60</td></tr>
+  </tbody>
+</table>
+
+<h3>Exemplo de template configurado</h3>
+<pre><span class="cmt">Olá {nome}! 👋
+
+Obrigado pela sua visita em {data}.
+
+🛒 Itens:
+{produtos}
+
+💰 Total dos itens: R$ {valor_total_itens}
+✅ Total da compra: R$ {valor_total}
+
+Agradecemos sua preferência!</span></pre>
+
+<h3>Mensagem gerada (com os dados do exemplo)</h3>
+<div style="background:#e8f5e9;border-radius:8px;padding:1rem 1.25rem;font-size:.875rem;white-space:pre-wrap;border-left:4px solid #2e7d32;line-height:1.8">Olá João Silva! 👋
+
+Obrigado pela sua visita em 21/04/2026.
+
+🛒 Itens:
+• Gasolina Comum (x40) — R$ 5,99
+• Óleo Motor 5W30 (x1) — R$ 42,00
+
+💰 Total dos itens: R$ 281,60
+✅ Total da compra: R$ 281,60
+
+Agradecemos sua preferência!</div>
+
+
+<!-- 6. Códigos de Resposta -->
+<h2 id="respostas">6. Códigos de Resposta</h2>
+<table>
+  <thead><tr><th>Código HTTP</th><th>Significado</th><th>Ação recomendada</th></tr></thead>
+  <tbody>
+    <tr><td><span class="badge badge-green">200 OK</span></td><td>Mensagem enviada com sucesso</td><td>Registrar envio no ERP</td></tr>
+    <tr><td><span class="badge badge-red">401 Unauthorized</span></td><td>Token ausente ou inválido</td><td>Verificar o token configurado</td></tr>
+    <tr><td><span class="badge badge-orange">503 Service Unavailable</span></td><td>Nenhuma sessão WhatsApp conectada</td><td>Notificar administrador para reconectar o WhatsApp</td></tr>
+    <tr><td><span class="badge badge-red">500 Internal Server Error</span></td><td>Falha no envio da mensagem</td><td>Aguardar e tentar reenviar; verificar logs</td></tr>
+    <tr><td><span class="badge badge-red">422 Unprocessable Entity</span></td><td>Campos obrigatórios ausentes ou inválidos</td><td>Verificar o payload enviado</td></tr>
+  </tbody>
+</table>
+
+
+<!-- 7. Exemplos Práticos -->
+<h2 id="exemplos">7. Exemplos Práticos</h2>
+
+<h3>cURL</h3>
+<pre><span class="verb">curl</span> -X POST http://SEU_SERVIDOR:4000/api/erp/venda \
+  -H <span class="str">"x-token: SEU_TOKEN"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "telefone": "11999990000",
+    "nome": "João Silva",
+    "produtos": [{"nome": "Gasolina Comum", "quantidade": 40, "valor_unitario": "5,99"}],
+    "valor_total_itens": "239,60",
+    "valor_total": "239,60"
+  }'</span></pre>
+
+<h3>Python (requests)</h3>
+<pre><span class="key">import</span> requests
+
+url = <span class="str">"http://SEU_SERVIDOR:4000/api/erp/venda"</span>
+headers = {<span class="str">"x-token"</span>: <span class="str">"SEU_TOKEN"</span>, <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>}
+payload = {
+    <span class="str">"telefone"</span>: <span class="str">"11999990000"</span>,
+    <span class="str">"nome"</span>: <span class="str">"João Silva"</span>,
+    <span class="str">"produtos"</span>: [
+        {<span class="str">"nome"</span>: <span class="str">"Gasolina Comum"</span>, <span class="str">"quantidade"</span>: <span class="num">40</span>, <span class="str">"valor_unitario"</span>: <span class="str">"5,99"</span>}
+    ],
+    <span class="str">"valor_total_itens"</span>: <span class="str">"239,60"</span>,
+    <span class="str">"valor_total"</span>: <span class="str">"239,60"</span>
+}
+resp = requests.post(url, json=payload, headers=headers)
+print(resp.json())</pre>
+
+<h3>C# (.NET HttpClient)</h3>
+<pre><span class="key">var</span> client = <span class="key">new</span> HttpClient();
+client.DefaultRequestHeaders.Add(<span class="str">"x-token"</span>, <span class="str">"SEU_TOKEN"</span>);
+
+<span class="key">var</span> payload = <span class="key">new</span> {
+    telefone = <span class="str">"11999990000"</span>,
+    nome = <span class="str">"João Silva"</span>,
+    produtos = <span class="key">new</span>[] {
+        <span class="key">new</span> { nome = <span class="str">"Gasolina Comum"</span>, quantidade = <span class="num">40</span>, valor_unitario = <span class="str">"5,99"</span> }
+    },
+    valor_total_itens = <span class="str">"239,60"</span>,
+    valor_total = <span class="str">"239,60"</span>
+};
+<span class="key">var</span> json = JsonSerializer.Serialize(payload);
+<span class="key">var</span> content = <span class="key">new</span> StringContent(json, Encoding.UTF8, <span class="str">"application/json"</span>);
+<span class="key">var</span> response = <span class="key">await</span> client.PostAsync(<span class="str">"http://SEU_SERVIDOR:4000/api/erp/venda"</span>, content);</pre>
+
+<h3>PHP</h3>
+<pre><span class="key">$payload</span> = json_encode([
+    <span class="str">'telefone'</span>          => <span class="str">'11999990000'</span>,
+    <span class="str">'nome'</span>              => <span class="str">'João Silva'</span>,
+    <span class="str">'produtos'</span>          => [[
+        <span class="str">'nome'</span>          => <span class="str">'Gasolina Comum'</span>,
+        <span class="str">'quantidade'</span>    => <span class="num">40</span>,
+        <span class="str">'valor_unitario'</span> => <span class="str">'5,99'</span>
+    ]],
+    <span class="str">'valor_total_itens'</span> => <span class="str">'239,60'</span>,
+    <span class="str">'valor_total'</span>       => <span class="str">'239,60'</span>
+]);
+
+<span class="key">$ch</span> = curl_init(<span class="str">'http://SEU_SERVIDOR:4000/api/erp/venda'</span>);
+curl_setopt_array(<span class="key">$ch</span>, [
+    CURLOPT_POST           => <span class="num">true</span>,
+    CURLOPT_POSTFIELDS     => <span class="key">$payload</span>,
+    CURLOPT_HTTPHEADER     => [<span class="str">'x-token: SEU_TOKEN'</span>, <span class="str">'Content-Type: application/json'</span>],
+    CURLOPT_RETURNTRANSFER => <span class="num">true</span>,
+]);
+<span class="key">$response</span> = curl_exec(<span class="key">$ch</span>);</pre>
+
+
+<div class="doc-footer">
+  <span>ZapDin — Sistema de Automação WhatsApp</span>
+  <span>Documentação v1.0 · Gerado em 21/04/2026</span>
+</div>
+
+</body>
+</html>
