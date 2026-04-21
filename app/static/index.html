@@ -991,9 +991,9 @@ Content-Type: application/json
           <div class="sessao-actions">
             <span class="chip ${chip}">${label}</span>
             ${s.status !== 'connected'
-              ? `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">📷 Mostrar QR</button>`
-              : `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">📱 Ver info</button>
-                 <button class="btn btn-primary btn-sm" onclick="abrirModalTeste('${s.id}','${s.nome.replace(/'/g,"\\'")}')">🧪 Testar Envio</button>`}
+              ? `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">Mostrar QR</button>`
+              : `<button class="btn btn-ghost btn-sm" onclick="toggleQR('${s.id}')">Ver info</button>
+                 <button class="btn btn-primary btn-sm" onclick="abrirModalTeste('${s.id}','${s.nome.replace(/'/g,"\\'")}')">Testar Envio</button>`}
             <button class="btn btn-danger btn-sm" onclick="deleteSessao('${s.id}')">Remover</button>
           </div>
         </div>
@@ -1028,15 +1028,23 @@ Content-Type: application/json
       cont.innerHTML = '<p style="color:var(--text-mid);font-size:.875rem;padding:.5rem 0">Nenhuma sessão. Adicione um número abaixo para começar.</p>';
       return;
     }
-    // Preserva quais QRs estão abertos antes de re-renderizar
-    const abertos = new Set(Object.keys(_qrPollers));
-    // Para todos os pollers — vão ser reiniciados se ainda abertos
+    // Salva quais QR-areas estavam abertas ANTES de re-renderizar
+    const abertos = new Set(
+      Array.from(document.querySelectorAll('.qr-area.visible'))
+           .map(el => el.id.replace('qrarea-', ''))
+    );
     Object.keys(_qrPollers).forEach(_stopQrPoller);
     cont.innerHTML = sessoes.map(_renderSessao).join('');
-    // Reabre pollers que estavam visíveis
-    abertos.forEach(id => {
-      const area = document.getElementById('qrarea-' + id);
-      if (area) { area.classList.add('visible'); _startQrPoller(id); }
+    // Reabre QRs que estavam visíveis + abre automaticamente sessões em estado qr
+    sessoes.forEach(s => {
+      if (s.status === 'connected') return;
+      const area = document.getElementById('qrarea-' + s.id);
+      if (!area) return;
+      if (abertos.has(s.id) || s.status === 'qr') {
+        area.classList.add('visible');
+        _startQrPoller(s.id);
+        _fetchQR(s.id).then(qr => { if (qr) _setQrImg(s.id, qr); });
+      }
     });
   }
 
@@ -1315,8 +1323,8 @@ Content-Type: application/json
     </div>
 
     <div class="modal-tabs">
-      <button class="modal-tab active" data-tab="texto">💬 Mensagem de Texto</button>
-      <button class="modal-tab" data-tab="arquivo">📎 Arquivo</button>
+      <button class="modal-tab active" data-tab="texto">Mensagem de Texto</button>
+      <button class="modal-tab" data-tab="arquivo">Enviar Arquivo</button>
     </div>
 
     <!-- Painel Texto -->
