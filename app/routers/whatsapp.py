@@ -1,7 +1,8 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 import aiosqlite
+import os
+import tempfile
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -63,3 +64,37 @@ async def get_qr(sessao_id: str, _: dict = Depends(get_current_user)):
     if qr is None:
         raise HTTPException(status_code=404, detail="QR não disponível")
     return {"qr": qr}
+
+
+class SendTextBody(BaseModel):
+    phone: str
+    message: str
+
+
+@router.post("/{sessao_id}/send-text")
+async def send_text(sessao_id: str, body: SendTextBody, _: dict = Depends(get_current_user)):
+    ok, err = await wa_manager.send_text(sessao_id, body.phone, body.message)
+    if not ok:
+        raise HTTPException(status_code=400, detail=err or "Erro ao enviar mensagem")
+    return {"ok": True}
+
+
+@router.post("/{sessao_id}/send-file")
+async def send_file(
+    sessao_id: str,
+    phone: str = Form(...),
+    caption: str = Form(""),
+    file: UploadFile = File(...),
+    _: dict = Depends(get_current_user),
+):
+    suffix = os.path.splitext(file.filename)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        ok, err = await wa_manager.send_file(sessao_id, phone, tmp_path, file.filename, caption or None)
+    finally:
+        os.unlink(tmp_path)
+    if not ok:
+        raise HTTPException(status_code=400, detail=err or "Erro ao enviar arquivo")
+    return {"ok": True}
