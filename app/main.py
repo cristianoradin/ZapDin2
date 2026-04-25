@@ -12,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from .core.config import settings
 from .core.database import init_db, get_db
 from .routers import auth, whatsapp, erp, config_router, arquivos, stats, telegram_router
-from .services import reporter, updater, telegram_service
+from .services import reporter, updater, telegram_service, queue_worker
 from .services.whatsapp_service import wa_manager
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
@@ -47,12 +47,14 @@ async def lifespan(app: FastAPI):
     reporter.start()
     updater.start()
     telegram_service.start()
+    queue_worker.start()
 
     yield
 
     reporter.stop()
     updater.stop()
     telegram_service.stop()
+    queue_worker.stop()
 
 
 # ── App ────────────────────────────────────────────────────────────────────────

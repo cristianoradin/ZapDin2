@@ -331,35 +331,127 @@
     .sessao-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
 
     /* ─── QR area ─────────────────────────────────────────────────────────── */
+    /* ── QR / Phone Mockup ───────────────────────────────────────────────── */
     .qr-area {
       display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 1.75rem;
       margin-top: 1.25rem;
       padding-top: 1.25rem;
       border-top: 1px solid var(--border);
+      flex-wrap: wrap;
     }
     .qr-area.visible { display: flex; }
-    .qr-box {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      width: 220px; height: 220px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: var(--shadow-sm);
+
+    /* Phone outer shell */
+    .phone-mockup {
+      position: relative;
+      width: 188px;
+      background: linear-gradient(145deg, #1e1e2e, #111118);
+      border-radius: 34px;
+      padding: 14px 9px 18px;
+      box-shadow:
+        0 0 0 1.5px #2a2a3a,
+        0 0 0 3.5px #0d0d12,
+        0 28px 64px rgba(0,0,0,.55);
+      flex-shrink: 0;
     }
-    .qr-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 4px; }
-    .qr-box .qr-placeholder { display: flex; flex-direction: column; align-items: center; gap: .5rem; color: var(--text-light); font-size: .85rem; }
+    /* Volume buttons — left */
+    .phone-mockup::before {
+      content: '';
+      position: absolute;
+      left: -4px; top: 68px;
+      width: 4px; height: 24px;
+      background: #222230;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 34px 0 #222230;
+    }
+    /* Power button — right */
+    .phone-mockup::after {
+      content: '';
+      position: absolute;
+      right: -4px; top: 88px;
+      width: 4px; height: 38px;
+      background: #222230;
+      border-radius: 0 2px 2px 0;
+    }
+    .phone-notch {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      margin-bottom: 8px;
+    }
+    .phone-speaker {
+      width: 44px; height: 4px;
+      background: #2a2a3a;
+      border-radius: 2px;
+    }
+    .phone-camera {
+      width: 7px; height: 7px;
+      background: #1a1a28;
+      border-radius: 50%;
+      border: 1px solid #333345;
+      box-shadow: 0 0 0 1px #0d0d18;
+    }
+    .phone-screen {
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      gap: 6px;
+      min-height: 230px;
+      justify-content: center;
+    }
+    .phone-screen-header {
+      width: 100%;
+      background: #25d366;
+      padding: 6px 10px;
+      display: flex; align-items: center; gap: 6px;
+      border-radius: 10px 10px 0 0;
+      margin: -10px -10px 4px;
+      width: calc(100% + 20px);
+    }
+    .phone-screen-header span {
+      color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .03em;
+    }
+    .phone-wa-icon {
+      width: 16px; height: 16px; flex-shrink: 0;
+    }
+    .phone-qr-wrap {
+      padding: 6px;
+      background: #fff;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .phone-qr-wrap img { width: 148px; height: 148px; object-fit: contain; }
+    .phone-qr-label {
+      font-size: .6rem; color: #555; text-align: center; line-height: 1.4;
+      padding: 0 4px;
+    }
+    .phone-home {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 2px solid #1e1e2e;
+      background: #16161f;
+      margin: 10px auto 0;
+    }
+
     .qr-spinner {
-      width: 28px; height: 28px;
-      border: 2.5px solid var(--border); border-top-color: var(--accent);
+      width: 32px; height: 32px;
+      border: 2.5px solid #e5e7eb; border-top-color: #25d366;
       border-radius: 50%; animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .qr-instrucoes { font-size: .82rem; color: var(--text-mid); text-align: center; line-height: 1.6; max-width: 280px; }
-    .qr-instrucoes strong { color: var(--text); }
+    .qr-instrucoes {
+      font-size: .82rem; color: var(--text-mid); line-height: 1.65;
+      max-width: 240px; padding-top: .25rem;
+    }
+    .qr-instrucoes strong { color: var(--text); display: block; margin-bottom: .4rem; font-size: .85rem; }
+    .qr-instrucoes ol { padding-left: 1.1rem; margin: 0; }
+    .qr-instrucoes ol li { margin-bottom: .3rem; }
+
     .qr-connected-msg {
       display: none; flex-direction: column; align-items: center; gap: .5rem;
       padding: 1.25rem; background: var(--accent-soft);
@@ -1011,14 +1103,35 @@ Content-Type: application/json
           ${s.phone ? `<span>Número: ${s.phone}</span>` : ''}
         </div>` : `
         <div class="qr-area" id="qrarea-${s.id}">
-          <div class="qr-box" id="qrbox-${s.id}">
-            <div class="qr-placeholder"><div class="qr-spinner"></div><span>Aguardando QR…</span></div>
+          <div class="phone-mockup">
+            <div class="phone-notch">
+              <div class="phone-camera"></div>
+              <div class="phone-speaker"></div>
+            </div>
+            <div class="phone-screen" id="qrbox-${s.id}">
+              <div class="phone-screen-header">
+                <svg class="phone-wa-icon" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
+                <span>WhatsApp Web</span>
+              </div>
+              <div class="phone-qr-wrap" id="qrimg-${s.id}">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0">
+                  <div class="qr-spinner"></div>
+                  <span style="font-size:.62rem;color:#888">Aguardando QR…</span>
+                </div>
+              </div>
+              <div class="phone-qr-label">Aponte a câmera para<br>escanear o código</div>
+            </div>
+            <div class="phone-home"></div>
           </div>
           <div class="qr-instrucoes">
-            <strong>Como conectar:</strong><br>
-            Abra o WhatsApp no celular →<br>
-            <strong>⋮ Menu → Aparelhos conectados → Conectar aparelho</strong><br>
-            Aponte a câmera para o QR acima.
+            <strong>Como conectar:</strong>
+            <ol>
+              <li>Abra o <strong>WhatsApp</strong> no celular</li>
+              <li>Toque em <strong>⋮ Menu</strong></li>
+              <li>Vá em <strong>Aparelhos conectados</strong></li>
+              <li>Toque em <strong>Conectar aparelho</strong></li>
+              <li>Aponte a câmera para o QR ao lado</li>
+            </ol>
           </div>
         </div>`}
       </div>`;
@@ -1069,9 +1182,9 @@ Content-Type: application/json
   }
 
   function _setQrImg(id, qrDataUrl) {
-    const box = document.getElementById('qrbox-' + id);
-    if (!box) return;
-    box.innerHTML = `<img src="${qrDataUrl}" alt="QR Code WhatsApp" />`;
+    const wrap = document.getElementById('qrimg-' + id);
+    if (!wrap) return;
+    wrap.innerHTML = `<img src="${qrDataUrl}" alt="QR Code WhatsApp" style="width:148px;height:148px;object-fit:contain" />`;
   }
 
   function _startQrPoller(id) {
@@ -1094,20 +1207,36 @@ Content-Type: application/json
 
   document.getElementById('btnAddSessao').addEventListener('click', async () => {
     const nome = document.getElementById('inputNovaSessao').value.trim();
-    if (!nome) return;
-    const res = await api('POST', '/api/sessoes', { nome });
-    if (res.ok) {
-      document.getElementById('inputNovaSessao').value = '';
-      showAlert('alertWA', 'Sessão criada! Clique em "Mostrar QR" para escanear.');
-      await loadSessoes();
-      // Abre automaticamente o QR da nova sessão
-      const id = res.id;
-      if (id) {
-        const area = document.getElementById('qrarea-' + id);
-        if (area) { area.classList.add('visible'); _startQrPoller(id); }
+    if (!nome) {
+      showAlert('alertWA', 'Digite um nome para a sessão.', 'error');
+      return;
+    }
+    const btn = document.getElementById('btnAddSessao');
+    btn.disabled = true;
+    btn.textContent = 'Criando…';
+    try {
+      const res = await api('POST', '/api/sessoes', { nome });
+      if (res.ok) {
+        document.getElementById('inputNovaSessao').value = '';
+        showAlert('alertWA', `Sessão "${nome}" criada! Escaneie o QR Code abaixo.`);
+        await loadSessoes();
+        const id = res.id;
+        if (id) {
+          const area = document.getElementById('qrarea-' + id);
+          if (area) {
+            area.classList.add('visible');
+            _startQrPoller(id);
+            _fetchQR(id).then(qr => { if (qr) _setQrImg(id, qr); });
+          }
+        }
+      } else {
+        showAlert('alertWA', res.detail || 'Erro ao criar sessão. Tente novamente.', 'error');
       }
-    } else {
-      showAlert('alertWA', 'Erro ao criar sessão', 'error');
+    } catch (e) {
+      showAlert('alertWA', 'Erro de conexão ao criar sessão.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '+ Adicionar';
     }
   });
 

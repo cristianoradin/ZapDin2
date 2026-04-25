@@ -78,9 +78,16 @@ async def init_db() -> None:
             VALUES ('admin', '$2b$12$Hwep0wwj.dmjNcQ7HEKcsO3gaxCl3Ptuegep21Q7kIxC3f50dhbnm');
         """)
         # Migrações para bancos existentes
-        for col in ("sent_at", "delivered_at", "read_at"):
+        for col, typ in [
+            ("sent_at",      "TEXT"),
+            ("delivered_at", "TEXT"),
+            ("read_at",      "TEXT"),
+            ("caption",      "TEXT"),
+            ("sessao_id",    "TEXT"),
+            ("erro",         "TEXT"),
+        ]:
             try:
-                await db.execute(f"ALTER TABLE arquivos ADD COLUMN {col} TEXT")
+                await db.execute(f"ALTER TABLE arquivos ADD COLUMN {col} {typ}")
             except Exception:
                 pass
         await db.executescript("""

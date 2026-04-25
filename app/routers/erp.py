@@ -11,7 +11,6 @@ import aiosqlite
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..services.whatsapp_service import wa_manager
 
 router = APIRouter(prefix="/api/erp", tags=["erp"])
 
@@ -125,30 +124,14 @@ async def receber_venda(
     template = row["value"] if row else "Olá {nome}, obrigado pela sua compra de {valor_total} em {data}!"
     mensagem = body.mensagem_custom or _aplicar_template(template, body, telefone)
 
-    sessao_id = wa_manager.pick_session()
-    if not sessao_id:
-        await db.execute(
-            "INSERT INTO mensagens (destinatario, mensagem, status, erro) VALUES (?, ?, 'failed', 'Sem sessão ativa')",
-            (telefone, mensagem),
-        )
-        await db.commit()
-        _record_call(request, "/api/erp/venda", False)
-        raise HTTPException(status_code=503, detail="Nenhuma sessão WhatsApp ativa")
-
-    sucesso, erro = await wa_manager.send_text(sessao_id, telefone, mensagem)
-    status_msg = "sent" if sucesso else "failed"
-
+    # Enfileira para disparo assíncrono — API retorna imediatamente
     await db.execute(
-        "INSERT INTO mensagens (sessao_id, destinatario, mensagem, status, erro, sent_at) VALUES (?, ?, ?, ?, ?, datetime('now'))",
-        (sessao_id, telefone, mensagem, status_msg, erro),
+        "INSERT INTO mensagens (destinatario, mensagem, tipo, status) VALUES (?, ?, 'text', 'queued')",
+        (telefone, mensagem),
     )
     await db.commit()
-    _record_call(request, "/api/erp/venda", sucesso)
-
-    if not sucesso:
-        raise HTTPException(status_code=500, detail=erro)
-
-    return {"ok": True, "sessao": sessao_id}
+    _record_call(request, "/api/erp/venda", True)
+    return {"ok": True, "queued": True}
 
 
 @router.post("/arquivo")
@@ -171,32 +154,14 @@ async def receber_arquivo(
     with open(caminho, "wb") as f:
         f.write(conteudo)
 
-    sessao_id = wa_manager.pick_session()
-    if not sessao_id:
-        await db.execute(
-            "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status) VALUES (?, ?, ?, ?, 'failed')",
-            (body.nome_arquivo, nome_salvo, len(conteudo), telefone),
-        )
-        await db.commit()
-        _record_call(request, "/api/erp/arquivo", False)
-        raise HTTPException(status_code=503, detail="Nenhuma sessão WhatsApp ativa")
-
-    sucesso, erro = await wa_manager.send_file(sessao_id, telefone, caminho, body.nome_arquivo, body.mensagem)
-    st = "sent" if sucesso else "failed"
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor = await db.execute(
-        "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status, sent_at) VALUES (?, ?, ?, ?, ?, ?)",
-        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, st, now if sucesso else None),
+    # Enfileira para disparo assíncrono — API retorna imediatamente
+    await db.execute(
+        "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status, caption) VALUES (?, ?, ?, ?, 'queued', ?)",
+        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, body.mensagem),
     )
     await db.commit()
-    _record_call(request, "/api/erp/arquivo", sucesso)
-
-    if not sucesso:
-        raise HTTPException(status_code=500, detail=erro)
-
-    wa_manager.schedule_status_check(cursor.lastrowid, sessao_id, telefone)
-    return {"ok": True}
+    _record_call(request, "/api/erp/arquivo", True)
+    return {"ok": True, "queued": True}
 
 
 @router.get("/status")

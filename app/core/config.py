@@ -19,5 +19,8 @@ class Settings(BaseSettings):
 
     github_repo: str = "cristianoradin/zapdin2"
 
+    dispatch_min_delay: float = 1.0   # segundos mínimos entre disparos
+    dispatch_max_delay: float = 4.0   # segundos máximos entre disparos
+
 
 settings = Settings()
