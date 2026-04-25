@@ -1,9 +1,20 @@
 import os
+from contextlib import asynccontextmanager
 import aiosqlite
 from .config import settings
 
 
 async def get_db() -> aiosqlite.Connection:
+    db = await aiosqlite.connect(settings.database_url)
+    db.row_factory = aiosqlite.Row
+    try:
+        yield db
+    finally:
+        await db.close()
+
+
+@asynccontextmanager
+async def get_db_direct():
     db = await aiosqlite.connect(settings.database_url)
     db.row_factory = aiosqlite.Row
     try:
@@ -57,11 +68,22 @@ async def init_db() -> None:
                 tamanho INTEGER,
                 destinatario TEXT,
                 status TEXT DEFAULT 'pending',
-                created_at TEXT DEFAULT (datetime('now'))
+                created_at TEXT DEFAULT (datetime('now')),
+                sent_at TEXT,
+                delivered_at TEXT,
+                read_at TEXT
             );
 
             INSERT OR IGNORE INTO usuarios (username, password_hash)
             VALUES ('admin', '$2b$12$Hwep0wwj.dmjNcQ7HEKcsO3gaxCl3Ptuegep21Q7kIxC3f50dhbnm');
+        """)
+        # Migrações para bancos existentes
+        for col in ("sent_at", "delivered_at", "read_at"):
+            try:
+                await db.execute(f"ALTER TABLE arquivos ADD COLUMN {col} TEXT")
+            except Exception:
+                pass
+        await db.executescript("""
 
             INSERT OR IGNORE INTO config (key, value) VALUES
                 ('mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),

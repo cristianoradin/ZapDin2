@@ -13,7 +13,7 @@ async def list_arquivos(
     _: dict = Depends(get_current_user),
 ):
     async with db.execute(
-        "SELECT id, nome_original, tamanho, destinatario, status, created_at FROM arquivos ORDER BY created_at DESC LIMIT 100"
+        "SELECT id, nome_original, tamanho, destinatario, status, created_at, sent_at, delivered_at, read_at FROM arquivos ORDER BY created_at DESC LIMIT 100"
     ) as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]

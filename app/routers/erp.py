@@ -184,9 +184,10 @@ async def receber_arquivo(
     sucesso, erro = await wa_manager.send_file(sessao_id, telefone, caminho, body.nome_arquivo, body.mensagem)
     st = "sent" if sucesso else "failed"
 
-    await db.execute(
-        "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status) VALUES (?, ?, ?, ?, ?)",
-        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, st),
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor = await db.execute(
+        "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status, sent_at) VALUES (?, ?, ?, ?, ?, ?)",
+        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, st, now if sucesso else None),
     )
     await db.commit()
     _record_call(request, "/api/erp/arquivo", sucesso)
@@ -194,6 +195,7 @@ async def receber_arquivo(
     if not sucesso:
         raise HTTPException(status_code=500, detail=erro)
 
+    wa_manager.schedule_status_check(cursor.lastrowid, sessao_id, telefone)
     return {"ok": True}
 
 

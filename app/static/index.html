@@ -251,6 +251,8 @@
     .chip-red    { background: var(--red-soft);      color: var(--red); }
     .chip-yellow { background: var(--yellow-soft);   color: var(--yellow); }
     .chip-gray   { background: var(--surface2);      color: var(--text-mid); }
+    .chip-blue   { background: #e0f3fc;              color: #1a7db5; }
+    .chip-purple { background: #ede9fe;              color: #7c3aed; }
 
     /* ─── Forms ───────────────────────────────────────────────────────────── */
     .form-group { margin-bottom: 1.25rem; }
@@ -629,10 +631,13 @@
     <!-- Envio de Arquivo -->
     <div class="page" id="page-arquivo">
       <div class="card">
-        <h2>Arquivos Enviados</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+          <h2 style="margin:0">Arquivos Enviados</h2>
+          <button class="btn btn-secondary" id="btnRefreshArquivos" style="padding:.35rem .85rem;font-size:.82rem">&#8635; Atualizar</button>
+        </div>
         <table>
-          <thead><tr><th>Arquivo</th><th>Destinatário</th><th>Status</th><th>Data</th></tr></thead>
-          <tbody id="tbodyArquivos"><tr><td colspan="4" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
+          <thead><tr><th>Arquivo</th><th>Destinatário</th><th>Status</th><th>Enviado</th><th>Entregue</th><th>Visualizado</th></tr></thead>
+          <tbody id="tbodyArquivos"><tr><td colspan="6" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -1174,29 +1179,59 @@ Content-Type: application/json
     if (res.ok) _renderErpStatus(await res.json());
   });
 
+  document.getElementById('btnRefreshArquivos').addEventListener('click', loadArquivos);
+
   // ── Arquivos ──────────────────────────────────────────────────────────────────
+  let _arquivosRefreshTimer = null;
+
+  function _arquivoStatusChip(a) {
+    const map = {
+      pending:   ['chip-yellow', '&#x23F3; Pendente'],
+      failed:    ['chip-red',    '&#x2717; Falhou'],
+      sent:      ['chip-gray',   '&#x2713; Enviado'],
+      delivered: ['chip-blue',   '&#x2713;&#x2713; Entregue'],
+      read:      ['chip-green',  '&#x2713;&#x2713; Visualizado'],
+    };
+    const [cls, label] = map[a.status] || ['chip-gray', a.status];
+    return `<span class="chip ${cls}">${label}</span>`;
+  }
+
+  function _fmtTs(ts) {
+    if (!ts) return '<span style="color:var(--text-mid)">—</span>';
+    const d = new Date(ts.replace(' ', 'T'));
+    if (isNaN(d)) return ts;
+    return `<span style="font-size:.78rem;color:var(--text-mid)">${d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'})} ${d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span>`;
+  }
+
   async function loadArquivos() {
     const res = await fetch('/api/arquivos');
     if (!res.ok) return;
     const arqs = await res.json();
     const tbody = document.getElementById('tbodyArquivos');
     if (arqs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mid);text-align:center">Nenhum arquivo</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-mid);text-align:center">Nenhum arquivo</td></tr>';
       return;
     }
     tbody.innerHTML = arqs.map(a => `
       <tr>
-        <td>${a.nome_original}</td>
-        <td>${a.destinatario || '—'}</td>
-        <td><span class="chip ${a.status === 'sent' ? 'chip-green' : a.status === 'failed' ? 'chip-red' : 'chip-yellow'}">${a.status}</span></td>
-        <td style="color:var(--text-mid);font-size:.8rem">${a.created_at}</td>
+        <td style="font-size:.85rem">${a.nome_original}</td>
+        <td style="font-size:.82rem;color:var(--text-mid)">${a.destinatario || '—'}</td>
+        <td>${_arquivoStatusChip(a)}</td>
+        <td>${_fmtTs(a.sent_at || a.created_at)}</td>
+        <td>${_fmtTs(a.delivered_at)}</td>
+        <td>${_fmtTs(a.read_at)}</td>
       </tr>`).join('');
+
+    // Agenda auto-refresh se houver arquivos aguardando entrega/visualização
+    const hasPending = arqs.some(a => a.status === 'sent' || a.status === 'delivered');
+    clearTimeout(_arquivosRefreshTimer);
+    if (hasPending) _arquivosRefreshTimer = setTimeout(loadArquivos, 15_000);
   }
 
   // ── Page loader ───────────────────────────────────────────────────────────────
   function onPageLoad(page) {
-    // Para o refresh de WA ao sair da página
     if (page !== 'whatsapp') _pararRefreshWA();
+    if (page !== 'arquivo') { clearTimeout(_arquivosRefreshTimer); _arquivosRefreshTimer = null; }
     if (page === 'dashboard') loadStats();
     else if (page === 'mensagem') loadMensagem();
     else if (page === 'whatsapp') { loadSessoes(); _iniciarRefreshWA(); }
