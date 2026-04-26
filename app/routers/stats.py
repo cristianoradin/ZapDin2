@@ -27,8 +27,9 @@ async def get_stats(
     ) as cur:
         hoje = (await cur.fetchone())["total"]
 
-    async with db.execute("SELECT COUNT(*) as total FROM sessoes_wa WHERE status = 'connected'") as cur:
-        sessoes_ativas = (await cur.fetchone())["total"]
+    sessoes_ativas = sum(
+        1 for s in wa_manager.get_status() if s["status"] == "connected"
+    )
 
     async with db.execute(
         "SELECT destinatario, mensagem, status, created_at FROM mensagens ORDER BY created_at DESC LIMIT 20"

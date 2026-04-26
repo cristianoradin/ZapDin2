@@ -4,11 +4,19 @@ Queue worker — processa mensagens e arquivos enfileirados com delays aleatóri
 Fluxo: ERP grava no banco com status='queued' e retorna imediatamente.
 Este worker pega um item por vez, aguarda um delay randômico (anti-ban)
 e dispara via WhatsApp. Nunca bloqueia a API.
+
+Funcionalidades de anti-banimento:
+- Delay randômico configurável (wa_delay_min / wa_delay_max)
+- Limite diário de mensagens por sessão (wa_daily_limit)
+- Restrição de horário de funcionamento (wa_hora_inicio / wa_hora_fim)
+- Motor de Spintax: {Olá|Oi|Bom dia} {nome} (wa_spintax=1)
 """
 import asyncio
 import logging
 import os
 import random
+import re
+import time
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -17,6 +25,99 @@ UPLOAD_DIR = "data/arquivos"
 
 _task = None
 
+# ── Config cache (recarrega a cada 30s) ───────────────────────────────────────
+_cfg_cache: dict = {}
+_cfg_loaded_at: float = 0.0
+_CFG_TTL = 30.0
+
+_WA_CFG_KEYS = (
+    "wa_delay_min", "wa_delay_max",
+    "wa_daily_limit",
+    "wa_hora_inicio", "wa_hora_fim",
+    "wa_spintax",
+)
+
+
+async def _load_cfg(get_db_direct) -> dict:
+    global _cfg_cache, _cfg_loaded_at
+    if time.monotonic() - _cfg_loaded_at < _CFG_TTL and _cfg_cache:
+        return _cfg_cache
+    try:
+        keys_sql = ",".join(f"'{k}'" for k in _WA_CFG_KEYS)
+        async with get_db_direct() as db:
+            async with db.execute(
+                f"SELECT key, value FROM config WHERE key IN ({keys_sql})"
+            ) as cur:
+                rows = await cur.fetchall()
+        _cfg_cache = {r["key"]: r["value"] for r in rows}
+        _cfg_loaded_at = time.monotonic()
+    except Exception as exc:
+        logger.debug("_load_cfg error: %s", exc)
+    return _cfg_cache
+
+
+def _cfg_float(cfg: dict, key: str, default: float) -> float:
+    try:
+        return float(cfg.get(key, default))
+    except (ValueError, TypeError):
+        return default
+
+
+def _cfg_int(cfg: dict, key: str, default: int) -> int:
+    try:
+        return int(cfg.get(key, default))
+    except (ValueError, TypeError):
+        return default
+
+
+# ── Spintax ───────────────────────────────────────────────────────────────────
+
+def process_spintax(text: str) -> str:
+    """Expande {opção1|opção2|opção3} aninhado de dentro para fora."""
+    pattern = re.compile(r'\{([^{}]+)\}')
+    for _ in range(10):  # proteção contra recursão infinita
+        new = pattern.sub(lambda m: random.choice(m.group(1).split('|')), text)
+        if new == text:
+            break
+        text = new
+    return text
+
+
+# ── Business hours ────────────────────────────────────────────────────────────
+
+def _within_hours(cfg: dict) -> bool:
+    inicio = cfg.get("wa_hora_inicio", "").strip()
+    fim = cfg.get("wa_hora_fim", "").strip()
+    if not inicio or not fim:
+        return True
+    now = datetime.now().strftime("%H:%M")
+    return inicio <= now <= fim
+
+
+# ── Daily limit ───────────────────────────────────────────────────────────────
+
+async def _daily_sent(db, sessao_id: str) -> int:
+    """Total de mensagens + arquivos enviados hoje por esta sessão."""
+    async with db.execute(
+        "SELECT COUNT(*) as cnt FROM mensagens "
+        "WHERE sessao_id=? AND status='sent' AND date(sent_at)=date('now')",
+        (sessao_id,),
+    ) as cur:
+        row = await cur.fetchone()
+    msg_count = row["cnt"] if row else 0
+
+    async with db.execute(
+        "SELECT COUNT(*) as cnt FROM arquivos "
+        "WHERE sessao_id=? AND status='sent' AND date(sent_at)=date('now')",
+        (sessao_id,),
+    ) as cur:
+        row = await cur.fetchone()
+    arq_count = row["cnt"] if row else 0
+
+    return msg_count + arq_count
+
+
+# ── Loop principal ────────────────────────────────────────────────────────────
 
 async def _loop() -> None:
     from ..core.config import settings
@@ -29,7 +130,6 @@ async def _loop() -> None:
         except Exception as exc:
             logger.error("Queue worker erro: %s", exc)
             dispatched = False
-        # Quando há item, volta logo; quando vazio, dorme 1s antes de checar de novo
         await asyncio.sleep(0.2 if dispatched else 1.0)
 
 
@@ -37,7 +137,18 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
     """Processa o próximo item na fila. Retorna True se processou algo."""
     now_str = lambda: datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # ── Mensagens de texto ──────────────────────────────────────────────────────
+    cfg = await _load_cfg(get_db_direct)
+
+    # Verifica janela de horário antes de qualquer envio
+    if not _within_hours(cfg):
+        return False
+
+    delay_min = _cfg_float(cfg, "wa_delay_min", settings.dispatch_min_delay)
+    delay_max = _cfg_float(cfg, "wa_delay_max", settings.dispatch_max_delay)
+    daily_limit = _cfg_int(cfg, "wa_daily_limit", 0)  # 0 = sem limite
+    spintax_on = cfg.get("wa_spintax", "1") not in ("0", "false", "")
+
+    # ── Mensagens de texto ────────────────────────────────────────────────────
     async with get_db_direct() as db:
         async with db.execute(
             "SELECT id, destinatario, mensagem FROM mensagens WHERE status='queued' ORDER BY id LIMIT 1"
@@ -45,15 +156,28 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
             msg = await cur.fetchone()
 
     if msg:
-        delay = random.uniform(settings.dispatch_min_delay, settings.dispatch_max_delay)
+        delay = random.uniform(delay_min, delay_max)
         logger.info("Queue: mensagem %s → delay %.1fs", msg["id"], delay)
         await asyncio.sleep(delay)
 
         sessao_id = wa_manager.pick_session()
         if not sessao_id:
-            return False  # sem sessão ativa, tenta mais tarde
+            return False
 
-        ok, err = await wa_manager.send_text(sessao_id, msg["destinatario"], msg["mensagem"])
+        # Checa limite diário
+        if daily_limit > 0:
+            async with get_db_direct() as db:
+                sent_today = await _daily_sent(db, sessao_id)
+            if sent_today >= daily_limit:
+                logger.info(
+                    "Queue: sessão %s atingiu limite diário (%d), aguardando…",
+                    sessao_id, daily_limit,
+                )
+                return False
+
+        texto = process_spintax(msg["mensagem"]) if spintax_on else msg["mensagem"]
+
+        ok, err = await wa_manager.send_text(sessao_id, msg["destinatario"], texto)
         st = "sent" if ok else "failed"
         async with get_db_direct() as db:
             await db.execute(
@@ -64,21 +188,33 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
         logger.info("Queue: mensagem %s → %s", msg["id"], st)
         return True
 
-    # ── Arquivos ────────────────────────────────────────────────────────────────
+    # ── Arquivos ──────────────────────────────────────────────────────────────
     async with get_db_direct() as db:
         async with db.execute(
-            "SELECT id, destinatario, nome_arquivo, nome_original, caption FROM arquivos WHERE status='queued' ORDER BY id LIMIT 1"
+            "SELECT id, destinatario, nome_arquivo, nome_original, caption "
+            "FROM arquivos WHERE status='queued' ORDER BY id LIMIT 1"
         ) as cur:
             arq = await cur.fetchone()
 
     if arq:
-        delay = random.uniform(settings.dispatch_min_delay, settings.dispatch_max_delay)
+        delay = random.uniform(delay_min, delay_max)
         logger.info("Queue: arquivo %s → delay %.1fs", arq["id"], delay)
         await asyncio.sleep(delay)
 
         sessao_id = wa_manager.pick_session()
         if not sessao_id:
             return False
+
+        # Checa limite diário
+        if daily_limit > 0:
+            async with get_db_direct() as db:
+                sent_today = await _daily_sent(db, sessao_id)
+            if sent_today >= daily_limit:
+                logger.info(
+                    "Queue: sessão %s atingiu limite diário (%d), aguardando…",
+                    sessao_id, daily_limit,
+                )
+                return False
 
         file_path = os.path.join(UPLOAD_DIR, arq["nome_arquivo"])
         if not os.path.exists(file_path):
@@ -90,9 +226,11 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
                 await db.commit()
             return True
 
+        caption = process_spintax(arq["caption"] or "") if spintax_on else (arq["caption"] or "")
+
         ok, err = await wa_manager.send_file(
             sessao_id, arq["destinatario"], file_path,
-            arq["nome_original"], arq["caption"],
+            arq["nome_original"], caption or None,
         )
         st = "sent" if ok else "failed"
         async with get_db_direct() as db:
@@ -113,7 +251,7 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
 def start() -> None:
     global _task
     _task = asyncio.create_task(_loop())
-    logger.info("Queue worker iniciado (delay %.1f–%.1fs)")
+    logger.info("Queue worker iniciado")
 
 
 def stop() -> None:

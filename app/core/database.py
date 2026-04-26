@@ -91,9 +91,13 @@ async def init_db() -> None:
             except Exception:
                 pass
         await db.executescript("""
-
             INSERT OR IGNORE INTO config (key, value) VALUES
                 ('mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),
-                ('erp_token', 'meu-token-erp');
+                ('wa_delay_min',    '5'),
+                ('wa_delay_max',    '15'),
+                ('wa_daily_limit',  '100'),
+                ('wa_hora_inicio',  '08:00'),
+                ('wa_hora_fim',     '18:00'),
+                ('wa_spintax',      '1');
         """)
         await db.commit()

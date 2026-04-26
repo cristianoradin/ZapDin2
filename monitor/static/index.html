@@ -4,20 +4,51 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ZapDin Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --green: #9DDB30;
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #21262d;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-mid: #8b949e;
-      --sidebar-w: 240px;
-    }
-    body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; min-height: 100vh; }
 
+    :root {
+      --accent:      #3d7f1f;
+      --accent-h:    #306618;
+      --accent-soft: #f0f7eb;
+      --accent-mid:  #d4edba;
+      --bg:          #f4f6f9;
+      --surface:     #ffffff;
+      --surface2:    #f2f3f5;
+      --border:      #e4e6ea;
+      --text:        #111318;
+      --text-mid:    #6b7280;
+      --text-light:  #9ca3af;
+      --red:         #dc2626;
+      --red-soft:    #fef2f2;
+      --red-mid:     #fecaca;
+      --orange:      #d97706;
+      --orange-soft: #fffbeb;
+      --blue:        #3b82f6;
+      --blue-soft:   #eff6ff;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.09), 0 2px 6px rgba(0,0,0,.05);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.06);
+      --grad:        linear-gradient(90deg, #3d7f1f 0%, #7cdc44 50%, #3b82f6 100%);
+      --radius:      10px;
+      --sidebar-w:   248px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      display: flex;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
     .sidebar {
       width: var(--sidebar-w);
       background: var(--surface);
@@ -29,35 +60,94 @@
       z-index: 100;
       overflow-y: auto;
     }
+
+    .sidebar-grad {
+      height: 4px;
+      background: var(--grad);
+      flex-shrink: 0;
+    }
+
     .sidebar-logo {
-      padding: 1.25rem 1rem;
+      padding: 1.1rem 1rem;
       display: flex;
       align-items: center;
       gap: .75rem;
       border-bottom: 1px solid var(--border);
     }
-    .sidebar-logo img { width: 36px; height: 36px; object-fit: contain; }
+    .sidebar-logo img { width: 40px; height: 40px; object-fit: contain; }
     .sidebar-logo-text { display: flex; flex-direction: column; }
-    .sidebar-logo-text span { font-size: 1rem; font-weight: 700; }
-    .sidebar-logo-text small { font-size: .7rem; color: var(--text-mid); }
-    .sidebar-section { padding: .5rem 1rem .2rem; font-size: .7rem; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .08em; margin-top: .5rem; }
+    .sidebar-logo-text span { font-size: 1rem; font-weight: 800; letter-spacing: -.4px; }
+    .sidebar-logo-text small { font-size: .7rem; color: var(--text-mid); font-weight: 400; }
+
+    .sidebar-section {
+      padding: .9rem 1rem .25rem;
+      font-size: .68rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .09em;
+    }
+
     .nav-item {
       display: flex;
       align-items: center;
       gap: .6rem;
-      padding: .55rem 1rem;
+      padding: .5rem 1rem;
       margin: .1rem .5rem;
       border-radius: 8px;
       cursor: pointer;
-      font-size: .9rem;
+      font-size: .875rem;
       color: var(--text-mid);
+      font-weight: 500;
       transition: background .15s, color .15s;
+      user-select: none;
     }
     .nav-item:hover { background: var(--surface2); color: var(--text); }
-    .nav-item.active { background: rgba(157,219,48,.12); color: var(--green); font-weight: 600; }
-    .nav-item .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+    .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .nav-item.active .nav-icon { color: var(--accent); }
+    .nav-icon { font-size: .95rem; width: 1.1rem; text-align: center; flex-shrink: 0; }
 
-    .main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: .75rem 1rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: .8rem;
+      color: var(--text-mid);
+    }
+    .sidebar-footer .avatar {
+      width: 28px; height: 28px;
+      background: var(--accent-soft);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .75rem; color: var(--accent);
+      flex-shrink: 0;
+    }
+    .sidebar-footer .user-name { flex: 1; font-weight: 500; color: var(--text); }
+    .btn-logout-icon {
+      background: none; border: none; cursor: pointer; color: var(--text-mid);
+      padding: .25rem; border-radius: 4px; font-size: 1rem; line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .btn-logout-icon:hover { color: var(--red); background: var(--red-soft); }
+    .btn-adduser-icon {
+      background: none; border: none; cursor: pointer; color: var(--text-mid);
+      padding: .25rem; border-radius: 4px; font-size: 1rem; line-height: 1;
+      transition: color .15s, background .15s;
+    }
+    .btn-adduser-icon:hover { color: var(--accent); background: var(--accent-soft); }
+
+    /* ── Main ────────────────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
     .topbar {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -68,89 +158,343 @@
       position: sticky;
       top: 0;
       z-index: 50;
+      box-shadow: var(--shadow-sm);
     }
-    .topbar-title { font-size: 1rem; font-weight: 600; }
+    .topbar-left { display: flex; align-items: center; gap: .5rem; }
+    .topbar-title { font-size: .95rem; font-weight: 700; letter-spacing: -.2px; }
     .topbar-right { display: flex; align-items: center; gap: .75rem; }
-    .badge { background: var(--green); color: #0d1117; border-radius: 20px; padding: .2rem .6rem; font-size: .75rem; font-weight: 700; }
-    .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--text-mid); border-radius: 6px; padding: .3rem .8rem; cursor: pointer; font-size: .85rem; transition: border-color .2s, color .2s; }
-    .btn-logout:hover { border-color: #f85149; color: #f85149; }
+    .topbar-refresh {
+      background: none; border: 1px solid var(--border); color: var(--text-mid);
+      border-radius: 6px; padding: .3rem .6rem; cursor: pointer; font-size: .85rem;
+      transition: border-color .15s, color .15s;
+    }
+    .topbar-refresh:hover { border-color: var(--accent); color: var(--accent); }
+
     .content { padding: 1.5rem; flex: 1; }
 
     .page { display: none; }
-    .page.active { display: block; }
+    .page.active { display: block; animation: fadeIn .2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem; border-left: 3px solid var(--green); }
-    .stat-card .label { font-size: .75rem; color: var(--text-mid); margin-bottom: .4rem; }
-    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    /* ── Stat cards ──────────────────────────────────────────────────────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.2rem;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .stat-card.green::before { background: var(--accent); }
+    .stat-card.red::before { background: var(--red); }
+    .stat-card.orange::before { background: var(--orange); }
+    .stat-card.blue::before { background: var(--blue); }
+    .stat-label { font-size: .72rem; color: var(--text-mid); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .4rem; }
+    .stat-value { font-size: 2rem; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+    .stat-card.green .stat-value { color: var(--accent); }
+    .stat-card.red .stat-value { color: var(--red); }
+    .stat-card.orange .stat-value { color: var(--orange); }
+    .stat-card.blue .stat-value { color: var(--blue); }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
-    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+    /* ── Cards genéricos ─────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.1rem;
+    }
+    .card-title { font-size: .95rem; font-weight: 700; letter-spacing: -.2px; }
 
-    .posto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    /* ── Posto cards (monitor) ───────────────────────────────────────────── */
+    .posto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: .9rem;
+    }
     .posto-card {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.1rem;
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: .5rem;
+      gap: .35rem;
       position: relative;
       border-left: 4px solid var(--border);
-      transition: border-color .3s;
+      transition: border-left-color .3s, box-shadow .2s;
     }
-    .posto-card.online { border-left-color: var(--green); }
-    .posto-card.offline { border-left-color: #f85149; }
-    .posto-nome { font-weight: 600; font-size: .95rem; }
-    .posto-detalhe { font-size: .8rem; color: var(--text-mid); }
-    .posto-status { position: absolute; top: 1rem; right: 1rem; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-    .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .dot-red { background: #f85149; }
+    .posto-card:hover { box-shadow: var(--shadow-md); }
+    .posto-card.online { border-left-color: var(--accent); }
+    .posto-card.offline { border-left-color: var(--red); }
+    .posto-nome { font-weight: 700; font-size: .9rem; padding-right: 2.5rem; }
+    .posto-detalhe { font-size: .78rem; color: var(--text-mid); }
+    .posto-status { position: absolute; top: .9rem; right: .9rem; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .dot-green { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); animation: pulse 2s infinite; }
+    .dot-red { background: var(--red); }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); }
+      50% { box-shadow: 0 0 0 5px var(--accent-mid); }
+    }
 
-    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-    th { color: var(--text-mid); text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-weight: 500; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
-    td { padding: .6rem .75rem; border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: middle; }
+    /* ── Tabelas ─────────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .855rem; }
+    thead tr { border-bottom: 2px solid var(--border); }
+    th {
+      color: var(--text-mid);
+      text-align: left;
+      padding: .5rem .75rem;
+      font-weight: 600;
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+    td { padding: .65rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    .td-mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: .78rem; color: var(--text-mid); }
 
-    .chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border-radius: 20px; font-size: .75rem; font-weight: 600; }
-    .chip-green { background: rgba(157,219,48,.15); color: var(--green); }
-    .chip-red { background: rgba(248,81,73,.15); color: #f85149; }
-    .chip-gray { background: rgba(139,148,158,.15); color: var(--text-mid); }
-
-    .form-group { margin-bottom: 1rem; }
-    .form-group label { display: block; font-size: .8rem; color: var(--text-mid); margin-bottom: .3rem; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      padding: .6rem .9rem; color: var(--text); font-size: .9rem; outline: none; transition: border-color .2s; font-family: inherit;
+    /* ── Chips / Badges ──────────────────────────────────────────────────── */
+    .chip {
+      display: inline-flex; align-items: center; gap: .25rem;
+      padding: .2rem .6rem;
+      border-radius: 20px; font-size: .72rem; font-weight: 600;
+      white-space: nowrap;
     }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--green); }
-    .btn { padding: .55rem 1.2rem; border-radius: 8px; border: none; cursor: pointer; font-size: .9rem; font-weight: 600; transition: opacity .2s; }
-    .btn:hover { opacity: .85; }
-    .btn-primary { background: var(--green); color: #0d1117; }
-    .btn-danger { background: #f85149; color: #fff; }
-    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+    .chip-green  { background: var(--accent-soft); color: var(--accent); }
+    .chip-red    { background: var(--red-soft); color: var(--red); }
+    .chip-gray   { background: var(--surface2); color: var(--text-mid); border: 1px solid var(--border); }
+    .chip-blue   { background: var(--blue-soft); color: var(--blue); }
+    .chip-orange { background: var(--orange-soft); color: var(--orange); }
 
-    .alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; margin-bottom: 1rem; display: none; }
-    .alert-success { background: rgba(157,219,48,.1); border: 1px solid rgba(157,219,48,.3); color: var(--green); }
-    .alert-error { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: #f85149; }
+    /* ── Formulários ─────────────────────────────────────────────────────── */
+    .form-group { margin-bottom: .9rem; }
+    .form-group label {
+      display: block; font-size: .78rem; font-weight: 600;
+      color: var(--text-mid); margin-bottom: .3rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .6rem .9rem;
+      color: var(--text);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      font-family: inherit;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      background: #fff;
+    }
+    .form-row { display: grid; gap: .75rem; }
 
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; }
+    /* ── Botões ──────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.1rem;
+      border-radius: 8px; border: none; cursor: pointer;
+      font-size: .875rem; font-weight: 600;
+      transition: opacity .15s, box-shadow .15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn:hover:not(:disabled) { opacity: .88; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 2px 6px rgba(61,127,31,.25); }
+    .btn-primary:hover:not(:disabled) { opacity: 1; background: var(--accent-h); }
+    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { background: var(--border); }
+    .btn-sm { padding: .3rem .7rem; font-size: .78rem; border-radius: 6px; }
+    .btn-icon { padding: .3rem .4rem; font-size: .9rem; }
+
+    /* ── Alertas inline ──────────────────────────────────────────────────── */
+    .alert {
+      padding: .7rem 1rem; border-radius: 8px;
+      font-size: .85rem; margin-bottom: .9rem;
+      display: none; font-weight: 500;
+    }
+    .alert-success { background: var(--accent-soft); border: 1px solid var(--accent-mid); color: var(--accent); }
+    .alert-error   { background: var(--red-soft); border: 1px solid var(--red-mid); color: var(--red); }
+
+    /* ── Modal ───────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(17,19,24,.45);
+      backdrop-filter: blur(3px);
+      z-index: 200; align-items: center; justify-content: center;
+    }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; max-width: 480px; width: 90%; }
-    .modal h3 { margin-bottom: 1rem; font-size: 1rem; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.75rem;
+      max-width: 500px; width: 90%;
+      box-shadow: var(--shadow-lg);
+      animation: modalIn .2s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes modalIn { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-close { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: var(--text-mid); padding: .2rem; border-radius: 4px; }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
     .modal-footer { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.25rem; }
 
-    .token-box { background: var(--surface2); border: 1px solid var(--green); border-radius: 8px; padding: .75rem 1rem; font-family: monospace; font-size: .9rem; color: var(--green); word-break: break-all; margin-top: .5rem; }
+    /* ── Token box ───────────────────────────────────────────────────────── */
+    .token-box {
+      background: var(--accent-soft);
+      border: 1.5px solid var(--accent-mid);
+      border-radius: 8px; padding: .8rem 1rem;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--accent); text-align: center;
+      letter-spacing: .12em; word-break: break-all;
+      margin: .75rem 0;
+    }
+    .token-box-small {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: .35rem .6rem;
+      font-family: monospace; font-size: .78rem; color: var(--text-mid);
+    }
+    .token-hint { font-size: .78rem; color: var(--text-mid); text-align: center; margin-bottom: .5rem; }
+
+    /* ── Versão form ─────────────────────────────────────────────────────── */
+    .versao-current {
+      display: flex; align-items: center; gap: .75rem;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      border-radius: 8px; padding: .75rem 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .versao-current .v-label { font-size: .78rem; color: var(--text-mid); font-weight: 500; }
+    .versao-current .v-val { font-size: 1.1rem; font-weight: 800; color: var(--accent); }
+
+    /* ── Empty state ─────────────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 2.5rem 1rem; color: var(--text-mid);
+    }
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: .5rem; }
+    .empty-state p { font-size: .875rem; }
+
+    /* ── Menu permission cards ───────────────────────────────────────────── */
+    .menu-perm-wrap { display: flex; flex-direction: column; gap: .5rem; }
+    .menu-perm-section { font-size: .68rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .08em; margin-top: .25rem; }
+    .menu-perm-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: .4rem; }
+    .menu-perm-card {
+      display: flex; align-items: center; gap: .55rem;
+      padding: .55rem .75rem;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      background: var(--surface);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color .15s, background .15s;
+      position: relative;
+    }
+    .menu-perm-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .menu-perm-card.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .menu-perm-card.selected .menu-perm-check { opacity: 1; }
+    .menu-perm-icon { font-size: 1.1rem; flex-shrink: 0; }
+    .menu-perm-name { font-size: .8rem; font-weight: 600; color: var(--text); flex: 1; }
+    .menu-perm-card:not(.selected) .menu-perm-name { color: var(--text-mid); }
+    .menu-perm-check {
+      opacity: 0; transition: opacity .15s;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: .65rem; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .menu-perm-all-toggle {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .4rem .6rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 7px; cursor: pointer; user-select: none;
+      font-size: .78rem; font-weight: 600; color: var(--text-mid);
+      transition: background .15s;
+    }
+    .menu-perm-all-toggle:hover { background: var(--border); }
+    .menu-perm-badge { font-size: .68rem; background: var(--accent-soft); color: var(--accent); padding: .1rem .4rem; border-radius: 10px; font-weight: 700; }
+
+    /* ── Client chip toggle (seletor no modal) ───────────────────────────── */
+    .client-chips-grid {
+      display: flex; flex-wrap: wrap; gap: .45rem;
+      padding: .65rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 50px;
+      align-content: flex-start;
+    }
+    .client-chip-toggle {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .28rem .75rem;
+      border-radius: 20px;
+      font-size: .78rem; font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-mid);
+      transition: border-color .15s, background .15s, color .15s;
+      user-select: none;
+    }
+    .client-chip-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .client-chip-toggle.selected {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .client-chips-empty { font-size: .8rem; color: var(--text-light); padding: .25rem; }
+
+    /* ── Chips inline na tabela (clientes do usuário) ────────────────────── */
+    .td-clients { display: flex; flex-wrap: wrap; gap: .3rem; }
+
+    /* ── Scrollbar ───────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   </style>
 </head>
 <body>
 
+<!-- ══════════════════════════════════════════════ SIDEBAR ══════════════════ -->
 <nav class="sidebar">
+  <div class="sidebar-grad"></div>
+
   <div class="sidebar-logo">
-    <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin" onerror="this.style.display='none'" />
+    <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin"
+         onerror="this.style.display='none'" />
     <div class="sidebar-logo-text">
       <span>ZapDin</span>
       <small>Monitor Central</small>
@@ -158,302 +502,1264 @@
   </div>
 
   <div class="sidebar-section">Painel</div>
-  <div class="nav-item active" data-page="monitor"><span class="icon">🖥️</span> Monitor</div>
-  <div class="nav-item" data-page="clientes"><span class="icon">🏪</span> Postos / Clientes</div>
+  <div class="nav-item active" data-page="monitor">
+    <span class="nav-icon">🖥️</span> Monitor
+  </div>
+
+  <div class="sidebar-section">Gestão</div>
+  <div class="nav-item" data-page="grupos">
+    <span class="nav-icon">🗂️</span> Grupos
+  </div>
+  <div class="nav-item" data-page="clientes">
+    <span class="nav-icon">🏪</span> Postos / Clientes
+  </div>
+  <div class="nav-item" data-page="usuarios">
+    <span class="nav-icon">👥</span> Usuários
+  </div>
 
   <div class="sidebar-section">Configurações</div>
-  <div class="nav-item" data-page="versao"><span class="icon">🚀</span> Versões</div>
+  <div class="nav-item" data-page="versao">
+    <span class="nav-icon">🚀</span> Versões
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="avatar" id="userAvatar">?</div>
+    <span class="user-name" id="userNameSidebar">—</span>
+    <button class="btn-adduser-icon" id="btnAddUsuarioMonitor" title="Criar usuário do monitor">👤+</button>
+    <button class="btn-logout-icon" id="btnLogout" title="Sair">⏏</button>
+  </div>
 </nav>
 
+<!-- ══════════════════════════════════════════════ MAIN ═════════════════════ -->
 <div class="main">
   <header class="topbar">
-    <span class="topbar-title" id="pageTitle">Monitor</span>
+    <div class="topbar-left">
+      <span class="topbar-title" id="pageTitle">Monitor</span>
+    </div>
     <div class="topbar-right">
-      <span class="badge" id="userBadge">…</span>
-      <button class="btn-logout" id="btnLogout">Sair</button>
+      <button class="topbar-refresh" id="btnTopRefresh" title="Atualizar página atual">↻</button>
     </div>
   </header>
 
   <div class="content">
 
-    <!-- Monitor -->
+    <!-- ─── MONITOR ──────────────────────────────────────────────────────── -->
     <div class="page active" id="page-monitor">
       <div class="stat-grid">
-        <div class="stat-card"><div class="label">Postos online</div><div class="value" id="cntOnline">—</div></div>
-        <div class="stat-card" style="border-left-color:#f85149"><div class="label">Postos offline</div><div class="value" id="cntOffline">—</div></div>
-        <div class="stat-card" style="border-left-color:#d2a007"><div class="label">Total postos</div><div class="value" id="cntTotal">—</div></div>
+        <div class="stat-card green">
+          <div class="stat-label">Online agora</div>
+          <div class="stat-value" id="cntOnline">—</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Offline</div>
+          <div class="stat-value" id="cntOffline">—</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-label">Total postos</div>
+          <div class="stat-value" id="cntTotal">—</div>
+        </div>
       </div>
+
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h2 style="margin:0">Status em Tempo Real</h2>
-          <button class="btn btn-ghost btn-sm" id="btnRefreshMonitor">↻ Atualizar</button>
+        <div class="card-header">
+          <span class="card-title">Status em Tempo Real</span>
+          <span style="font-size:.78rem;color:var(--text-mid)" id="lastUpdate"></span>
         </div>
         <div class="posto-grid" id="postoGrid">
-          <p style="color:var(--text-mid)">Carregando…</p>
+          <div class="empty-state"><div class="empty-icon">⏳</div><p>Carregando…</p></div>
         </div>
       </div>
     </div>
 
-    <!-- Clientes -->
+    <!-- ─── GRUPOS ──────────────────────────────────────────────────────── -->
+    <div class="page" id="page-grupos">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Grupos de Postos</span>
+          <button class="btn btn-primary btn-sm" id="btnNovoGrupo">+ Novo Grupo</button>
+        </div>
+        <div class="alert" id="alertGrupos"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome do Grupo</th>
+                <th>Descrição</th>
+                <th>Postos</th>
+                <th>Criado em</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyGrupos">
+              <tr><td colspan="5"><div class="empty-state"><p>Carregando…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── CLIENTES ─────────────────────────────────────────────────────── -->
     <div class="page" id="page-clientes">
       <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h2 style="margin:0">🏪 Postos / Clientes</h2>
-          <button class="btn btn-primary btn-sm" id="btnNovoCliente">+ Novo</button>
+        <div class="card-header">
+          <span class="card-title">Postos / Clientes</span>
+          <button class="btn btn-primary btn-sm" id="btnNovoCliente">+ Novo Posto</button>
         </div>
         <div class="alert" id="alertClientes"></div>
-        <table>
-          <thead><tr><th>Nome</th><th>CNPJ</th><th>Cidade/UF</th><th>Versão</th><th>Status</th><th>Token</th><th></th></tr></thead>
-          <tbody id="tbodyClientes"><tr><td colspan="7" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Grupo</th>
+                <th>CNPJ</th>
+                <th>Cidade / UF</th>
+                <th>Versão</th>
+                <th>Status</th>
+                <th>Token Ativação</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyClientes">
+              <tr><td colspan="8"><div class="empty-state"><p>Carregando…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- Versao -->
-    <div class="page" id="page-versao">
+    <!-- ─── USUÁRIOS ──────────────────────────────────────────────────────── -->
+    <div class="page" id="page-usuarios">
       <div class="card">
-        <h2>🚀 Gerenciar Versão do App WhatsApp</h2>
+        <div class="card-header">
+          <span class="card-title">Usuários do Sistema</span>
+          <button class="btn btn-primary btn-sm" id="btnNovoUsuario">+ Novo Usuário</button>
+        </div>
+        <div class="alert" id="alertUsuarios"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Postos com Acesso</th>
+                <th>Criado em</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyUsuarios">
+              <tr><td colspan="4"><div class="empty-state"><p>Carregando…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── VERSÃO ────────────────────────────────────────────────────────── -->
+    <div class="page" id="page-versao">
+      <div class="card" style="max-width:560px">
+        <div class="card-header">
+          <span class="card-title">Versão Publicada do App</span>
+        </div>
+        <div class="versao-current" id="versaoAtual">
+          <div>
+            <div class="v-label">Versão atual</div>
+            <div class="v-val" id="versaoAtualVal">—</div>
+          </div>
+        </div>
         <div class="alert" id="alertVersao"></div>
-        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1rem">
-          Os postos consultam esta versão a cada 15 minutos. Se a versão for maior que a instalada, o posto atualiza automaticamente.
+        <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:1.1rem">
+          Os postos consultam esta versão a cada 15 minutos. Se a versão publicada for maior que a instalada, o posto atualiza automaticamente via Velopack.
         </p>
-        <div id="versaoAtual" style="margin-bottom:1.5rem;font-size:.9rem;color:var(--text-mid)">Carregando…</div>
         <div class="form-group">
           <label>Nova versão</label>
-          <input type="text" id="inputVersao" placeholder="ex: 1.2.0" />
+          <input type="text" id="inputVersao" placeholder="ex: 2.1.0" />
         </div>
         <div class="form-group">
-          <label>URL de download (opcional)</label>
-          <input type="text" id="inputVersaoUrl" placeholder="https://github.com/.../releases/download/..." />
+          <label>URL do canal de atualização (Velopack)</label>
+          <input type="text" id="inputVersaoUrl" placeholder="https://github.com/.../releases/latest/download" />
         </div>
         <div class="form-group">
           <label>Notas da versão</label>
-          <textarea id="inputVersaoNotas" rows="3"></textarea>
+          <textarea id="inputVersaoNotas" rows="3" placeholder="Descreva as mudanças desta versão…"></textarea>
         </div>
-        <button class="btn btn-primary" id="btnSalvarVersao">Publicar Versão</button>
+        <button class="btn btn-primary" id="btnSalvarVersao">📢 Publicar Versão</button>
       </div>
     </div>
 
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ════════════════════════════════════════════ MODAIS ════════════════════ -->
+
+<!-- Modal: Novo/Editar Grupo -->
+<div class="modal-overlay" id="modalGrupo">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title" id="modalGrupoTitulo">🗂️ Novo Grupo</span>
+      <button class="modal-close" data-close="modalGrupo">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Nome do Grupo *</label>
+      <input type="text" id="gNome" placeholder="ex: Rede Sul, Franquia Centro" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Descrição <span style="font-weight:400;color:var(--text-light)">(opcional)</span></label>
+      <textarea id="gDescricao" rows="2" placeholder="Breve descrição do grupo…" style="resize:vertical"></textarea>
+    </div>
+    <div class="alert" id="alertModalGrupo"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalGrupo">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmGrupo">Criar Grupo</button>
+    </div>
   </div>
 </div>
 
-<!-- Modal Novo Cliente -->
+<!-- Modal: Novo/Editar Cliente -->
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
-    <h3 id="modalClienteTitulo">Novo Posto / Cliente</h3>
+    <div class="modal-header">
+      <span class="modal-title" id="modalClienteTitulo">Novo Posto / Cliente</span>
+      <button class="modal-close" data-close="modalCliente">✕</button>
+    </div>
     <div class="form-group"><label>Nome *</label><input type="text" id="cNome" /></div>
     <div class="form-group"><label>CNPJ</label><input type="text" id="cCnpj" /></div>
-    <div style="display:grid;grid-template-columns:1fr 80px;gap:.75rem">
+    <div class="form-row" style="grid-template-columns:1fr 72px">
       <div class="form-group"><label>Cidade</label><input type="text" id="cCidade" /></div>
-      <div class="form-group"><label>UF</label><input type="text" id="cUf" maxlength="2" /></div>
+      <div class="form-group"><label>UF</label><input type="text" id="cUf" maxlength="2" style="text-transform:uppercase" /></div>
     </div>
-    <div id="tokenGerado" style="display:none">
-      <label style="font-size:.8rem;color:var(--text-mid)">Token gerado (anote!)</label>
-      <div class="token-box" id="tokenBox"></div>
+    <div class="form-group">
+      <label>Grupo <span style="font-weight:400;color:var(--text-light)">(opcional)</span></label>
+      <select id="cGrupo">
+        <option value="">— Sem grupo —</option>
+      </select>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" id="btnCancelCliente">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmCliente">Criar</button>
+      <button class="btn btn-ghost" data-close="modalCliente">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmCliente">Criar Posto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Token de Ativação gerado -->
+<div class="modal-overlay" id="modalToken">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">🔑 Token de Ativação</span>
+      <button class="modal-close" data-close="modalToken">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.25rem" id="tokenClienteNome"></p>
+    <p class="token-hint">Entregue este token ao responsável do posto para ativar o sistema:</p>
+    <div class="token-box" id="tokenBox">—</div>
+    <p style="font-size:.78rem;color:var(--text-mid);text-align:center">
+      ⚠️ Anote ou copie agora. Por segurança, este token não fica visível após fechar.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" id="btnCopyToken">📋 Copiar</button>
+      <button class="btn btn-primary btn-sm" data-close="modalToken">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Token gerado ao criar cliente -->
+<div class="modal-overlay" id="modalClienteCriado">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">✅ Posto criado</span>
+      <button class="modal-close" data-close="modalClienteCriado">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.5rem">
+      O posto <strong id="clienteCriadoNome"></strong> foi criado com sucesso.
+    </p>
+    <p class="token-hint">Token de comunicação (heartbeat) — anote:</p>
+    <div class="token-box" id="clienteCriadoToken" style="font-size:.85rem;letter-spacing:.04em"></div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" data-close="modalClienteCriado">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Novo Usuário -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title">👤 Novo Usuário</span>
+      <button class="modal-close" data-close="modalUsuario">✕</button>
+    </div>
+
+    <div class="form-row" style="grid-template-columns:1fr 1fr;gap:.85rem">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Nome de usuário</label>
+        <input type="text" id="uUsername" placeholder="ex: joao.silva" autocomplete="off" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Senha (mín. 6 caracteres)</label>
+        <input type="password" id="uPassword" autocomplete="new-password" />
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:.9rem">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        <span>🏪 Postos com Acesso</span>
+        <span style="font-weight:400;color:var(--text-light);font-size:.7rem">Clique para selecionar</span>
+      </label>
+      <div class="client-chips-grid" id="uClienteChips">
+        <span class="client-chips-empty">Carregando postos…</span>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:.9rem">
+      <label style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+        <span>🎛️ Menus do Sistema de Envio</span>
+        <span class="menu-perm-all-toggle" id="uMenusToggleAll" onclick="toggleAllMenus('uMenusGrid')">
+          Selecionar todos
+        </span>
+      </label>
+      <div id="uMenusGrid"></div>
+    </div>
+
+    <div class="alert" id="alertModalUsuario"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalUsuario">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmUsuario">✅ Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Acessos do Usuário -->
+<div class="modal-overlay" id="modalAcessos">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <span class="modal-title">🏪 Acessos — <span id="acessosUsuarioNome" style="color:var(--accent)">—</span></span>
+      <button class="modal-close" data-close="modalAcessos">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">
+      Selecione os postos que este usuário poderá acessar. Clique em cada chip para ativar ou desativar.
+    </p>
+    <div class="client-chips-grid" id="acessosClienteChips" style="min-height:64px">
+      <span class="client-chips-empty">Carregando…</span>
+    </div>
+    <div class="alert" id="alertModalAcessos"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalAcessos">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmAcessos">💾 Salvar Acessos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Menus do Usuário -->
+<div class="modal-overlay" id="modalMenus">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title">🎛️ Menus — <span id="menusUsuarioNome" style="color:var(--accent)">—</span></span>
+      <button class="modal-close" data-close="modalMenus">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.65rem">
+      Selecione quais menus este usuário poderá acessar no sistema de envio. Menus não selecionados ficam completamente ocultos.
+    </p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem">
+      <span id="menusCountLabel" style="font-size:.78rem;color:var(--text-mid)">—</span>
+      <span class="menu-perm-all-toggle" onclick="toggleAllMenus('menusGrid')">Alternar todos</span>
+    </div>
+    <div id="menusGrid"></div>
+    <div class="alert" id="alertModalMenus"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalMenus">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmMenus">💾 Salvar Permissões</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Trocar Senha -->
+<div class="modal-overlay" id="modalSenha">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Alterar Senha</span>
+      <button class="modal-close" data-close="modalSenha">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.75rem">
+      Usuário: <strong id="senhaUsuarioNome"></strong>
+    </p>
+    <div class="form-group">
+      <label>Nova senha (mín. 6 caracteres)</label>
+      <input type="password" id="novaSenha" autocomplete="new-password" />
+    </div>
+    <div class="alert" id="alertModalSenha"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalSenha">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmSenha">Salvar Senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Alterar Username -->
+<div class="modal-overlay" id="modalUsername">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Alterar Usuário</span>
+      <button class="modal-close" data-close="modalUsername">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.75rem">
+      Usuário atual: <strong id="usernameAtual"></strong>
+    </p>
+    <div class="form-group">
+      <label>Novo nome de usuário</label>
+      <input type="text" id="novoUsername" autocomplete="off" placeholder="ex: joao.silva" />
+    </div>
+    <div class="alert" id="alertModalUsername"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalUsername">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmUsername">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Criar Usuário do Monitor -->
+<div class="modal-overlay" id="modalNovoUsuarioMonitor">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">👤 Novo Usuário do Monitor</span>
+      <button class="modal-close" data-close="modalNovoUsuarioMonitor">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.9rem">
+      Este usuário terá acesso completo ao painel monitor. Não terá acesso ao sistema de envio.
+    </p>
+    <div class="form-group">
+      <label>Nome de usuário</label>
+      <input type="text" id="mUsername" placeholder="ex: joao.silva" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Senha <span style="font-weight:400;color:var(--text-light)">(mín. 6 caracteres)</span></label>
+      <input type="password" id="mPassword" autocomplete="new-password" />
+    </div>
+    <div class="alert" id="alertModalMonitorUsuario"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalNovoUsuarioMonitor">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmMonitorUsuario">✅ Criar Usuário</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Confirmar Delete Genérico -->
+<div class="modal-overlay" id="modalConfirm">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title" id="confirmTitle">Confirmar</span>
+      <button class="modal-close" data-close="modalConfirm">✕</button>
+    </div>
+    <p style="font-size:.875rem;color:var(--text-mid);margin-bottom:1.25rem" id="confirmMsg"></p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalConfirm">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmAction">Remover</button>
     </div>
   </div>
 </div>
 
 <script>
-  // ── Nav ───────────────────────────────────────────────────────────────────────
-  const pageTitles = { monitor: 'Monitor', clientes: 'Postos / Clientes', versao: 'Versões' };
+// ══════════════════════════════════════════════════════════════════════════════
+// UTILIDADES
+// ══════════════════════════════════════════════════════════════════════════════
 
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const p = item.dataset.page;
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-      item.classList.add('active');
-      document.getElementById('page-' + p).classList.add('active');
-      document.getElementById('pageTitle').textContent = pageTitles[p] || p;
-      onPageLoad(p);
-    });
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z');
+  return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function showAlert(id, msg, type = 'success') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `alert alert-${type}`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4500);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Fecha modais pelos botões data-close e click fora
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
   });
+});
 
-  // ── Auth ──────────────────────────────────────────────────────────────────────
-  async function checkAuth() {
-    try {
-      const res = await fetch('/api/auth/me');
-      if (res.status === 401) { window.location.href = '/login'; return; }
-      const d = await res.json();
-      document.getElementById('userBadge').textContent = d.username;
-    } catch { window.location.href = '/login'; }
-  }
+// ══════════════════════════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ══════════════════════════════════════════════════════════════════════════════
 
-  document.getElementById('btnLogout').addEventListener('click', async () => {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login';
+const PAGE_TITLES = {
+  monitor:  'Monitor',
+  grupos:   'Grupos de Postos',
+  clientes: 'Postos / Clientes',
+  usuarios: 'Usuários',
+  versao:   'Versões',
+};
+
+let _currentPage = 'monitor';
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const p = item.dataset.page;
+    if (!p) return;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + p)?.classList.add('active');
+    document.getElementById('pageTitle').textContent = PAGE_TITLES[p] || p;
+    _currentPage = p;
+    onPageLoad(p);
   });
+});
 
-  // ── Monitor ───────────────────────────────────────────────────────────────────
-  async function loadMonitor() {
-    try {
-      const res = await fetch('/api/monitor');
-      if (res.status === 401) { window.location.href = '/login'; return; }
-      const postos = await res.json();
-      const online = postos.filter(p => p.ativo).length;
-      const offline = postos.length - online;
-      document.getElementById('cntOnline').textContent = online;
-      document.getElementById('cntOffline').textContent = offline;
-      document.getElementById('cntTotal').textContent = postos.length;
+document.getElementById('btnTopRefresh').addEventListener('click', () => onPageLoad(_currentPage));
 
-      const grid = document.getElementById('postoGrid');
-      if (postos.length === 0) {
-        grid.innerHTML = '<p style="color:var(--text-mid)">Nenhum posto cadastrado.</p>';
-        return;
-      }
-      grid.innerHTML = postos.map(p => `
-        <div class="posto-card ${p.ativo ? 'online' : 'offline'}">
-          <div class="posto-status"><span class="dot ${p.ativo ? 'dot-green' : 'dot-red'}"></span></div>
-          <div class="posto-nome">${p.nome}</div>
-          <div class="posto-detalhe">${p.cnpj || '—'}</div>
-          <div class="posto-detalhe">${[p.cidade, p.uf].filter(Boolean).join('/') || '—'}</div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.25rem">
-            <span style="font-size:.78rem;color:var(--text-mid)">v${p.versao_instalada || '?'}</span>
-            <span class="chip ${p.ativo ? 'chip-green' : 'chip-red'}">${p.ativo ? 'Online' : 'Offline'}</span>
-          </div>
-          ${p.ultimo_ping ? `<div class="posto-detalhe">Último ping: ${new Date(p.ultimo_ping + 'Z').toLocaleString('pt-BR')}</div>` : ''}
-          ${p.ultimo_ip ? `<div class="posto-detalhe">IP: ${p.ultimo_ip}</div>` : ''}
-        </div>`).join('');
-    } catch(e) { console.error(e); }
-  }
+function onPageLoad(p) {
+  if (p === 'monitor')  loadMonitor();
+  if (p === 'grupos')   loadGrupos();
+  if (p === 'clientes') loadClientes();
+  if (p === 'usuarios') loadUsuarios();
+  if (p === 'versao')   loadVersao();
+}
 
-  document.getElementById('btnRefreshMonitor').addEventListener('click', loadMonitor);
+// ══════════════════════════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════════════════════════
 
-  // ── Clientes ──────────────────────────────────────────────────────────────────
-  async function loadClientes() {
-    const res = await fetch('/api/clientes');
-    if (!res.ok) return;
-    const clientes = await res.json();
-    const tbody = document.getElementById('tbodyClientes');
-    if (clientes.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--text-mid);text-align:center">Nenhum cliente</td></tr>';
+let _currentUserId = null;
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    const d = await res.json();
+    _currentUserId = d.uid;
+    const name = d.username || '?';
+    document.getElementById('userNameSidebar').textContent = name;
+    document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+  } catch { window.location.href = '/login'; }
+}
+
+document.getElementById('btnLogout').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login';
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MONITOR
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadMonitor() {
+  try {
+    const res = await fetch('/api/monitor');
+    if (res.status === 401) { window.location.href = '/login'; return; }
+    const postos = await res.json();
+    const online = postos.filter(p => p.ativo).length;
+    const offline = postos.length - online;
+
+    document.getElementById('cntOnline').textContent  = online;
+    document.getElementById('cntOffline').textContent = offline;
+    document.getElementById('cntTotal').textContent   = postos.length;
+    document.getElementById('lastUpdate').textContent =
+      'Atualizado às ' + new Date().toLocaleTimeString('pt-BR', { timeStyle: 'short' });
+
+    const grid = document.getElementById('postoGrid');
+    if (postos.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div><p>Nenhum posto cadastrado.</p></div>';
       return;
     }
-    tbody.innerHTML = clientes.map(c => `
-      <tr>
-        <td>${c.nome}</td>
-        <td style="color:var(--text-mid)">${c.cnpj || '—'}</td>
-        <td style="color:var(--text-mid)">${[c.cidade, c.uf].filter(Boolean).join('/') || '—'}</td>
-        <td><span class="chip chip-gray">v${c.versao_instalada || '?'}</span></td>
-        <td><span class="chip ${c.ativo ? 'chip-green' : 'chip-red'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
-        <td><code style="font-size:.75rem;color:var(--text-mid)">${c.token}</code></td>
-        <td>
-          <button class="btn btn-danger btn-sm" onclick="deleteCliente(${c.id})">Remover</button>
-        </td>
-      </tr>`).join('');
+    grid.innerHTML = postos.map(p => `
+      <div class="posto-card ${p.ativo ? 'online' : 'offline'}">
+        <div class="posto-status">
+          <span class="dot ${p.ativo ? 'dot-green' : 'dot-red'}"></span>
+        </div>
+        <div class="posto-nome">${p.nome}</div>
+        ${p.cnpj ? `<div class="posto-detalhe">CNPJ: ${p.cnpj}</div>` : ''}
+        ${(p.cidade || p.uf) ? `<div class="posto-detalhe">📍 ${[p.cidade, p.uf].filter(Boolean).join(' / ')}</div>` : ''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.4rem">
+          <span class="chip chip-gray">v${p.versao_instalada || '?'}</span>
+          <span class="chip ${p.ativo ? 'chip-green' : 'chip-red'}">${p.ativo ? '● Online' : '○ Offline'}</span>
+        </div>
+        ${p.ultimo_ping ? `<div class="posto-detalhe" style="margin-top:.15rem">Último ping: ${fmtDate(p.ultimo_ping)}</div>` : ''}
+        ${p.ultimo_ip   ? `<div class="posto-detalhe">IP: ${p.ultimo_ip}</div>` : ''}
+      </div>`).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GRUPOS
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _grupos = [];
+
+async function loadGrupos() {
+  const res = await fetch('/api/grupos');
+  if (!res.ok) return;
+  _grupos = await res.json();
+  renderGrupos();
+}
+
+function renderGrupos() {
+  const tbody = document.getElementById('tbodyGrupos');
+  if (!tbody) return;
+  if (_grupos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🗂️</div><p>Nenhum grupo cadastrado. Crie um grupo para organizar seus postos.</p></div></td></tr>';
+    return;
   }
+  tbody.innerHTML = _grupos.map(g => `
+    <tr>
+      <td style="font-weight:600">
+        <span class="chip chip-blue" style="font-size:.78rem;margin-right:.4rem">🗂️</span>${g.nome}
+      </td>
+      <td style="color:var(--text-mid)">${g.descricao || '—'}</td>
+      <td>
+        <span class="chip ${g.total_clientes > 0 ? 'chip-green' : 'chip-gray'}">
+          ${g.total_clientes} posto${g.total_clientes !== 1 ? 's' : ''}
+        </span>
+      </td>
+      <td style="color:var(--text-mid)">${fmtDate(g.created_at)}</td>
+      <td style="text-align:right">
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="editGrupo(${g.id})" title="Editar">✏️</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDeleteGrupo(${g.id}, '${g.nome.replace(/'/g,"\\'")}', ${g.total_clientes})">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
 
-  async function deleteCliente(id) {
-    if (!confirm('Remover este cliente?')) return;
-    await fetch('/api/clientes/' + id, { method: 'DELETE' });
-    loadClientes();
+// Novo Grupo
+document.getElementById('btnNovoGrupo').addEventListener('click', () => {
+  document.getElementById('gNome').value      = '';
+  document.getElementById('gDescricao').value = '';
+  document.getElementById('alertModalGrupo').style.display = 'none';
+  document.getElementById('modalGrupoTitulo').textContent = '🗂️ Novo Grupo';
+  document.getElementById('btnConfirmGrupo').textContent  = 'Criar Grupo';
+  delete document.getElementById('btnConfirmGrupo').dataset.editId;
+  openModal('modalGrupo');
+});
+
+function editGrupo(id) {
+  const g = _grupos.find(x => x.id === id);
+  if (!g) return;
+  document.getElementById('gNome').value      = g.nome;
+  document.getElementById('gDescricao').value = g.descricao || '';
+  document.getElementById('alertModalGrupo').style.display = 'none';
+  document.getElementById('modalGrupoTitulo').textContent = '✏️ Editar Grupo';
+  document.getElementById('btnConfirmGrupo').textContent  = 'Salvar';
+  document.getElementById('btnConfirmGrupo').dataset.editId = id;
+  openModal('modalGrupo');
+}
+
+document.getElementById('btnConfirmGrupo').addEventListener('click', async () => {
+  const nome = document.getElementById('gNome').value.trim();
+  if (!nome) { showAlert('alertModalGrupo', 'Nome é obrigatório.', 'error'); return; }
+  const body = { nome, descricao: document.getElementById('gDescricao').value.trim() || null };
+  const editId = document.getElementById('btnConfirmGrupo').dataset.editId;
+  const res = editId
+    ? await fetch(`/api/grupos/${editId}`, { method: 'PUT',  headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    : await fetch('/api/grupos',           { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (res.ok) {
+    closeModal('modalGrupo');
+    showAlert('alertGrupos', editId ? `Grupo "${nome}" atualizado!` : `Grupo "${nome}" criado!`);
+    await loadGrupos();
+    _populateGrupoSelect(); // atualiza o select no modal de clientes
+  } else {
+    const d = await res.json().catch(() => ({}));
+    showAlert('alertModalGrupo', d.detail || 'Erro ao salvar grupo.', 'error');
   }
+});
 
-  // Modal cliente
-  document.getElementById('btnNovoCliente').addEventListener('click', () => {
-    document.getElementById('cNome').value = '';
-    document.getElementById('cCnpj').value = '';
-    document.getElementById('cCidade').value = '';
-    document.getElementById('cUf').value = '';
-    document.getElementById('tokenGerado').style.display = 'none';
-    document.getElementById('btnConfirmCliente').textContent = 'Criar';
-    document.getElementById('btnConfirmCliente').disabled = false;
-    document.getElementById('modalCliente').classList.add('open');
+function confirmDeleteGrupo(id, nome, totalClientes) {
+  const msg = totalClientes > 0
+    ? `Remover o grupo "${nome}"? Os ${totalClientes} posto(s) vinculado(s) ficarão sem grupo, mas não serão excluídos.`
+    : `Remover o grupo "${nome}"?`;
+  document.getElementById('confirmTitle').textContent = 'Remover Grupo';
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('btnConfirmAction').onclick = async () => {
+    await fetch('/api/grupos/' + id, { method: 'DELETE' });
+    closeModal('modalConfirm');
+    showAlert('alertGrupos', `Grupo "${nome}" removido.`);
+    await loadGrupos();
+    _populateGrupoSelect();
+  };
+  openModal('modalConfirm');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLIENTES
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _clientes = [];
+
+async function loadClientes() {
+  // Garante grupos carregados para popular o select
+  if (_grupos.length === 0) await loadGrupos();
+  const res = await fetch('/api/clientes');
+  if (!res.ok) return;
+  _clientes = await res.json();
+  renderClientes();
+  _populateGrupoSelect();
+}
+
+function _populateGrupoSelect() {
+  const sel = document.getElementById('cGrupo');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Sem grupo —</option>' +
+    _grupos.map(g => `<option value="${g.id}">${g.nome}</option>`).join('');
+  sel.value = current;
+}
+
+function renderClientes() {
+  const tbody = document.getElementById('tbodyClientes');
+  if (_clientes.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏪</div><p>Nenhum cliente cadastrado.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = _clientes.map(c => {
+    let tokenFmt = '—';
+    if (c.activation_token && c.activation_token.length === 16) {
+      const t = c.activation_token;
+      tokenFmt = `${t.slice(0,4)}-${t.slice(4,8)}-${t.slice(8,12)}-${t.slice(12)}`;
+    }
+    const grupoChip = c.grupo_nome
+      ? `<span class="chip chip-blue" style="font-size:.72rem">🗂️ ${c.grupo_nome}</span>`
+      : `<span style="color:var(--text-light);font-size:.78rem">—</span>`;
+    return `
+    <tr>
+      <td style="font-weight:600">${c.nome}</td>
+      <td>${grupoChip}</td>
+      <td class="td-mono">${c.cnpj || '—'}</td>
+      <td style="color:var(--text-mid)">${[c.cidade, c.uf].filter(Boolean).join(' / ') || '—'}</td>
+      <td><span class="chip chip-gray">v${c.versao_instalada || '?'}</span></td>
+      <td><span class="chip ${c.ativo ? 'chip-green' : 'chip-red'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+      <td>
+        <button class="btn btn-sm ${tokenFmt !== '—' ? 'btn-ghost' : 'btn-primary'}"
+                onclick="gerarToken(${c.id}, '${c.nome.replace(/'/g,"\\'")}')">
+          ${tokenFmt !== '—' ? '🔄 Regen.' : '🔑 Gerar'}
+        </button>
+      </td>
+      <td>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="editCliente(${c.id})" title="Editar">✏️</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDeleteCliente(${c.id}, '${c.nome.replace(/'/g,"\\'")}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Gerar / Regenerar Token de Ativação
+async function gerarToken(clienteId, clienteNome) {
+  const res = await fetch(`/api/clientes/${clienteId}/activation-token`, { method: 'POST' });
+  if (!res.ok) { showAlert('alertClientes', 'Erro ao gerar token.', 'error'); return; }
+  const d = await res.json();
+  document.getElementById('tokenClienteNome').textContent = clienteNome;
+  document.getElementById('tokenBox').textContent = d.activation_token;
+  openModal('modalToken');
+  loadClientes(); // atualiza tabela
+}
+
+document.getElementById('btnCopyToken').addEventListener('click', () => {
+  const txt = document.getElementById('tokenBox').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    document.getElementById('btnCopyToken').textContent = '✅ Copiado!';
+    setTimeout(() => document.getElementById('btnCopyToken').textContent = '📋 Copiar', 2000);
   });
+});
 
-  document.getElementById('btnCancelCliente').addEventListener('click', () => {
-    document.getElementById('modalCliente').classList.remove('open');
-    loadClientes();
-  });
+// Editar cliente
+async function editCliente(id) {
+  const c = _clientes.find(x => x.id === id);
+  if (!c) return;
+  if (_grupos.length === 0) await loadGrupos();
+  _populateGrupoSelect();
+  document.getElementById('cNome').value    = c.nome;
+  document.getElementById('cCnpj').value    = c.cnpj   || '';
+  document.getElementById('cCidade').value  = c.cidade || '';
+  document.getElementById('cUf').value      = c.uf     || '';
+  document.getElementById('cGrupo').value   = c.grupo_id || '';
+  document.getElementById('modalClienteTitulo').textContent = 'Editar Posto';
+  document.getElementById('btnConfirmCliente').textContent  = 'Salvar';
+  document.getElementById('btnConfirmCliente').dataset.editId = id;
+  openModal('modalCliente');
+}
 
-  document.getElementById('btnConfirmCliente').addEventListener('click', async () => {
-    const nome = document.getElementById('cNome').value.trim();
-    if (!nome) { alert('Nome obrigatório'); return; }
-    const body = {
-      nome,
-      cnpj: document.getElementById('cCnpj').value.trim() || null,
-      cidade: document.getElementById('cCidade').value.trim() || null,
-      uf: document.getElementById('cUf').value.trim().toUpperCase() || null,
-    };
+// Abrir modal Novo Cliente
+document.getElementById('btnNovoCliente').addEventListener('click', async () => {
+  if (_grupos.length === 0) await loadGrupos();
+  _populateGrupoSelect();
+  ['cNome','cCnpj','cCidade','cUf'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cGrupo').value = '';
+  document.getElementById('modalClienteTitulo').textContent = 'Novo Posto / Cliente';
+  document.getElementById('btnConfirmCliente').textContent  = 'Criar Posto';
+  delete document.getElementById('btnConfirmCliente').dataset.editId;
+  openModal('modalCliente');
+});
+
+// Confirmar Criar/Editar
+document.getElementById('btnConfirmCliente').addEventListener('click', async () => {
+  const nome = document.getElementById('cNome').value.trim();
+  if (!nome) { alert('Nome é obrigatório.'); return; }
+  const grupoVal = document.getElementById('cGrupo').value;
+  const body = {
+    nome,
+    cnpj:     document.getElementById('cCnpj').value.trim()   || null,
+    cidade:   document.getElementById('cCidade').value.trim() || null,
+    uf:       document.getElementById('cUf').value.trim().toUpperCase() || null,
+    grupo_id: grupoVal ? parseInt(grupoVal) : null,
+  };
+  const editId = document.getElementById('btnConfirmCliente').dataset.editId;
+  if (editId) {
+    const res = await fetch(`/api/clientes/${editId}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, ativo: 1 }),
+    });
+    if (res.ok) { showAlert('alertClientes', 'Posto atualizado!'); closeModal('modalCliente'); loadClientes(); }
+    else showAlert('alertClientes', 'Erro ao atualizar.', 'error');
+  } else {
     const res = await fetch('/api/clientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     });
     if (res.ok) {
       const d = await res.json();
-      document.getElementById('tokenBox').textContent = d.token;
-      document.getElementById('tokenGerado').style.display = 'block';
-      document.getElementById('btnConfirmCliente').textContent = 'Fechar';
-      document.getElementById('btnConfirmCliente').onclick = () => {
-        document.getElementById('modalCliente').classList.remove('open');
-        loadClientes();
-        document.getElementById('btnConfirmCliente').onclick = null;
-      };
+      closeModal('modalCliente');
+      document.getElementById('clienteCriadoNome').textContent  = d.nome;
+      document.getElementById('clienteCriadoToken').textContent = d.token;
+      openModal('modalClienteCriado');
+      loadClientes();
     } else {
       const d = await res.json();
-      alert(d.detail || 'Erro ao criar cliente');
+      showAlert('alertClientes', d.detail || 'Erro ao criar posto.', 'error');
     }
-  });
+  }
+});
 
-  // ── Versao ────────────────────────────────────────────────────────────────────
-  async function loadVersao() {
-    const res = await fetch('/api/versao/whatsapp');
-    if (!res.ok) return;
+// Delete cliente com confirmação
+let _pendingDeleteCliente = null;
+function confirmDeleteCliente(id, nome) {
+  _pendingDeleteCliente = id;
+  document.getElementById('confirmTitle').textContent = 'Remover Posto';
+  document.getElementById('confirmMsg').textContent   = `Deseja remover o posto "${nome}"? Esta ação não pode ser desfeita.`;
+  document.getElementById('btnConfirmAction').onclick = async () => {
+    await fetch('/api/clientes/' + _pendingDeleteCliente, { method: 'DELETE' });
+    closeModal('modalConfirm');
+    loadClientes();
+  };
+  openModal('modalConfirm');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MENUS DO APP — definições e helpers
+// ══════════════════════════════════════════════════════════════════════════════
+
+const APP_MENU_DEFS = [
+  { key: 'dashboard', icon: '📊', label: 'Dashboard',          section: 'Principal'   },
+  { key: 'mensagem',  icon: '✏️', label: 'Config. Mensagem',   section: 'Principal'   },
+  { key: 'whatsapp',  icon: '📱', label: 'Conectar WhatsApp',  section: 'Principal'   },
+  { key: 'teste',     icon: '🧪', label: 'Teste de Envio',     section: 'Principal'   },
+  { key: 'token',     icon: '🔑', label: 'Token API',          section: 'Integrações' },
+  { key: 'arquivo',   icon: '📎', label: 'Envio de Arquivo',   section: 'Integrações' },
+  { key: 'docs',      icon: '📖', label: 'Documentações',      section: 'Integrações' },
+  { key: 'telegram',  icon: '✈️', label: 'Telegram',           section: 'Outros'      },
+];
+
+function renderMenuGrid(containerId, selectedKeys) {
+  // selectedKeys: null = todos selecionados; array = apenas esses
+  const all = selectedKeys === null;
+  const selected = all ? APP_MENU_DEFS.map(m => m.key) : (selectedKeys || []);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const sections = [...new Set(APP_MENU_DEFS.map(m => m.section))];
+  container.innerHTML = sections.map(sec => {
+    const items = APP_MENU_DEFS.filter(m => m.section === sec);
+    return `
+      <div class="menu-perm-section">${sec}</div>
+      <div class="menu-perm-row">
+        ${items.map(m => `
+          <div class="menu-perm-card ${selected.includes(m.key) ? 'selected' : ''}"
+               data-key="${m.key}" onclick="toggleMenuCard(this, '${containerId}')">
+            <span class="menu-perm-icon">${m.icon}</span>
+            <span class="menu-perm-name">${m.label}</span>
+            <span class="menu-perm-check">✓</span>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+  _updateMenuCount(containerId);
+}
+
+function toggleMenuCard(el, containerId) {
+  el.classList.toggle('selected');
+  _updateMenuCount(containerId);
+}
+
+function toggleAllMenus(containerId) {
+  const cards = document.querySelectorAll(`#${containerId} .menu-perm-card`);
+  const allSelected = [...cards].every(c => c.classList.contains('selected'));
+  cards.forEach(c => allSelected ? c.classList.remove('selected') : c.classList.add('selected'));
+  _updateMenuCount(containerId);
+}
+
+function _updateMenuCount(containerId) {
+  const cards    = document.querySelectorAll(`#${containerId} .menu-perm-card`);
+  const selected = document.querySelectorAll(`#${containerId} .menu-perm-card.selected`);
+  const label    = document.getElementById(containerId === 'menusGrid' ? 'menusCountLabel' : null);
+  if (label) label.textContent = `${selected.length} de ${cards.length} menus selecionados`;
+}
+
+function getSelectedMenuKeys(containerId) {
+  const keys = Array.from(
+    document.querySelectorAll(`#${containerId} .menu-perm-card.selected`)
+  ).map(el => el.dataset.key);
+  // se todos estão selecionados, retorna null (= sem restrição)
+  return keys.length === APP_MENU_DEFS.length ? null : keys;
+}
+
+// ── Modal editar menus de usuário existente ───────────────────────────────────
+
+let _menusEditId = null;
+
+function openMenus(userId) {
+  const u = _usuariosCache[userId];
+  if (!u) return;
+  _menusEditId = userId;
+  document.getElementById('menusUsuarioNome').textContent = u.username;
+  document.getElementById('alertModalMenus').style.display = 'none';
+  // menus vem da API como string JSON ou null
+  let currentMenus = null;
+  if (u.menus) { try { currentMenus = JSON.parse(u.menus); } catch(e) { currentMenus = null; } }
+  renderMenuGrid('menusGrid', currentMenus);
+  openModal('modalMenus');
+}
+
+document.getElementById('btnConfirmMenus').addEventListener('click', async () => {
+  const menus = getSelectedMenuKeys('menusGrid');
+  const btn = document.getElementById('btnConfirmMenus');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const res = await fetch(`/api/auth/usuarios/${_menusEditId}/menus`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ menus }),
+    });
+    if (res.ok) {
+      closeModal('modalMenus');
+      const count = menus === null ? 'Todos os menus' : `${menus.length} menus`;
+      showAlert('alertUsuarios', `Permissões atualizadas (${count}).`);
+      loadUsuarios();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showAlert('alertModalMenus', d.detail || 'Erro ao salvar.', 'error');
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar Permissões';
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// USUÁRIOS
+// ══════════════════════════════════════════════════════════════════════════════
+
+let _senhaEditId = null;
+let _usuariosCache = {}; // userId -> dados completos do usuário
+
+async function loadUsuarios() {
+  const res = await fetch('/api/auth/usuarios');
+  if (!res.ok) {
+    const tbody = document.getElementById('tbodyUsuarios');
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Erro ao carregar usuários. Verifique o console.</p></div></td></tr>';
+    return;
+  }
+  const usuarios = await res.json();
+  _usuariosCache = {};
+  usuarios.forEach(u => { _usuariosCache[u.id] = u; });
+  const tbody = document.getElementById('tbodyUsuarios');
+  if (usuarios.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum usuário.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = usuarios.map(u => {
+    const clienteChips = u.clientes && u.clientes.length > 0
+      ? `<div class="td-clients">${u.clientes.map(c =>
+          `<span class="chip chip-green" style="font-size:.68rem">🏪 ${c.nome}</span>`
+        ).join('')}</div>`
+      : `<span class="chip chip-gray" style="font-size:.68rem">Sem acesso</span>`;
+
+    return `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <div style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);
+                      display:flex;align-items:center;justify-content:center;
+                      font-weight:700;font-size:.8rem;color:var(--accent);flex-shrink:0">
+            ${u.username[0].toUpperCase()}
+          </div>
+          <span style="font-weight:600">${u.username}</span>
+          ${u.id === _currentUserId ? '<span class="chip chip-blue" style="font-size:.65rem">você</span>' : ''}
+        </div>
+      </td>
+      <td>${clienteChips}</td>
+      <td style="color:var(--text-mid)">${fmtDate(u.created_at)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openAcessos(${u.id})">🏪 Acessos</button>
+        <button class="btn btn-ghost btn-sm" onclick="openMenus(${u.id})">🎛️ Menus</button>
+        <button class="btn btn-ghost btn-sm" onclick="openChangeUsername(${u.id})">✏️ Usuário</button>
+        <button class="btn btn-ghost btn-sm" onclick="openChangeSenha(${u.id})">🔒 Senha</button>
+        ${u.id !== _currentUserId
+          ? `<button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDeleteUsuario(${u.id})">🗑️</button>`
+          : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Helpers: chip selector ────────────────────────────────────────────────
+
+function renderClienteChips(containerId, selectedIds = []) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (_clientes.length === 0) {
+    container.innerHTML = '<span class="client-chips-empty">Nenhum posto cadastrado ainda.</span>';
+    return;
+  }
+  container.innerHTML = _clientes.map(c => `
+    <div class="client-chip-toggle ${selectedIds.includes(c.id) ? 'selected' : ''}"
+         data-id="${c.id}"
+         onclick="this.classList.toggle('selected')">
+      🏪 ${c.nome}
+    </div>`).join('');
+}
+
+function getSelectedClienteIds(containerId) {
+  return Array.from(
+    document.querySelectorAll(`#${containerId} .client-chip-toggle.selected`)
+  ).map(el => parseInt(el.dataset.id));
+}
+
+// ── Criar usuário ─────────────────────────────────────────────────────────
+
+document.getElementById('btnNovoUsuario').addEventListener('click', async () => {
+  ['uUsername','uPassword'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('alertModalUsuario').style.display = 'none';
+  if (_clientes.length === 0) await loadClientes();
+  renderClienteChips('uClienteChips', []);
+  renderMenuGrid('uMenusGrid', null); // todos selecionados por padrão
+  openModal('modalUsuario');
+});
+
+document.getElementById('btnConfirmUsuario').addEventListener('click', async () => {
+  const username = document.getElementById('uUsername').value.trim();
+  const password = document.getElementById('uPassword').value;
+  if (!username || !password) { showAlert('alertModalUsuario', 'Preencha todos os campos.', 'error'); return; }
+  const cliente_ids = getSelectedClienteIds('uClienteChips');
+  const menus = getSelectedMenuKeys('uMenusGrid');
+  const res = await fetch('/api/auth/usuarios', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, cliente_ids, menus }),
+  });
+  if (res.ok) {
+    closeModal('modalUsuario');
+    showAlert('alertUsuarios', `Usuário "${username}" criado com sucesso!`);
+    loadUsuarios();
+  } else {
     const d = await res.json();
-    document.getElementById('versaoAtual').innerHTML =
-      `Versão atual publicada: <strong style="color:var(--green)">${d.versao}</strong>` +
-      (d.notas ? `<br><span style="font-size:.8rem">${d.notas}</span>` : '');
-    document.getElementById('inputVersao').value = d.versao;
-    document.getElementById('inputVersaoUrl').value = d.url_download || '';
-    document.getElementById('inputVersaoNotas').value = d.notas || '';
+    showAlert('alertModalUsuario', d.detail || 'Erro ao criar usuário.', 'error');
   }
+});
 
-  document.getElementById('btnSalvarVersao').addEventListener('click', async () => {
-    const body = {
-      versao: document.getElementById('inputVersao').value.trim(),
-      url_download: document.getElementById('inputVersaoUrl').value.trim() || null,
-      notas: document.getElementById('inputVersaoNotas').value.trim() || null,
-    };
-    if (!body.versao) { alert('Versão obrigatória'); return; }
-    const res = await fetch('/api/versao/whatsapp', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+// ── Editar acessos de um usuário ──────────────────────────────────────────
+
+let _acessosEditId = null;
+
+async function openAcessos(userId) {
+  const u = _usuariosCache[userId];
+  if (!u) return;
+  _acessosEditId = userId;
+  document.getElementById('acessosUsuarioNome').textContent = u.username;
+  document.getElementById('alertModalAcessos').style.display = 'none';
+  if (_clientes.length === 0) await loadClientes();
+  const currentClienteIds = (u.clientes || []).map(c => c.id);
+  renderClienteChips('acessosClienteChips', currentClienteIds);
+  openModal('modalAcessos');
+}
+
+document.getElementById('btnConfirmAcessos').addEventListener('click', async () => {
+  const cliente_ids = getSelectedClienteIds('acessosClienteChips');
+  const btn = document.getElementById('btnConfirmAcessos');
+  btn.disabled = true; btn.textContent = 'Salvando…';
+  try {
+    const res = await fetch(`/api/auth/usuarios/${_acessosEditId}/clientes`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente_ids }),
     });
     if (res.ok) {
-      showAlert('alertVersao', 'Versão publicada com sucesso!');
-      loadVersao();
+      closeModal('modalAcessos');
+      showAlert('alertUsuarios', 'Acessos atualizados com sucesso!');
+      loadUsuarios();
     } else {
-      showAlert('alertVersao', 'Erro ao publicar', 'error');
+      const d = await res.json().catch(() => ({}));
+      showAlert('alertModalAcessos', d.detail || 'Erro ao salvar acessos.', 'error');
     }
-  });
-
-  function showAlert(id, msg, type = 'success') {
-    const el = document.getElementById(id);
-    el.textContent = msg;
-    el.className = `alert alert-${type}`;
-    el.style.display = 'block';
-    setTimeout(() => el.style.display = 'none', 4000);
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Salvar Acessos';
   }
+});
 
-  // ── Page loader ───────────────────────────────────────────────────────────────
-  function onPageLoad(p) {
-    if (p === 'monitor') loadMonitor();
-    else if (p === 'clientes') loadClientes();
-    else if (p === 'versao') loadVersao();
-  }
+// Trocar senha
+function openChangeSenha(id) {
+  const u = _usuariosCache[id];
+  if (!u) return;
+  _senhaEditId = id;
+  document.getElementById('senhaUsuarioNome').textContent = u.username;
+  document.getElementById('novaSenha').value = '';
+  document.getElementById('alertModalSenha').style.display = 'none';
+  openModal('modalSenha');
+}
 
-  // ── Init ──────────────────────────────────────────────────────────────────────
-  checkAuth().then(() => {
-    loadMonitor();
-    setInterval(loadMonitor, 30_000);
+document.getElementById('btnConfirmSenha').addEventListener('click', async () => {
+  const password = document.getElementById('novaSenha').value;
+  if (!password) { showAlert('alertModalSenha', 'Informe a nova senha.', 'error'); return; }
+  const res = await fetch(`/api/auth/usuarios/${_senhaEditId}/senha`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: '', password }),
   });
+  if (res.ok) {
+    closeModal('modalSenha');
+    showAlert('alertUsuarios', 'Senha alterada com sucesso!');
+  } else {
+    const d = await res.json();
+    showAlert('alertModalSenha', d.detail || 'Erro ao alterar senha.', 'error');
+  }
+});
+
+// Alterar username
+let _usernameEditId = null;
+
+function openChangeUsername(id) {
+  const u = _usuariosCache[id];
+  if (!u) return;
+  _usernameEditId = id;
+  document.getElementById('usernameAtual').textContent = u.username;
+  document.getElementById('novoUsername').value = u.username;
+  document.getElementById('alertModalUsername').style.display = 'none';
+  openModal('modalUsername');
+  setTimeout(() => {
+    const inp = document.getElementById('novoUsername');
+    inp.focus(); inp.select();
+  }, 120);
+}
+
+document.getElementById('btnConfirmUsername').addEventListener('click', async () => {
+  const username = document.getElementById('novoUsername').value.trim();
+  if (!username) { showAlert('alertModalUsername', 'Informe o novo nome de usuário.', 'error'); return; }
+  const res = await fetch(`/api/auth/usuarios/${_usernameEditId}/username`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+  if (res.ok) {
+    closeModal('modalUsername');
+    showAlert('alertUsuarios', `Usuário alterado para "${username}" com sucesso!`);
+    loadUsuarios();
+  } else {
+    const d = await res.json().catch(() => ({}));
+    showAlert('alertModalUsername', d.detail || 'Erro ao alterar usuário.', 'error');
+  }
+});
+
+// Delete usuário
+function confirmDeleteUsuario(id) {
+  const u = _usuariosCache[id];
+  const username = u ? u.username : id;
+  document.getElementById('confirmTitle').textContent = 'Remover Usuário';
+  document.getElementById('confirmMsg').textContent   = `Deseja remover o usuário "${username}"?`;
+  document.getElementById('btnConfirmAction').onclick = async () => {
+    const res = await fetch('/api/auth/usuarios/' + id, { method: 'DELETE' });
+    if (res.ok || res.status === 204) {
+      closeModal('modalConfirm');
+      showAlert('alertUsuarios', `Usuário "${username}" removido.`);
+      loadUsuarios();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showAlert('alertUsuarios', d.detail || 'Erro ao remover.', 'error');
+      closeModal('modalConfirm');
+    }
+  };
+  openModal('modalConfirm');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// VERSÃO
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadVersao() {
+  const res = await fetch('/api/versao/whatsapp');
+  if (!res.ok) return;
+  const d = await res.json();
+  document.getElementById('versaoAtualVal').textContent    = d.versao || '—';
+  document.getElementById('inputVersao').value             = d.versao || '';
+  document.getElementById('inputVersaoUrl').value          = d.url_download || '';
+  document.getElementById('inputVersaoNotas').value        = d.notas || '';
+}
+
+document.getElementById('btnSalvarVersao').addEventListener('click', async () => {
+  const body = {
+    versao:       document.getElementById('inputVersao').value.trim(),
+    url_download: document.getElementById('inputVersaoUrl').value.trim()  || null,
+    notas:        document.getElementById('inputVersaoNotas').value.trim() || null,
+  };
+  if (!body.versao) { showAlert('alertVersao', 'Informe a versão.', 'error'); return; }
+  const res = await fetch('/api/versao/whatsapp', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  if (res.ok) { showAlert('alertVersao', `Versão ${body.versao} publicada com sucesso!`); loadVersao(); }
+  else showAlert('alertVersao', 'Erro ao publicar versão.', 'error');
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CRIAR USUÁRIO DO MONITOR (sidebar footer)
+// ══════════════════════════════════════════════════════════════════════════════
+
+document.getElementById('btnAddUsuarioMonitor').addEventListener('click', () => {
+  document.getElementById('mUsername').value = '';
+  document.getElementById('mPassword').value = '';
+  document.getElementById('alertModalMonitorUsuario').style.display = 'none';
+  openModal('modalNovoUsuarioMonitor');
+  setTimeout(() => document.getElementById('mUsername').focus(), 120);
+});
+
+document.getElementById('btnConfirmMonitorUsuario').addEventListener('click', async () => {
+  const username = document.getElementById('mUsername').value.trim();
+  const password = document.getElementById('mPassword').value;
+  if (!username || !password) {
+    showAlert('alertModalMonitorUsuario', 'Preencha usuário e senha.', 'error');
+    return;
+  }
+  const btn = document.getElementById('btnConfirmMonitorUsuario');
+  btn.disabled = true; btn.textContent = 'Criando…';
+  try {
+    const res = await fetch('/api/auth/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, cliente_ids: [], menus: null, monitor_only: true }),
+    });
+    if (res.ok) {
+      closeModal('modalNovoUsuarioMonitor');
+      showAlert('alertUsuarios', `Usuário "${username}" criado com acesso ao monitor!`);
+      // Atualiza tabela de usuários se estiver na página
+      if (_currentPage === 'usuarios') loadUsuarios();
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showAlert('alertModalMonitorUsuario', d.detail || 'Erro ao criar usuário.', 'error');
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ Criar Usuário';
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════════════════
+checkAuth().then(() => {
+  loadMonitor();
+  setInterval(loadMonitor, 30_000); // auto-refresh monitor a cada 30s
+});
 </script>
 </body>
 </html>

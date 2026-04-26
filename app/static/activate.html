@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZapDin — Ativação do Sistema</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:   #25D366;
+      --green-d: #1ebe5a;
+      --dark:    #111b21;
+      --card:    #1e2b33;
+      --border:  #2a3942;
+      --text:    #e9edef;
+      --muted:   #8696a0;
+      --error:   #f15c6d;
+      --warn:    #ffc107;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--dark);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 24px 48px rgba(0,0,0,.45);
+      animation: fadeUp .35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: var(--green);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .logo-icon svg { width: 28px; height: 28px; fill: #fff; }
+
+    .logo-text h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-text p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: .08em;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--green);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--border);
+      letter-spacing: 0;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--green-d); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .alert.error   { background: rgba(241,92,109,.15); border: 1px solid rgba(241,92,109,.4); color: #f99; }
+    .alert.success { background: rgba(37,211,102,.12); border: 1px solid rgba(37,211,102,.35); color: #aeffcd; }
+    .alert.info    { background: rgba(134,150,160,.12); border: 1px solid var(--border); color: var(--muted); }
+
+    .divider { height: 1px; background: var(--border); margin: 28px 0; }
+
+    .footer {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">
+      <!-- WhatsApp icon simplificado -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.855L.057 23.882l6.188-1.444A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.003-1.368l-.36-.213-3.668.856.897-3.552-.234-.374A9.818 9.818 0 0112 2.182c5.425 0 9.818 4.393 9.818 9.818S17.425 21.818 12 21.818z"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <h1>ZapDin</h1>
+      <p>Sistema de mensagens WhatsApp</p>
+    </div>
+  </div>
+
+  <h2>Ativação do sistema</h2>
+  <p class="subtitle">
+    Este sistema precisa ser ativado antes do primeiro uso.<br>
+    Insira o token de ativação fornecido pelo seu representante.
+  </p>
+
+  <label for="token">Token de Ativação</label>
+  <input
+    type="text"
+    id="token"
+    placeholder="XXXX-XXXX-XXXX-XXXX"
+    autocomplete="off"
+    spellcheck="false"
+    autofocus
+  />
+
+  <button class="btn" id="btn-activate" onclick="activate()">
+    <span class="spinner" id="spinner"></span>
+    <span id="btn-text">Ativar sistema</span>
+  </button>
+
+  <div class="alert" id="alert"></div>
+
+  <div class="divider"></div>
+  <div class="footer">
+    Token fornecido pelo painel administrativo ZapDin Monitor.<br>
+    Dúvidas? Entre em contato com o suporte.
+  </div>
+</div>
+
+<script>
+  // Formata token enquanto digita: XXXX-XXXX-XXXX-XXXX
+  document.getElementById('token').addEventListener('input', function () {
+    let v = this.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let formatted = v.match(/.{1,4}/g)?.join('-') ?? v;
+    this.value = formatted.substring(0, 19);
+  });
+
+  document.getElementById('token').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') activate();
+  });
+
+  function setLoading(on) {
+    const btn = document.getElementById('btn-activate');
+    const spinner = document.getElementById('spinner');
+    const text = document.getElementById('btn-text');
+    btn.disabled = on;
+    spinner.style.display = on ? 'block' : 'none';
+    text.textContent = on ? 'Validando…' : 'Ativar sistema';
+  }
+
+  function showAlert(msg, type = 'error') {
+    const el = document.getElementById('alert');
+    el.textContent = msg;
+    el.className = `alert ${type}`;
+    el.style.display = 'block';
+  }
+
+  function hideAlert() {
+    document.getElementById('alert').style.display = 'none';
+  }
+
+  async function activate() {
+    const token = document.getElementById('token').value.replace(/-/g, '').trim();
+    if (token.length < 8) {
+      showAlert('Token muito curto. Verifique e tente novamente.');
+      return;
+    }
+
+    hideAlert();
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/activate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        showAlert('✅ ' + data.message, 'success');
+        document.getElementById('btn-activate').disabled = true;
+        // Aguarda 3s e redireciona — o servidor reiniciará no backend
+        setTimeout(() => { window.location.href = '/'; }, 4000);
+      } else {
+        showAlert(data.error ?? 'Erro desconhecido.');
+        setLoading(false);
+      }
+    } catch (err) {
+      showAlert('Não foi possível conectar ao sistema. Verifique se o serviço está rodando.');
+      setLoading(false);
+    }
+  }
+</script>
+</body>
+</html>

@@ -14,16 +14,29 @@ venv/
 env/
 pip-wheel-metadata/
 
-# Env files
+# Env files — nunca commitar .env real
 .env
 !.env.example
 
-# Data & logs
+# Bancos de dados SQLite (dados de produção e desenvolvimento)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
 app/data/
 monitor/data/
-*/data/
+
+# Logs
+*.log
 */logs/
 logs/
+app_startup.log
+monitor_startup.log
+
+# WhatsApp sessions (estado do Playwright — não versionar)
+data/wa_sessions/
+app/data/wa_sessions/
 
 # IDE
 .vscode/
@@ -36,9 +49,14 @@ Thumbs.db
 # Build artifacts
 output/
 *.exe
-zapdin-app.zip
-zapdin-monitor.zip
+*.zip
 zapdin.ico
 
-# Playwright
+# Playwright browsers
 playwright/.local-browsers/
+app/.venv/
+monitor/.venv/
+
+# macOS launchers gerados
+"▶ Iniciar App.command"
+"▶ Iniciar Monitor.command"

@@ -1,4 +1,4 @@
-name: Build & Release
+name: Build & Release v3
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - "monitor/**"
+      - "installer/**"
       - "setup_app.iss"
       - "setup_monitor.iss"
   workflow_dispatch:
@@ -13,77 +14,64 @@ on:
 permissions:
   contents: write
 
+# =============================================================================
+# Job 1 — Ubuntu: lê versão, converte logo, cria GitHub Release
+# =============================================================================
 jobs:
-  # ── Job 1: Ubuntu — prepare zips and release ─────────────────────────────────
   prepare-release:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.versao }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Read version
+      - name: Read version from versao.json
         id: version
-        run: echo "versao=$(python3 -c "import json; print(json.load(open('app/versao.json'))['versao'])")" >> $GITHUB_OUTPUT
+        run: |
+          VER=$(python3 -c "import json; print(json.load(open('app/versao.json'))['versao'])")
+          echo "versao=$VER" >> $GITHUB_OUTPUT
+          echo "Building ZapDin v$VER"
 
-      - name: Install Pillow for ICO conversion
-        run: pip install Pillow
+      - name: Install Pillow
+        run: pip install Pillow --quiet
 
-      - name: Convert logo PNG to ICO
+      - name: Convert logo PNG → ICO
         run: |
           python3 - <<'EOF'
           from PIL import Image
           import os
           src = "app/static/logo/Zapdin-removebg-preview.png"
           if os.path.exists(src):
-              img = Image.open(src)
-              img.save("zapdin.ico", format="ICO", sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
-              print("ICO created")
+              img = Image.open(src).convert("RGBA")
+              img.save("zapdin.ico", format="ICO",
+                       sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+              print("ICO criado com sucesso.")
           else:
-              print("Logo not found, skipping ICO")
+              # Cria ICO vazio para não quebrar o workflow
+              from PIL import Image as _I
+              _I.new("RGBA", (256,256), (37,211,102,255)).save("zapdin.ico", format="ICO")
+              print("Logo não encontrada — ICO placeholder criado.")
           EOF
 
-      - name: Create app zip
-        run: |
-          cd app
-          zip -r ../zapdin-app.zip . \
-            --exclude "**/__pycache__/*" \
-            --exclude "**/*.pyc" \
-            --exclude ".env" \
-            --exclude "data/*" \
-            --exclude "logs/*"
-          cd ..
-
-      - name: Create monitor zip
-        run: |
-          cd monitor
-          zip -r ../zapdin-monitor.zip . \
-            --exclude "**/__pycache__/*" \
-            --exclude "**/*.pyc" \
-            --exclude ".env" \
-            --exclude "data/*" \
-            --exclude "logs/*"
-          cd ..
-
       - name: Create GitHub Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.versao }}
           name: "ZapDin v${{ steps.version.outputs.versao }}"
           draft: false
           prerelease: false
-          files: |
-            zapdin-app.zip
-            zapdin-monitor.zip
-            zapdin.ico
+          files: zapdin.ico
 
-  # ── Job 2: Windows — launchers .exe + Inno Setup installers ─────────────────
+
+# =============================================================================
+# Job 2 — Windows: Nuitka builds + Velopack pack + Inno Setup installer
+# =============================================================================
   build-windows:
     runs-on: windows-latest
     needs: prepare-release
+    env:
+      VERSION: ${{ needs.prepare-release.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -93,57 +81,198 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
-
-      - name: Download ICO from release
+      # ── Dependências Python ────────────────────────────────────────────────
+      - name: Install Python dependencies
         run: |
-          curl -L "https://github.com/cristianoradin/ZapDin2/releases/download/v${{ needs.prepare-release.outputs.version }}/zapdin.ico" -o zapdin.ico 2>$null
-          if (-not (Test-Path "zapdin.ico")) { New-Item -ItemType File -Name "zapdin.ico" }
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt
+          pip install nuitka ordered-set zstandard  # Nuitka + compressores
         shell: pwsh
 
-      - name: Build ZapDin-App.exe launcher
+      # ── Download ICO do release ────────────────────────────────────────────
+      - name: Download ICO
         run: |
-          pyinstaller app/launcher.py `
-            --onefile --noconsole `
-            --name ZapDin-App `
-            --icon zapdin.ico `
-            --distpath dist
+          $url = "https://github.com/${{ github.repository }}/releases/download/v$env:VERSION/zapdin.ico"
+          try {
+            Invoke-WebRequest -Uri $url -OutFile "zapdin.ico" -UseBasicParsing
+          } catch {
+            Write-Host "ICO não encontrado na release, criando placeholder."
+            New-Item -ItemType File -Path "zapdin.ico" -Force | Out-Null
+          }
         shell: pwsh
 
-      - name: Build ZapDin-Monitor.exe launcher
+      # ── Pasta de payload ───────────────────────────────────────────────────
+      - name: Create payload structure
         run: |
-          pyinstaller monitor/launcher.py `
-            --onefile --noconsole `
-            --name ZapDin-Monitor `
-            --icon zapdin.ico `
-            --distpath dist
+          New-Item -ItemType Directory -Force -Path payload\tools   | Out-Null
+          New-Item -ItemType Directory -Force -Path payload\branding | Out-Null
+          New-Item -ItemType Directory -Force -Path payload\deps     | Out-Null
+          New-Item -ItemType Directory -Force -Path payload\static   | Out-Null
+          New-Item -ItemType Directory -Force -Path output           | Out-Null
+          Copy-Item zapdin.ico -Destination payload\branding\zapdin.ico -Force
+          if (Test-Path app\static) {
+            Copy-Item app\static\* -Destination payload\static -Recurse -Force
+          }
         shell: pwsh
 
-      - name: Upload launchers to release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.prepare-release.outputs.version }}
-          files: |
-            dist/ZapDin-App.exe
-            dist/ZapDin-Monitor.exe
+      # ── Download NSSM ──────────────────────────────────────────────────────
+      - name: Download NSSM
+        run: |
+          Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" `
+            -OutFile nssm.zip -UseBasicParsing
+          Expand-Archive nssm.zip -DestinationPath nssm_tmp -Force
+          Copy-Item nssm_tmp\nssm-2.24\win64\nssm.exe -Destination payload\tools\nssm.exe
+          Remove-Item nssm_tmp -Recurse -Force
+        shell: pwsh
 
-      - name: Compile setup_app.iss
+      # ── Download bootstrappers de deps (WebView2 + VC++) ──────────────────
+      - name: Download dependency bootstrappers
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" `
+            -OutFile payload\deps\MicrosoftEdgeWebview2Setup.exe -UseBasicParsing
+          Invoke-WebRequest `
+            -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" `
+            -OutFile payload\deps\vc_redist.x64.exe -UseBasicParsing
+        shell: pwsh
+
+      # ── Playwright: instala Chromium e copia para payload ─────────────────
+      - name: Install Playwright Chromium
+        run: |
+          $env:PLAYWRIGHT_BROWSERS_PATH = "$PWD\payload\playwright-browsers"
+          python -m playwright install chromium --with-deps
+        shell: pwsh
+
+      # ── Template .env ──────────────────────────────────────────────────────
+      - name: Create .env.template
+        run: |
+          @"
+          # ZapDin — Bootstrap template (gerado pelo CI)
+          APP_STATE=locked
+          PORT=4000
+          CLIENT_TOKEN=
+          MONITOR_URL=
+          CLIENT_NAME=
+          CLIENT_CNPJ=
+          ERP_TOKEN=
+          SECRET_KEY=
+          PLAYWRIGHT_BROWSERS_PATH=.\playwright-browsers
+          VELOPACK_CHANNEL_URL=https://github.com/${{ github.repository }}/releases/latest/download
+          VELOPACK_UPDATE_EXE=.\Update.exe
+          "@ | Out-File -FilePath payload\.env.template -Encoding utf8
+        shell: pwsh
+
+      # ── Nuitka: compila ZapDin-App.exe (Backend + WhatsApp) ───────────────
+      - name: Nuitka — ZapDin-App.exe
+        run: |
+          python -m nuitka `
+            --onefile `
+            --windows-console-mode=disable `
+            --output-filename=ZapDin-App.exe `
+            --output-dir=payload `
+            --windows-icon-from-ico=zapdin.ico `
+            --include-package=app `
+            --include-package=uvicorn `
+            --include-package=fastapi `
+            --include-package=starlette `
+            --include-package=socketio `
+            --include-package=aiosqlite `
+            --include-package=playwright `
+            --include-package=httpx `
+            --include-package=cryptography `
+            --noinclude-pytest-mode=nofollow `
+            --assume-yes-for-downloads `
+            app/launcher_service.py
+        shell: pwsh
+
+      # ── Nuitka: compila ZapDin-Worker.exe (Worker de fila) ────────────────
+      - name: Nuitka — ZapDin-Worker.exe
+        run: |
+          python -m nuitka `
+            --onefile `
+            --windows-console-mode=disable `
+            --output-filename=ZapDin-Worker.exe `
+            --output-dir=payload `
+            --windows-icon-from-ico=zapdin.ico `
+            --include-package=httpx `
+            --noinclude-pytest-mode=nofollow `
+            --assume-yes-for-downloads `
+            app/worker_main.py
+        shell: pwsh
+
+      # ── Nuitka: compila ZapDin-Launcher.exe (Kiosk WebView2) ──────────────
+      - name: Nuitka — ZapDin-Launcher.exe
+        run: |
+          python -m nuitka `
+            --onefile `
+            --windows-console-mode=disable `
+            --output-filename=ZapDin-Launcher.exe `
+            --output-dir=payload `
+            --windows-icon-from-ico=zapdin.ico `
+            --include-package=webview `
+            --noinclude-pytest-mode=nofollow `
+            --assume-yes-for-downloads `
+            app/launcher_gui.py
+        shell: pwsh
+
+      # ── Velopack: empacota para update delta ──────────────────────────────
+      - name: Install Velopack CLI (vpk)
+        run: dotnet tool install -g vpk
+        shell: pwsh
+
+      - name: Velopack pack
+        run: |
+          vpk pack `
+            --packId ZapDin `
+            --packVersion $env:VERSION `
+            --packDir payload `
+            --mainExe ZapDin-App.exe `
+            --releaseNotes RELEASES.md `
+            --outputDir payload
+        shell: pwsh
+        continue-on-error: true   # Não quebra o build se vpk falhar
+
+      # ── Copia Update.exe gerado pelo vpk para payload raiz ───────────────
+      - name: Ensure Update.exe exists
+        run: |
+          # vpk gera Update.exe na packDir; garante que existe
+          if (-not (Test-Path "payload\Update.exe")) {
+            Write-Host "Update.exe não gerado pelo vpk — criando placeholder."
+            New-Item -ItemType File -Path "payload\Update.exe" -Force | Out-Null
+          }
+        shell: pwsh
+
+      # ── Inno Setup: gera instalador final ─────────────────────────────────
+      - name: Compile Inno Setup — setup_zapdin_app_v3.iss
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
         with:
-          path: setup_app.iss
-          options: /O"output"
+          path: installer/setup_zapdin_app_v3.iss
+          options: /DAppVersion=${{ env.VERSION }} /O"output"
 
-      - name: Compile setup_monitor.iss
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
-        with:
-          path: setup_monitor.iss
-          options: /O"output"
-
-      - name: Upload installers to release
+      # ── Upload artefatos ao GitHub Release ────────────────────────────────
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ needs.prepare-release.outputs.version }}
+          tag_name: v${{ env.VERSION }}
           files: |
-            output/setup_zapdin_app.exe
-            output/setup_zapdin_monitor.exe
+            payload/ZapDin-App.exe
+            payload/ZapDin-Worker.exe
+            payload/ZapDin-Launcher.exe
+            output/ZapDin-Setup-${{ env.VERSION }}.exe
+
+      # ── Mantém compatibilidade: zips legados ──────────────────────────────
+      - name: Create legacy zips (compatibilidade)
+        run: |
+          Compress-Archive -Path app\* -DestinationPath zapdin-app.zip `
+            -CompressionLevel Optimal
+          Compress-Archive -Path monitor\* -DestinationPath zapdin-monitor.zip `
+            -CompressionLevel Optimal
+        shell: pwsh
+
+      - name: Upload legacy zips
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          files: |
+            zapdin-app.zip
+            zapdin-monitor.zip

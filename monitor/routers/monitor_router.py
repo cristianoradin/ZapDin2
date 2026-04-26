@@ -60,7 +60,11 @@ async def get_monitor(
     db: aiosqlite.Connection = Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    threshold = (datetime.utcnow() - timedelta(minutes=ACTIVE_THRESHOLD_MINUTES)).isoformat()
+    # SQLite armazena datetime('now') como "YYYY-MM-DD HH:MM:SS" (espaço, sem micros).
+    # isoformat() usa "T" como separador, que tem ASCII 84 > espaço (32), quebrando a
+    # comparação de string — todo cliente apareceria offline. Usamos strftime para
+    # gerar o mesmo formato que o SQLite usa.
+    threshold = (datetime.utcnow() - timedelta(minutes=ACTIVE_THRESHOLD_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
 
     async with db.execute(
         """SELECT c.id, c.nome, c.cnpj, c.versao_instalada, c.cidade, c.uf,

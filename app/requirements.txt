@@ -10,3 +10,10 @@ python-jose[cryptography]>=3.3.0
 itsdangerous>=2.2.0
 Pillow>=10.0.0
 qrcode>=7.4.0
+# ── Ativação por token (criptografia AES-256-GCM) ────────────────────────────
+cryptography>=42.0.0
+# ── Kiosk window sem barra de endereços (WebView2) ──────────────────────────
+# Instalado apenas no launcher_gui.exe — não necessário para o serviço Windows
+pywebview>=5.0.0
+# ── Worker standalone (ZapDin-Worker.exe) ────────────────────────────────────
+# httpx já incluído acima

@@ -43,10 +43,28 @@ _UA = (
 _LOGGED_IN_SEL = (
     '[data-testid="default-user"],'
     '[data-testid="chat-list-title"],'
-    '#side,'
-    'div[aria-label="Lista de conversas"]'
+    '[data-testid="chatlist-header"],'
+    'div[aria-label="Lista de conversas"],'
+    'div[aria-label="Chat list"],'
+    'header[data-testid="chatlist-header"]'
 )
-_QR_SEL = 'div[data-ref] canvas, canvas[aria-label="Scan me!"]'
+_QR_SEL = (
+    'div[data-ref] canvas,'
+    'canvas[aria-label="Scan me!"],'
+    '[data-testid="qrcode"] canvas,'
+    '[data-testid="qr-code-container"] canvas,'
+    'div[class*="landing-main"] canvas'
+)
+_COMPOSE_SEL = (
+    '[data-testid="conversation-compose-box-input"],'
+    'div[aria-label="Message"],'
+    'div[aria-label="Mensagem"],'
+    'footer [contenteditable="true"],'
+    'div[contenteditable="true"][data-tab="10"]'
+)
+# Botão "OK" do diálogo de erro "número não está no WhatsApp"
+# (ancestral com role="dialog" — não confunde com "Cancelar" do "Iniciando conversa")
+_DIALOG_BTN_SEL = '[role="dialog"] button'
 
 
 class WhatsAppSession:
@@ -101,6 +119,7 @@ class WhatsAppSession:
     async def stop(self) -> None:
         self._running = False
         self.status = "disconnected"
+        asyncio.create_task(self._sync_db_status("disconnected"))
         try:
             if self._browser:
                 await self._browser.close()
@@ -131,6 +150,10 @@ class WhatsAppSession:
                 while self._running:
                     await asyncio.sleep(3)
 
+                    # Pula todas as verificações se um envio está em andamento
+                    if self._lock.locked():
+                        continue
+
                     # Verifica se a página ainda está viva
                     try:
                         await self._page.evaluate("1")
@@ -145,8 +168,9 @@ class WhatsAppSession:
                             if self.status != "connected":
                                 logger.info("Sessão %s conectada", self.session_id)
                                 stuck_since = None
-                            self.status   = "connected"
-                            self.qr_data  = None
+                                self.status = "connected"
+                                self.qr_data = None
+                                asyncio.create_task(self._sync_db_status("connected"))
                             await asyncio.sleep(15)
                             continue
 
@@ -163,10 +187,21 @@ class WhatsAppSession:
                                 qr_b64 = await self._page.evaluate(
                                     "(canvas) => canvas.toDataURL('image/png')", qr_canvas
                                 )
+                                if not qr_b64 or len(qr_b64) < 1000:
+                                    # Fallback: screenshot the canvas element
+                                    import base64 as _b64
+                                    raw = await qr_canvas.screenshot()
+                                    qr_b64 = "data:image/png;base64," + _b64.b64encode(raw).decode()
                                 if len(qr_b64) > 1000:
                                     self.qr_data = qr_b64
                             except Exception as e:
                                 logger.debug("Erro ao capturar QR: %s", e)
+                                try:
+                                    import base64 as _b64
+                                    raw = await qr_canvas.screenshot()
+                                    self.qr_data = "data:image/png;base64," + _b64.b64encode(raw).decode()
+                                except Exception as e2:
+                                    logger.debug("Erro no fallback screenshot QR: %s", e2)
                             continue
 
                         # ── Conectando (carregando) ────────────────────────
@@ -204,8 +239,10 @@ class WhatsAppSession:
             if not self._running:
                 break
 
-            # Tenta recuperar a página antes de aguardar
             await asyncio.sleep(RECONNECT_WAIT)
+
+            # Tenta recuperar: primeiro a página, se falhar reinicia Playwright completo
+            recovered = False
             try:
                 if self._browser:
                     pages = self._browser.pages
@@ -215,10 +252,51 @@ class WhatsAppSession:
                         self._page = await self._browser.new_page()
                     await self._page.add_init_script(_WEBDRIVER_SCRIPT)
                     logger.info("Sessão %s — página recriada, reconectando…", self.session_id)
-            except Exception as exc:
-                logger.error("Sessão %s — não conseguiu recriar página: %s", self.session_id, exc)
-                self.status = "error"
-                return
+                    recovered = True
+            except Exception:
+                pass
+
+            if not recovered:
+                # Browser crashou (EPIPE, etc.) — reinicia Playwright completo
+                logger.warning("Sessão %s — reiniciando Playwright completo…", self.session_id)
+                try:
+                    if self._browser:
+                        await self._browser.close()
+                except Exception:
+                    pass
+                try:
+                    if self._pw:
+                        await self._pw.stop()
+                except Exception:
+                    pass
+
+                from playwright.async_api import async_playwright
+                user_data = os.path.join(SESSION_BASE, self.session_id)
+                try:
+                    self._pw = await async_playwright().start()
+                    self._browser = await self._pw.chromium.launch_persistent_context(
+                        user_data_dir=user_data,
+                        headless=True,
+                        user_agent=_UA,
+                        args=[
+                            "--no-sandbox",
+                            "--disable-setuid-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-blink-features=AutomationControlled",
+                        ],
+                        ignore_default_args=["--enable-automation"],
+                    )
+                    self._page = (
+                        self._browser.pages[0]
+                        if self._browser.pages
+                        else await self._browser.new_page()
+                    )
+                    await self._page.add_init_script(_WEBDRIVER_SCRIPT)
+                    logger.info("Sessão %s — Playwright reiniciado com sucesso", self.session_id)
+                except Exception as exc:
+                    logger.error("Sessão %s — falha ao reiniciar Playwright: %s", self.session_id, exc)
+                    self.status = "error"
+                    return
 
         logger.info("Sessão %s — monitor encerrado", self.session_id)
 
@@ -232,20 +310,52 @@ class WhatsAppSession:
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}&text="
                 await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                await self._page.wait_for_selector(
-                    '[data-testid="conversation-compose-box-input"]', timeout=20_000
-                )
-                await self._page.fill(
-                    '[data-testid="conversation-compose-box-input"]', message
-                )
+
+                compose = None
+                loop = asyncio.get_event_loop()
+                deadline = loop.time() + 40
+
+                while loop.time() < deadline:
+                    await asyncio.sleep(1)
+
+                    # Verifica caixa de composição (caminho de sucesso)
+                    compose = await self._page.query_selector(_COMPOSE_SEL)
+                    if compose:
+                        break
+
+                    # Diálogo presente — pode ser:
+                    # (a) "Iniciando conversa" → clicar Continuar e aguardar compose
+                    # (b) Erro "número não está no WhatsApp" → clicar OK, sem compose
+                    btn = await self._page.query_selector(_DIALOG_BTN_SEL)
+                    if btn:
+                        await btn.click()
+                        # Aguarda até 8s para saber se compose aparece
+                        inner_deadline = loop.time() + 8
+                        while loop.time() < inner_deadline:
+                            await asyncio.sleep(1)
+                            compose = await self._page.query_selector(_COMPOSE_SEL)
+                            if compose:
+                                break
+                        break  # sai do loop externo com compose=None ou compose=encontrado
+
+                if compose is None:
+                    asyncio.create_task(self._return_home())
+                    # Verifica se o diálogo ainda está presente (erro real)
+                    still_dialog = await self._page.query_selector(_DIALOG_BTN_SEL)
+                    if still_dialog:
+                        return False, "Número não registrado no WhatsApp"
+                    return False, "Tempo esgotado ao abrir conversa"
+
+                await compose.click()
+                await self._page.keyboard.type(message)
                 await self._page.keyboard.press("Enter")
                 await asyncio.sleep(2)
-                # Volta para a página principal para não ficar em URL de envio
                 asyncio.create_task(self._return_home())
                 telegram_service.record_sent("text")
                 return True, None
             except Exception as exc:
                 logger.error("send_text error [%s]: %s", self.session_id, exc)
+                asyncio.create_task(self._return_home())
                 from . import telegram_service
                 asyncio.create_task(
                     telegram_service.notify_send_failure(self.nome, phone, str(exc))
@@ -261,37 +371,178 @@ class WhatsAppSession:
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}"
                 await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                await self._page.wait_for_selector(
-                    '[data-testid="conversation-compose-box-input"]', timeout=20_000
+
+                compose = None
+                loop = asyncio.get_event_loop()
+                deadline = loop.time() + 40
+
+                while loop.time() < deadline:
+                    await asyncio.sleep(1)
+                    compose = await self._page.query_selector(_COMPOSE_SEL)
+                    if compose:
+                        break
+                    btn = await self._page.query_selector(_DIALOG_BTN_SEL)
+                    if btn:
+                        await btn.click()
+                        inner_deadline = loop.time() + 8
+                        while loop.time() < inner_deadline:
+                            await asyncio.sleep(1)
+                            compose = await self._page.query_selector(_COMPOSE_SEL)
+                            if compose:
+                                break
+                        break
+
+                if compose is None:
+                    asyncio.create_task(self._return_home())
+                    still_dialog = await self._page.query_selector(_DIALOG_BTN_SEL)
+                    if still_dialog:
+                        return False, "Número não registrado no WhatsApp"
+                    return False, "Tempo esgotado ao abrir conversa"
+
+                # ── Estratégia: abrir menu de anexo → set_input_files no input correto ──
+                # Playwright.set_input_files() cria eventos isTrusted=true que o
+                # WhatsApp Web (React) aceita, ao contrário de DragEvent injetado via JS.
+                import mimetypes as _mt
+                _filename = os.path.basename(file_path)
+                _mime = _mt.guess_type(file_path)[0] or "application/octet-stream"
+                logger.info("send_file [%s]: %s (%s)", self.session_id, _filename, _mime)
+
+                _ATTACH_BTN_SEL = (
+                    '[data-testid="attach-btn"],'
+                    'span[data-icon="attach-menu-plus"],'
+                    '[data-testid="attach-menu-plus"]'
+                )
+                _SUBMENU_DOC = [
+                    '[data-testid="attach-document"]',
+                    '[data-testid="mi-attach-document"]',
+                    'li[data-testid*="document"]',
+                ]
+                _SUBMENU_MEDIA = [
+                    '[data-testid="attach-media"]',
+                    '[data-testid="mi-attach-media"]',
+                    'li[data-testid*="media"]',
+                    'li[data-testid*="photo"]',
+                    'li[data-testid*="image"]',
+                ]
+                _CAP_SEL = (
+                    '[data-testid="media-caption-input"],'
+                    '[data-testid="caption-input"]'
+                )
+                _PREV_SEND_SEL = (
+                    '[data-testid="send"],'
+                    '[data-testid="media-send-button"],'
+                    '[data-testid="compose-btn-send"]'
                 )
 
-                attach = await self._page.query_selector('[data-testid="attach-menu-plus"]')
+                is_image_video = _mime.startswith("image/") or _mime.startswith("video/")
+
+                # Abre o menu de anexo para ativar os inputs ocultos
+                attach = await self._page.query_selector(_ATTACH_BTN_SEL)
+                logger.info("attach button found: %s", attach is not None)
                 if attach:
                     await attach.click()
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.8)
 
-                file_input = await self._page.query_selector('input[type="file"]')
-                if file_input:
-                    await file_input.set_input_files(file_path)
-                    await asyncio.sleep(1)
-                    if caption:
-                        cap_input = await self._page.query_selector(
-                            '[data-testid="media-caption-input"]'
-                        )
-                        if cap_input:
-                            await cap_input.fill(caption)
-                    send_btn = await self._page.query_selector('[data-testid="send"]')
-                    if send_btn:
-                        await send_btn.click()
-                    await asyncio.sleep(3)
+                    # Clica no item de submenu adequado ao tipo de arquivo
+                    submenu_first  = _SUBMENU_MEDIA if is_image_video else _SUBMENU_DOC
+                    submenu_second = _SUBMENU_DOC   if is_image_video else _SUBMENU_MEDIA
+                    clicked = False
+                    for candidates in [submenu_first, submenu_second]:
+                        for sel in candidates:
+                            item = await self._page.query_selector(sel)
+                            if item:
+                                try:
+                                    if await item.is_visible():
+                                        await item.click()
+                                        logger.info("clicked submenu: %s", sel)
+                                        await asyncio.sleep(0.5)
+                                        clicked = True
+                                        break
+                                except Exception as _e:
+                                    logger.info("submenu click fail %s: %s", sel, _e)
+                        if clicked:
+                            break
+                    if not clicked:
+                        logger.warning("nenhum item de submenu encontrado/visível")
+
+                # Coleta todos os inputs disponíveis (com ou sem menu aberto)
+                all_inputs = await self._page.query_selector_all('input[type="file"]')
+                logger.info("file inputs encontrados: %d", len(all_inputs))
+                for i, inp in enumerate(all_inputs):
+                    acc = await inp.get_attribute("accept") or ""
+                    logger.info("  input[%d] accept=%r", i, acc)
+
+                # Ordena: para documento → sem restrição primeiro;
+                #         para mídia    → com restrição primeiro (image/video)
+                no_restrict, restricted = [], []
+                for inp in all_inputs:
+                    acc = (await inp.get_attribute("accept") or "").strip()
+                    (restricted if acc and acc != "*" else no_restrict).append(inp)
+
+                ordered = (restricted + no_restrict) if is_image_video else (no_restrict + restricted)
+                if not ordered:
+                    ordered = list(reversed(all_inputs))
+
+                set_ok = False
+                for inp in ordered:
+                    acc = await inp.get_attribute("accept") or ""
+                    try:
+                        await inp.set_input_files(file_path)
+                        logger.info("set_input_files OK (accept=%r)", acc)
+                        set_ok = True
+                        break
+                    except Exception as _e:
+                        logger.debug("set_input_files[accept=%r] fail: %s", acc, _e)
+
+                if not set_ok:
                     asyncio.create_task(self._return_home())
-                    from . import telegram_service
-                    telegram_service.record_sent("file")
-                    return True, None
+                    return False, "Nenhum input de arquivo disponível"
 
-                return False, "Input de arquivo não encontrado"
+                # Aguarda tela de preview aparecer (até 25 s)
+                send_btn = None
+                loop2 = asyncio.get_event_loop()
+                prev_deadline = loop2.time() + 25
+                caption_filled = False
+
+                while loop2.time() < prev_deadline:
+                    await asyncio.sleep(1)
+
+                    # Preenche legenda assim que o campo aparecer
+                    if caption and not caption_filled:
+                        cap_el = await self._page.query_selector(_CAP_SEL)
+                        if cap_el:
+                            try:
+                                await cap_el.fill(caption)
+                                caption_filled = True
+                            except Exception:
+                                pass
+
+                    # Confirma que a tela de preview abriu (campo de legenda presente)
+                    cap_el = await self._page.query_selector(_CAP_SEL)
+                    if cap_el:
+                        send_btn = await self._page.query_selector(_PREV_SEND_SEL)
+                        if send_btn:
+                            logger.info("Preview aberto, botão de envio encontrado")
+                            break
+                    else:
+                        logger.debug(
+                            "Aguardando preview… url=%s",
+                            self._page.url[:60],
+                        )
+
+                if send_btn is None:
+                    asyncio.create_task(self._return_home())
+                    return False, "Preview do arquivo não apareceu"
+
+                await send_btn.click()
+                await asyncio.sleep(3)
+                asyncio.create_task(self._return_home())
+                from . import telegram_service
+                telegram_service.record_sent("file")
+                return True, None
             except Exception as exc:
                 logger.error("send_file error [%s]: %s", self.session_id, exc)
+                asyncio.create_task(self._return_home())
                 from . import telegram_service
                 asyncio.create_task(
                     telegram_service.notify_send_failure(self.nome, phone, str(exc))
@@ -307,9 +558,8 @@ class WhatsAppSession:
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}"
                 await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-                await self._page.wait_for_selector(
-                    '[data-testid="conversation-compose-box-input"]', timeout=20_000
-                )
+                await asyncio.sleep(2)
+                await self._page.wait_for_selector(_COMPOSE_SEL, timeout=25_000)
                 await asyncio.sleep(2)
                 status = await self._page.evaluate(_JS_GET_LAST_STATUS)
                 asyncio.create_task(self._return_home())
@@ -317,6 +567,18 @@ class WhatsAppSession:
             except Exception as exc:
                 logger.debug("check_file_status error [%s]: %s", self.session_id, exc)
                 return None
+
+    async def _sync_db_status(self, new_status: str) -> None:
+        try:
+            from ..core.database import get_db_direct
+            async with get_db_direct() as db:
+                await db.execute(
+                    "UPDATE sessoes_wa SET status=?, last_seen=? WHERE id=?",
+                    (new_status, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.session_id),
+                )
+                await db.commit()
+        except Exception as exc:
+            logger.debug("_sync_db_status error [%s]: %s", self.session_id, exc)
 
     async def _return_home(self) -> None:
         """Volta para a página principal do WhatsApp Web após envio."""

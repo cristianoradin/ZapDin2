@@ -22,8 +22,10 @@ def _root_dir() -> str:
 
 def _find_python(root: str) -> str:
     candidates = [
-        os.path.join(root, ".venv", "Scripts", "python.exe"),
-        os.path.join(root, ".venv", "bin", "python"),
+        os.path.join(root, "monitor", ".venv", "Scripts", "python.exe"),  # Windows — monitor/.venv
+        os.path.join(root, "monitor", ".venv", "bin", "python"),           # Unix — monitor/.venv
+        os.path.join(root, ".venv", "Scripts", "python.exe"),              # Windows — root venv (fallback)
+        os.path.join(root, ".venv", "bin", "python"),                      # Unix — root venv (fallback)
         sys.executable,
     ]
     for p in candidates:

@@ -15,7 +15,7 @@
       --accent:      #3d7f1f;
       --accent-soft: #f0f7eb;
       --accent-mid:  #d4edba;
-      --bg:          #f7f8fa;
+      --bg:          #f4f6f9;
       --surface:     #ffffff;
       --surface2:    #f2f3f5;
       --border:      #e4e6ea;
@@ -30,11 +30,22 @@
       --sidebar-w:   224px;
       --radius:      10px;
       --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md:   0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+      --shadow-md:   0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.13), 0 4px 12px rgba(0,0,0,.07);
+      /* Sidebar light theme */
+      --sb-bg:        #ffffff;
+      --sb-text:      #6b7280;
+      --sb-text-h:    #111318;
+      --sb-active-bg: #f0f7eb;
+      --sb-active-c:  #3d7f1f;
+      --sb-section:   #b0b8c4;
+      --sb-divider:   #e8eaed;
     }
 
     body {
       background: var(--bg);
+      background-image: radial-gradient(ellipse at 0% 0%, rgba(61,127,31,.06) 0%, transparent 55%),
+                        radial-gradient(ellipse at 100% 100%, rgba(124,58,237,.05) 0%, transparent 55%);
       color: var(--text);
       font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       font-size: 14px;
@@ -47,7 +58,7 @@
     /* ─── Sidebar ─────────────────────────────────────────────────────────── */
     .sidebar {
       width: var(--sidebar-w);
-      background: var(--surface);
+      background: var(--sb-bg);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
@@ -55,55 +66,79 @@
       top: 0; left: 0; bottom: 0;
       z-index: 100;
       overflow-y: auto;
+      box-shadow: 2px 0 12px rgba(0,0,0,.04);
+    }
+    .sidebar::-webkit-scrollbar { width: 3px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* Faixa decorativa no topo da sidebar — mesma lógica do topbar */
+    .sidebar-top-bar {
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent) 0%, #7cdc44 50%, #3b82f6 100%);
+      flex-shrink: 0;
     }
 
     .sidebar-logo {
-      padding: 1.5rem 1.25rem 1.25rem;
+      padding: .75rem 1rem;
       display: flex;
       align-items: center;
-      gap: .625rem;
+      justify-content: center;
     }
-    .sidebar-logo img { width: 28px; height: 28px; object-fit: contain; }
-    .sidebar-logo span {
-      font-size: .9375rem;
-      font-weight: 700;
-      letter-spacing: -.02em;
-      color: var(--text);
+    .sidebar-logo img {
+      width: 170px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(61,127,31,.18));
     }
+    /* Nome removido — apenas logo */
+    .sidebar-logo span { display: none; }
 
     .sidebar-divider {
       height: 1px;
-      background: var(--border);
+      background: var(--sb-divider);
       margin: 0 1.25rem .75rem;
     }
 
     .sidebar-section {
       padding: .75rem 1.25rem .3rem;
-      font-size: .6875rem;
-      font-weight: 600;
-      color: var(--text-light);
+      font-size: .6rem;
+      font-weight: 700;
+      color: var(--sb-section);
       text-transform: uppercase;
-      letter-spacing: .1em;
+      letter-spacing: .13em;
     }
 
     .nav-item {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: .625rem;
       padding: .5rem 1rem;
-      margin: .125rem .75rem;
-      border-radius: 7px;
+      margin: .1rem .6rem;
+      border-radius: 8px;
       cursor: pointer;
-      font-size: .875rem;
-      font-weight: 400;
-      color: var(--text-mid);
+      font-size: .8375rem;
+      font-weight: 500;
+      color: var(--sb-text);
       letter-spacing: -.01em;
-      transition: background .12s, color .12s;
+      transition: background .14s, color .14s;
       user-select: none;
     }
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item .nav-icon {
+      font-size: .9rem;
+      flex-shrink: 0;
+      width: 22px;
+      text-align: center;
+    }
+    .nav-item:hover {
+      background: var(--surface2);
+      color: var(--sb-text-h);
+    }
     .nav-item.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 600;
+      background: var(--sb-active-bg);
+      color: var(--sb-active-c);
+      font-weight: 700;
+      box-shadow: inset 3px 0 0 var(--accent);
     }
 
     /* ─── Main ────────────────────────────────────────────────────────────── */
@@ -118,47 +153,221 @@
     .topbar {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: .875rem 2rem;
+      padding: 0 2rem;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       position: sticky;
       top: 0;
       z-index: 50;
+      box-shadow: 0 1px 10px rgba(0,0,0,.06);
+    }
+    .topbar::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent) 0%, #7cdc44 50%, #3b82f6 100%);
+    }
+
+    /* Left side: breadcrumb + page title */
+    .topbar-left { display: flex; align-items: center; gap: .5rem; }
+    .topbar-breadcrumb {
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--text-light);
+      letter-spacing: -.01em;
+    }
+    .topbar-sep {
+      color: var(--border);
+      font-size: 1rem;
+      line-height: 1;
+      font-weight: 300;
+    }
+    .topbar-page-icon {
+      font-size: 1rem;
+      line-height: 1;
     }
     .topbar-title {
-      font-size: .9375rem;
-      font-weight: 600;
+      font-size: .9rem;
+      font-weight: 700;
       letter-spacing: -.02em;
       color: var(--text);
     }
-    .topbar-right { display: flex; align-items: center; gap: .75rem; }
 
-    .badge {
-      background: var(--accent-soft);
-      color: var(--accent);
+    /* Right side */
+    .topbar-right { display: flex; align-items: center; gap: .625rem; }
+
+    .topbar-status-pill {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: 20px;
-      padding: .2rem .65rem;
+      font-size: .775rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      cursor: default;
+    }
+    .topbar-status-pill .sdot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-light);
+    }
+    .topbar-status-pill.active .sdot {
+      background: var(--accent);
+      box-shadow: 0 0 0 2.5px rgba(61,127,31,.2);
+    }
+    .topbar-status-pill.active { color: var(--accent); border-color: var(--accent-mid); background: var(--accent-soft); }
+
+    .topbar-user {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .3rem .875rem .3rem .45rem;
+      background: linear-gradient(135deg, #4ea825 0%, #3d7f1f 100%);
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(61,127,31,.25);
+      cursor: default;
+    }
+    .topbar-user-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      display: flex; align-items: center; justify-content: center;
       font-size: .75rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .topbar-user-name {
+      font-size: .8rem;
       font-weight: 600;
-      letter-spacing: .01em;
+      color: #fff;
+      letter-spacing: -.01em;
+    }
+
+    /* keep .badge for backward compat but hidden */
+    .badge { display: none; }
+
+    /* ─── Client-name chip (topbar) ──────────────────────────────────────── */
+    .topbar-client {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      padding: .3rem .85rem .3rem .55rem;
+      background: var(--surface);
+      border: 1.5px solid var(--accent-mid);
+      border-radius: 20px;
+      box-shadow: 0 1px 6px rgba(61,127,31,.10);
+      cursor: default;
+      max-width: 220px;
+    }
+    .topbar-client-icon {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #7cdc44 0%, #3d7f1f 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem;
+      flex-shrink: 0;
+    }
+    .topbar-client-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .topbar-client-label {
+      font-size: .6rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      line-height: 1.1;
+    }
+    .topbar-client-name {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -.02em;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ─── Sidebar client badge ────────────────────────────────────────────── */
+    .sidebar-client-badge {
+      margin: .1rem 1.25rem .9rem;
+      padding: .55rem .75rem;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+    }
+    .sidebar-client-badge-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #7cdc44 0%, #3d7f1f 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(61,127,31,.25);
+    }
+    .sidebar-client-badge-text {
+      min-width: 0;
+    }
+    .sidebar-client-badge-label {
+      font-size: .58rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      line-height: 1;
+    }
+    .sidebar-client-badge-name {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.02em;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 140px;
+      display: block;
     }
 
     .btn-logout {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      width: calc(100% - 1.2rem);
+      margin: 0 .6rem .25rem;
       background: transparent;
       border: 1px solid var(--border);
       color: var(--text-mid);
-      border-radius: 7px;
-      padding: .35rem .85rem;
+      border-radius: 8px;
+      padding: .5rem 1rem;
       cursor: pointer;
-      font-size: .8125rem;
+      font-size: .8375rem;
       font-family: inherit;
       font-weight: 500;
-      transition: border-color .15s, color .15s;
+      transition: border-color .15s, color .15s, background .15s;
+      text-align: left;
     }
-    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+    .btn-logout:hover {
+      border-color: #fca5a5;
+      color: var(--red);
+      background: var(--red-soft);
+    }
 
-    .content { padding: 2rem; flex: 1; max-width: 1100px; }
+    .content { padding: 2rem; flex: 1; max-width: 1120px; }
 
     /* ─── Pages ───────────────────────────────────────────────────────────── */
     .page        { display: none; }
@@ -177,21 +386,63 @@
       border-radius: var(--radius);
       padding: 1.375rem 1.5rem;
       box-shadow: var(--shadow-sm);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+      transition: transform .2s, box-shadow .2s;
+      cursor: default;
+    }
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .stat-card .stat-icon {
+      font-size: 1.5rem;
+      margin-bottom: .25rem;
+      display: block;
     }
     .stat-card .label {
       font-size: .75rem;
       font-weight: 500;
-      color: var(--text-light);
       text-transform: uppercase;
       letter-spacing: .07em;
-      margin-bottom: .5rem;
+      margin-bottom: .25rem;
     }
     .stat-card .value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -.03em;
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      line-height: 1;
     }
+    /* Card — Mensagens hoje (azul) */
+    .stat-card.card-blue { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; }
+    .stat-card.card-blue::before { background: #3b82f6; }
+    .stat-card.card-blue .label  { color: #1d4ed8; }
+    .stat-card.card-blue .value  { color: #1e3a8a; }
+    /* Card — Total enviadas (verde) */
+    .stat-card.card-green { background: linear-gradient(135deg, var(--accent-soft) 0%, #d9f0c0 100%); border-color: var(--accent-mid); }
+    .stat-card.card-green::before { background: var(--accent); }
+    .stat-card.card-green .label  { color: #2d6a0a; }
+    .stat-card.card-green .value  { color: #1a4206; }
+    /* Card — Falhas (vermelho) */
+    .stat-card.card-red { background: linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%); border-color: #fecaca; }
+    .stat-card.card-red::before { background: var(--red); }
+    .stat-card.card-red .label  { color: #b91c1c; }
+    .stat-card.card-red .value  { color: #7f1d1d; }
+    /* Card — Sessões ativas (roxo) */
+    .stat-card.card-purple { background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border-color: #ddd6fe; }
+    .stat-card.card-purple::before { background: #7c3aed; }
+    .stat-card.card-purple .label  { color: #5b21b6; }
+    .stat-card.card-purple .value  { color: #3b0764; }
 
     /* ─── Cards ───────────────────────────────────────────────────────────── */
     .card {
@@ -201,6 +452,11 @@
       padding: 1.75rem;
       margin-bottom: 1.25rem;
       box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
     }
     .card h2 {
       font-size: 1rem;
@@ -222,20 +478,25 @@
       color: var(--text-light);
       text-align: left;
       padding: .625rem .875rem;
-      border-bottom: 1px solid var(--border);
-      font-weight: 500;
-      font-size: .75rem;
+      border-bottom: 2px solid var(--border);
+      font-weight: 600;
+      font-size: .7rem;
       text-transform: uppercase;
-      letter-spacing: .06em;
+      letter-spacing: .08em;
+      background: var(--surface2);
     }
+    th:first-child { border-radius: 6px 0 0 0; }
+    th:last-child  { border-radius: 0 6px 0 0; }
     td {
       padding: .75rem .875rem;
       border-bottom: 1px solid var(--border-soft);
       vertical-align: middle;
       color: var(--text);
+      transition: background .1s;
     }
     tr:last-child td { border-bottom: none; }
-    tbody tr:hover td { background: var(--surface2); }
+    tbody tr:nth-child(even) td { background: rgba(242,243,245,.5); }
+    tbody tr:hover td { background: var(--accent-soft) !important; }
 
     /* ─── Chips / badges ──────────────────────────────────────────────────── */
     .chip {
@@ -279,9 +540,11 @@
       transition: border-color .15s, box-shadow .15s;
     }
     .form-group input:focus,
-    .form-group textarea:focus {
+    .form-group textarea:focus,
+    .form-group select:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(61,127,31,.08);
+      box-shadow: 0 0 0 3px rgba(61,127,31,.12);
+      outline: none;
     }
     .form-group textarea { resize: vertical; min-height: 100px; }
 
@@ -295,36 +558,45 @@
       font-family: inherit;
       font-weight: 600;
       letter-spacing: -.01em;
-      transition: opacity .15s, box-shadow .15s;
+      transition: opacity .15s, box-shadow .15s, transform .12s;
     }
-    .btn:hover { opacity: .88; }
-    .btn:active { opacity: 1; transform: scale(.99); }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn:active { opacity: 1; transform: scale(.98); }
     .btn-primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, #4ea825 0%, #3d7f1f 100%);
       color: #fff;
-      box-shadow: 0 1px 3px rgba(61,127,31,.25);
+      box-shadow: 0 2px 10px rgba(61,127,31,.35);
     }
-    .btn-danger  { background: var(--red); color: #fff; }
+    .btn-primary:hover {
+      box-shadow: 0 4px 18px rgba(61,127,31,.45);
+      opacity: 1;
+    }
+    .btn-danger  {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(220,38,38,.3);
+    }
     .btn-ghost   {
       background: var(--surface);
       color: var(--text-mid);
       border: 1px solid var(--border);
     }
-    .btn-ghost:hover { color: var(--text); background: var(--surface2); opacity: 1; }
+    .btn-ghost:hover { color: var(--text); background: var(--surface2); opacity: 1; box-shadow: var(--shadow-sm); }
     .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
 
     /* ─── Session cards ───────────────────────────────────────────────────── */
     .sessao-card {
-      background: var(--surface2);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
       margin-bottom: 1rem;
-      transition: border-color .2s, box-shadow .2s;
+      transition: border-color .2s, box-shadow .2s, transform .2s;
     }
-    .sessao-card.status-connected { border-color: var(--accent);  box-shadow: 0 0 0 1px var(--accent-mid); }
-    .sessao-card.status-qr        { border-color: #d97706;        box-shadow: 0 0 0 1px #fde68a; }
-    .sessao-card.status-error     { border-color: var(--red);     box-shadow: 0 0 0 1px #fecaca; }
+    .sessao-card:hover { transform: translateY(-1px); }
+    .sessao-card.status-connected { border-color: var(--accent);  box-shadow: 0 0 0 1px var(--accent-mid), 0 4px 16px rgba(61,127,31,.1); }
+    .sessao-card.status-qr        { border-color: #d97706;        box-shadow: 0 0 0 1px #fde68a, 0 4px 16px rgba(217,119,6,.08); }
+    .sessao-card.status-error     { border-color: var(--red);     box-shadow: 0 0 0 1px #fecaca, 0 4px 16px rgba(220,38,38,.08); }
     .sessao-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .25rem; }
     .sessao-nome   { font-weight: 700; font-size: .9375rem; letter-spacing: -.01em; }
     .sessao-meta   { font-size: .78rem; color: var(--text-light); margin-bottom: .75rem; }
@@ -444,6 +716,15 @@
       border-radius: 50%; animation: spin .8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .page.active { animation: fadeIn .2s ease; }
     .qr-instrucoes {
       font-size: .82rem; color: var(--text-mid); line-height: 1.65;
       max-width: 240px; padding-top: .25rem;
@@ -510,6 +791,206 @@
       border-radius: 4px; transition: color .12s;
     }
     .modal-close:hover { color: var(--text); }
+
+    /* ─── WA Config Modal ────────────────────────────────────────────────────── */
+    .wa-cfg-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .wa-cfg-section {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.125rem;
+      display: flex;
+      flex-direction: column;
+      gap: .65rem;
+    }
+    .wa-cfg-title {
+      font-size: .8125rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.01em;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      margin-bottom: .1rem;
+    }
+    .wa-cfg-desc {
+      font-size: .73rem;
+      color: var(--text-mid);
+      line-height: 1.45;
+    }
+    .wa-cfg-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .wa-cfg-row label { font-size: .78rem; color: var(--text-mid); white-space: nowrap; min-width: 50px; }
+    .wa-cfg-input {
+      width: 100%;
+      padding: .4rem .6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: .875rem;
+      transition: border-color .15s;
+    }
+    .wa-cfg-input:focus { outline: none; border-color: var(--accent); }
+    .wa-cfg-input[type="number"] { width: 80px; }
+    .wa-cfg-input[type="time"]   { width: 110px; }
+    /* Toggle switch */
+    .wa-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+    }
+    .wa-toggle-label { font-size: .82rem; color: var(--text-mid); }
+    .toggle-switch {
+      position: relative;
+      width: 38px; height: 22px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; inset: 0;
+      background: #d1d5db;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.25);
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+    /* Spintax test area */
+    .spin-test-area {
+      width: 100%;
+      padding: .4rem .6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+      font-size: .78rem;
+      resize: vertical;
+      min-height: 56px;
+      transition: border-color .15s;
+    }
+    .spin-test-area:focus { outline: none; border-color: var(--accent); }
+    .spin-preview-box {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      border-radius: 6px;
+      padding: .45rem .6rem;
+      font-size: .78rem;
+      color: var(--accent);
+      min-height: 28px;
+      word-break: break-word;
+      display: none;
+    }
+    .spin-preview-box.visible { display: block; }
+    /* ─── Confirm dialog ────────────────────────────────────────────────────── */
+    .confirm-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(4px);
+      z-index: 900;
+      align-items: center;
+      justify-content: center;
+      animation: cfade-in .15s ease;
+    }
+    .confirm-overlay.open { display: flex; }
+    @keyframes cfade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .confirm-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: cslide-in .18s cubic-bezier(.34,1.3,.64,1);
+    }
+    @keyframes cslide-in {
+      from { transform: scale(.92) translateY(8px); opacity: 0; }
+      to   { transform: scale(1)   translateY(0);   opacity: 1; }
+    }
+    .confirm-header {
+      padding: 1.5rem 1.5rem 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .confirm-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+    }
+    .confirm-icon-wrap.danger  { background: var(--red-soft);    }
+    .confirm-icon-wrap.warning { background: var(--yellow-soft); }
+    .confirm-icon-wrap.info    { background: var(--accent-soft); }
+    .confirm-text { flex: 1; min-width: 0; }
+    .confirm-title {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: .35rem;
+    }
+    .confirm-body {
+      font-size: .875rem;
+      color: var(--text-mid);
+      line-height: 1.55;
+    }
+    .confirm-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: .625rem;
+      padding: 1.25rem 1.5rem 1.5rem;
+    }
+    .confirm-btn {
+      border: none; border-radius: 8px;
+      padding: .55rem 1.25rem;
+      font-size: .875rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .12s, transform .1s;
+      letter-spacing: -.01em;
+    }
+    .confirm-btn:hover  { opacity: .88; }
+    .confirm-btn:active { transform: scale(.97); }
+    .confirm-btn-cancel {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+    }
+    .confirm-btn-cancel:hover { background: var(--border); }
+    .confirm-btn-ok.danger  { background: var(--red);    color: #fff; }
+    .confirm-btn-ok.warning { background: #b45309;       color: #fff; }
+    .confirm-btn-ok.info    { background: var(--accent); color: #fff; }
+
+    /* WA config modal wide */
+    .modal-box-wide { max-width: 600px; }
     .modal-tabs {
       display: flex;
       gap: .25rem;
@@ -543,39 +1024,366 @@
     .modal-result { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; display: none; }
     .modal-result.ok  { display: block; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-mid); }
     .modal-result.err { display: block; background: var(--red-soft); color: var(--red); border: 1px solid #fecaca; }
+
+    /* ─── Page Hero Banner ────────────────────────────────────────────────── */
+    .page-hero {
+      border-radius: var(--radius);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::after {
+      content: '';
+      position: absolute;
+      right: -20px; top: -20px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      opacity: .12;
+    }
+    .page-hero-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+      width: 52px; height: 52px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 14px;
+    }
+    .page-hero-text h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -.02em; margin-bottom: .2rem; }
+    .page-hero-text p  { font-size: .84rem; opacity: .8; line-height: 1.5; margin: 0; }
+
+    .hero-green  { background: linear-gradient(135deg, #e8f5e0 0%, #d4edba 100%); border: 1px solid #b8dfa0; }
+    .hero-green .page-hero-icon  { background: #c5e8a0; }
+    .hero-green .page-hero-text  { color: #1a4206; }
+    .hero-green::after           { background: var(--accent); }
+
+    .hero-blue   { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; }
+    .hero-blue .page-hero-icon   { background: #bfdbfe; }
+    .hero-blue .page-hero-text   { color: #1e3a8a; }
+    .hero-blue::after            { background: #3b82f6; }
+
+    .hero-purple { background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border: 1px solid #ddd6fe; }
+    .hero-purple .page-hero-icon { background: #ddd6fe; }
+    .hero-purple .page-hero-text { color: #3b0764; }
+    .hero-purple::after          { background: #7c3aed; }
+
+    .hero-orange { background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border: 1px solid #fdba74; }
+    .hero-orange .page-hero-icon { background: #fed7aa; }
+    .hero-orange .page-hero-text { color: #7c2d12; }
+    .hero-orange::after          { background: #f97316; }
+
+    .hero-teal   { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border: 1px solid #99f6e4; }
+    .hero-teal .page-hero-icon   { background: #99f6e4; }
+    .hero-teal .page-hero-text   { color: #134e4a; }
+    .hero-teal::after            { background: #14b8a6; }
+
+    .hero-sky    { background: linear-gradient(135deg, #f0f9ff 0%, #bae6fd 100%); border: 1px solid #7dd3fc; }
+    .hero-sky .page-hero-icon    { background: #bae6fd; }
+    .hero-sky .page-hero-text    { color: #0c4a6e; }
+    .hero-sky::after             { background: #0ea5e9; }
+
+    /* ─── Step list ───────────────────────────────────────────────────────── */
+    .step-list { display: flex; flex-direction: column; gap: .75rem; }
+    .step-item {
+      display: flex; align-items: flex-start; gap: .875rem;
+      padding: .75rem 1rem;
+      background: var(--surface2);
+      border-radius: 10px;
+      border: 1px solid var(--border-soft);
+      transition: background .15s;
+    }
+    .step-item:hover { background: var(--accent-soft); border-color: var(--accent-mid); }
+    .step-num {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      background: linear-gradient(135deg, #4ea825 0%, #3d7f1f 100%);
+      color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700;
+    }
+    .step-body { font-size: .85rem; color: var(--text); line-height: 1.5; }
+    .step-body strong { color: var(--text); }
+
+    /* ─── Variable chips (clickable) ─────────────────────────────────────── */
+    .var-tag {
+      display: inline-flex; align-items: center; gap: .3rem;
+      background: #eef2ff; color: #4338ca;
+      border: 1px solid #c7d2fe;
+      border-radius: 6px;
+      padding: .2rem .55rem;
+      font-size: .78rem; font-weight: 600;
+      font-family: monospace;
+      cursor: pointer;
+      transition: background .12s, transform .1s;
+      user-select: none;
+    }
+    .var-tag:hover { background: #c7d2fe; transform: scale(1.04); }
+    .var-tag:active { transform: scale(.97); }
+
+    /* ─── WhatsApp message bubble ─────────────────────────────────────────── */
+    .wa-preview-wrap {
+      background: #e5ddd5 url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8b9a6' fill-opacity='0.25'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      border-radius: 10px;
+      padding: 1rem;
+      min-height: 100px;
+      display: flex; align-items: flex-end;
+    }
+    .wa-bubble {
+      background: #fff;
+      border-radius: 8px 8px 8px 2px;
+      padding: .65rem .875rem .5rem;
+      max-width: 85%;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
+      font-size: .875rem;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: #111;
+      position: relative;
+    }
+    .wa-bubble::before {
+      content: '';
+      position: absolute;
+      left: -8px; bottom: 6px;
+      border: 5px solid transparent;
+      border-right-color: #fff;
+      border-bottom-color: #fff;
+    }
+    .wa-bubble-time {
+      font-size: .68rem; color: #999;
+      text-align: right; margin-top: .3rem;
+    }
+
+    /* ─── ERP mini stat cards ─────────────────────────────────────────────── */
+    .erp-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: .75rem;
+    }
+    .erp-stat-card {
+      border-radius: 10px;
+      padding: .9rem 1.1rem;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid transparent;
+    }
+    .erp-stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: 10px 10px 0 0;
+    }
+    .erp-stat-card .esl { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: .3rem; }
+    .erp-stat-card .esv { font-size: .95rem; font-weight: 700; }
+    .erp-sc-blue   { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #bfdbfe; }
+    .erp-sc-blue::before { background: #3b82f6; }
+    .erp-sc-blue .esl { color: #1d4ed8; }
+    .erp-sc-blue .esv { color: #1e3a8a; }
+    .erp-sc-green  { background: linear-gradient(135deg, var(--accent-soft) 0%, #d9f0c0 100%); border-color: var(--accent-mid); }
+    .erp-sc-green::before { background: var(--accent); }
+    .erp-sc-green .esl { color: #2d6a0a; }
+    .erp-sc-green .esv { color: #1a4206; }
+    .erp-sc-gray   { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-color: #e2e8f0; }
+    .erp-sc-gray::before { background: #94a3b8; }
+    .erp-sc-gray .esl { color: #64748b; }
+    .erp-sc-gray .esv { color: #334155; }
+    .erp-sc-purple { background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border-color: #ddd6fe; }
+    .erp-sc-purple::before { background: #7c3aed; }
+    .erp-sc-purple .esl { color: #5b21b6; }
+    .erp-sc-purple .esv { color: #3b0764; }
+    .erp-sc-orange { background: linear-gradient(135deg, #fff7ed 0%, #fed7aa 100%); border-color: #fdba74; }
+    .erp-sc-orange::before { background: #f97316; }
+    .erp-sc-orange .esl { color: #c2410c; }
+    .erp-sc-orange .esv { color: #7c2d12; font-size:.8rem; }
+    .erp-sc-red    { background: linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%); border-color: #fecaca; }
+    .erp-sc-red::before { background: var(--red); }
+    .erp-sc-red .esl { color: #b91c1c; }
+    .erp-sc-red .esv { color: #7f1d1d; }
+
+    /* ─── Info banners ────────────────────────────────────────────────────── */
+    .info-banner {
+      display: flex; align-items: flex-start; gap: .75rem;
+      padding: .875rem 1rem;
+      border-radius: 10px;
+      font-size: .84rem;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .info-banner .ib-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+    .info-banner-green  { background: var(--accent-soft); border: 1px solid var(--accent-mid); color: #1a4206; }
+    .info-banner-yellow { background: var(--yellow-soft); border-left: 3px solid var(--yellow); border-radius: 0 10px 10px 0; color: #78350f; }
+    .info-banner-blue   { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; }
+    .info-banner-purple { background: #faf5ff; border: 1px solid #ddd6fe; color: #3b0764; }
+
+    /* ─── Telegram alert cards ────────────────────────────────────────────── */
+    .tg-alert-card {
+      display: flex; align-items: center; gap: .875rem;
+      padding: .875rem 1.1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .tg-alert-card:hover { box-shadow: var(--shadow-sm); }
+    .tg-alert-icon {
+      width: 40px; height: 40px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px; font-size: 1.2rem;
+    }
+    .tg-alert-text strong { font-size: .875rem; display: block; margin-bottom: .15rem; }
+    .tg-alert-text span   { font-size: .78rem; color: var(--text-mid); }
+    .tg-ac-red    { border-left: 3px solid #dc2626; }
+    .tg-ac-red    .tg-alert-icon { background: #fef2f2; }
+    .tg-ac-orange { border-left: 3px solid #f97316; }
+    .tg-ac-orange .tg-alert-icon { background: #fff7ed; }
+    .tg-ac-yellow { border-left: 3px solid #eab308; }
+    .tg-ac-yellow .tg-alert-icon { background: var(--yellow-soft); }
+    .tg-ac-blue   { border-left: 3px solid #3b82f6; }
+    .tg-ac-blue   .tg-alert-icon { background: #eff6ff; }
+
+    /* ─── Section header ──────────────────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; gap: .625rem;
+      margin-bottom: 1rem;
+    }
+    .section-header-icon {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; font-size: .95rem; flex-shrink: 0;
+    }
+    .section-header h2, .section-header h3 {
+      font-size: .95rem; font-weight: 700;
+      letter-spacing: -.01em; margin: 0;
+    }
+    .shi-green  { background: var(--accent-soft); }
+    .shi-blue   { background: #dbeafe; }
+    .shi-purple { background: #ede9fe; }
+    .shi-orange { background: #fed7aa; }
+    .shi-red    { background: #fee2e2; }
+    .shi-teal   { background: #ccfbf1; }
+
+    /* ─── Code block ──────────────────────────────────────────────────────── */
+    .code-block {
+      background: #0f1923;
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+      font-size: .8rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      overflow-x: auto;
+      color: #c9d1d9;
+      line-height: 1.7;
+      margin-bottom: .75rem;
+      border: 1px solid #1e2d3d;
+    }
+    .code-block .cb-method  { color: #79c0ff; font-weight: 700; }
+    .code-block .cb-path    { color: #a5f3a5; }
+    .code-block .cb-header  { color: #e3b341; }
+    .code-block .cb-key     { color: #79c0ff; }
+    .code-block .cb-string  { color: #a8ff78; }
+    .code-block .cb-num     { color: #f97316; }
+    .code-block .cb-comment { color: #6e7681; font-style: italic; }
+
+    /* ─── Arquivo stats mini-row ──────────────────────────────────────────── */
+    .arquivo-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: .625rem;
+      margin-bottom: 1.25rem;
+    }
+    .arq-stat {
+      padding: .7rem .9rem;
+      border-radius: 9px;
+      display: flex; align-items: center; gap: .6rem;
+      border: 1px solid transparent;
+    }
+    .arq-stat-icon { font-size: 1.1rem; }
+    .arq-stat-body .arq-val { font-size: 1.25rem; font-weight: 800; line-height: 1; }
+    .arq-stat-body .arq-lbl { font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: .1rem; }
+    .as-yellow { background: #fffbeb; border-color: #fde68a; }
+    .as-yellow .arq-val, .as-yellow .arq-lbl { color: #92400e; }
+    .as-gray   { background: #f8fafc; border-color: #e2e8f0; }
+    .as-gray   .arq-val, .as-gray .arq-lbl { color: #334155; }
+    .as-blue   { background: #eff6ff; border-color: #bfdbfe; }
+    .as-blue   .arq-val, .as-blue .arq-lbl { color: #1e3a8a; }
+    .as-green  { background: var(--accent-soft); border-color: var(--accent-mid); }
+    .as-green  .arq-val, .as-green .arq-lbl { color: #1a4206; }
+    .as-red    { background: #fef2f2; border-color: #fecaca; }
+    .as-red    .arq-val, .as-red .arq-lbl { color: #7f1d1d; }
   </style>
 </head>
 <body>
 
 <!-- Sidebar -->
 <nav class="sidebar">
+  <div class="sidebar-top-bar"></div>
   <div class="sidebar-logo">
     <img src="/logo/Zapdin-removebg-preview.png" alt="ZapDin" onerror="this.style.display='none'" />
     <span>ZapDin</span>
   </div>
+
+  <!-- Badge do cliente — aparece após checkAuth() preencher o nome -->
+  <div class="sidebar-client-badge" id="sidebarClientBadge" style="display:none">
+    <div class="sidebar-client-badge-icon">🏢</div>
+    <div class="sidebar-client-badge-text">
+      <span class="sidebar-client-badge-label">Licenciado para</span>
+      <span class="sidebar-client-badge-name" id="sidebarClientName">—</span>
+    </div>
+  </div>
+
   <div class="sidebar-divider"></div>
 
   <div class="sidebar-section">Principal</div>
-  <div class="nav-item active" data-page="dashboard">Dashboard</div>
-  <div class="nav-item" data-page="mensagem">Configurar Mensagem</div>
-  <div class="nav-item" data-page="whatsapp">Conectar WhatsApp</div>
+  <div class="nav-item active" data-page="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+  <div class="nav-item" data-page="mensagem"><span class="nav-icon">✏️</span> Configurar Mensagem</div>
+  <div class="nav-item" data-page="whatsapp"><span class="nav-icon">📱</span> Conectar WhatsApp</div>
+  <div class="nav-item" data-page="teste"><span class="nav-icon">🧪</span> Teste de Envio</div>
 
   <div class="sidebar-section">Integrações</div>
-  <div class="nav-item" data-page="token">Token API</div>
-  <div class="nav-item" data-page="arquivo">Envio de Arquivo</div>
-  <div class="nav-item" data-page="docs">Documentações</div>
+  <div class="nav-item" data-page="token"><span class="nav-icon">🔑</span> Token API</div>
+  <div class="nav-item" data-page="arquivo"><span class="nav-icon">📎</span> Envio de Arquivo</div>
+  <div class="nav-item" data-page="docs"><span class="nav-icon">📖</span> Documentações</div>
 
   <div class="sidebar-section">Outros</div>
-  <div class="nav-item" data-page="telegram">Telegram</div>
+  <div class="nav-item" data-page="telegram"><span class="nav-icon">✈️</span> Telegram</div>
+
+  <div style="margin-top:auto;padding-top:1rem">
+    <div style="height:1px;background:var(--border);margin:0 1.25rem .75rem"></div>
+    <button class="btn-logout" id="btnLogout">
+      <span style="font-size:.9rem">🚪</span> Sair
+    </button>
+    <div style="padding:.5rem 1.25rem 1.25rem;font-size:.68rem;color:var(--text-light);letter-spacing:.04em">
+      ZapDin v1.0 &nbsp;·&nbsp; Python/FastAPI
+    </div>
+  </div>
 </nav>
 
 <!-- Main -->
 <div class="main">
   <header class="topbar">
-    <span class="topbar-title" id="pageTitle">Dashboard</span>
+    <div class="topbar-left">
+      <span class="topbar-breadcrumb">ZapDin</span>
+      <span class="topbar-sep">/</span>
+      <span class="topbar-page-icon" id="pageIcon">📊</span>
+      <span class="topbar-title" id="pageTitle">Dashboard</span>
+    </div>
     <div class="topbar-right">
-      <span class="badge" id="userBadge">…</span>
-      <button class="btn-logout" id="btnLogout">Sair</button>
+      <div class="topbar-client" id="topbarClient" style="display:none">
+        <div class="topbar-client-icon">🏢</div>
+        <div class="topbar-client-info">
+          <span class="topbar-client-label">Empresa</span>
+          <span class="topbar-client-name" id="topbarClientName">—</span>
+        </div>
+      </div>
+      <div class="topbar-status-pill" id="topbarStatusPill">
+        <span class="sdot"></span>
+        <span id="topbarStatusText">Verificando…</span>
+      </div>
+      <div class="topbar-user" id="topbarUser">
+        <div class="topbar-user-avatar" id="userAvatar">?</div>
+        <span class="topbar-user-name" id="userBadge">…</span>
+      </div>
     </div>
   </header>
 
@@ -584,10 +1392,26 @@
     <!-- Dashboard -->
     <div class="page active" id="page-dashboard">
       <div class="stat-grid" id="statsGrid">
-        <div class="stat-card"><div class="label">Mensagens hoje</div><div class="value" id="statHoje">—</div></div>
-        <div class="stat-card"><div class="label">Total enviadas</div><div class="value" id="statEnviadas">—</div></div>
-        <div class="stat-card"><div class="label">Falhas</div><div class="value" id="statFalhas">—</div></div>
-        <div class="stat-card"><div class="label">Sessões ativas</div><div class="value" id="statSessoes">—</div></div>
+        <div class="stat-card card-blue">
+          <span class="stat-icon">💬</span>
+          <div class="label">Mensagens hoje</div>
+          <div class="value" id="statHoje">—</div>
+        </div>
+        <div class="stat-card card-green">
+          <span class="stat-icon">✅</span>
+          <div class="label">Total enviadas</div>
+          <div class="value" id="statEnviadas">—</div>
+        </div>
+        <div class="stat-card card-red">
+          <span class="stat-icon">⚠️</span>
+          <div class="label">Falhas</div>
+          <div class="value" id="statFalhas">—</div>
+        </div>
+        <div class="stat-card card-purple">
+          <span class="stat-icon">📱</span>
+          <div class="label">Sessões ativas</div>
+          <div class="value" id="statSessoes">—</div>
+        </div>
       </div>
       <div class="card">
         <h2>Mensagens recentes</h2>
@@ -600,337 +1424,899 @@
 
     <!-- Configurar Mensagem -->
     <div class="page" id="page-mensagem">
-      <div class="card">
-        <h2 style="margin-bottom:.25rem">Configurar Mensagem Padrão</h2>
-        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:1.25rem">Monte o layout da mensagem que será enviada ao cliente após cada venda. Use as variáveis abaixo para incluir dados dinâmicos do ERP.</p>
-        <div class="alert" id="alertMensagem"></div>
-        <div class="form-group">
-          <label>Template da mensagem</label>
-          <textarea id="inputMensagem" rows="9" style="font-family:monospace"></textarea>
-          <div class="vars-hint" style="margin-top:.6rem">
-            <strong style="color:var(--text)">Variáveis disponíveis:</strong><br>
-            <code>{nome}</code> Nome do cliente &nbsp;·&nbsp;
-            <code>{telefone}</code> Telefone &nbsp;·&nbsp;
-            <code>{data}</code> Data da compra<br>
-            <code>{produtos}</code> Lista de produtos (nome, qtd, valor unitário)<br>
-            <code>{valor_total_itens}</code> Valor total dos itens &nbsp;·&nbsp;
-            <code>{valor_total}</code> Valor total da compra
+
+      <div class="page-hero hero-green">
+        <div class="page-hero-icon">✏️</div>
+        <div class="page-hero-text">
+          <h1>Template de Mensagem</h1>
+          <p>Monte o texto enviado automaticamente ao cliente após cada venda. Clique nas variáveis para inserí-las.</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
+
+        <!-- Editor -->
+        <div class="card" style="margin-bottom:0">
+          <div class="section-header">
+            <div class="section-header-icon shi-green">📝</div>
+            <h2>Editor do Template</h2>
+          </div>
+          <div class="alert" id="alertMensagem"></div>
+
+          <!-- Variable chips -->
+          <div style="margin-bottom:1rem">
+            <div style="font-size:.72rem;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Clique para inserir</div>
+            <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+              <span class="var-tag" data-var="{nome}">👤 {nome}</span>
+              <span class="var-tag" data-var="{telefone}">📞 {telefone}</span>
+              <span class="var-tag" data-var="{data}">📅 {data}</span>
+              <span class="var-tag" data-var="{produtos}">🛒 {produtos}</span>
+              <span class="var-tag" data-var="{valor_total_itens}">💰 {valor_total_itens}</span>
+              <span class="var-tag" data-var="{valor_total}">💳 {valor_total}</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Template da mensagem</label>
+            <textarea id="inputMensagem" rows="10" style="font-family:'JetBrains Mono','Fira Code',monospace;font-size:.85rem"></textarea>
+          </div>
+          <button class="btn btn-primary" id="btnSalvarMensagem" style="width:100%">💾 Salvar Template</button>
+        </div>
+
+        <!-- Preview -->
+        <div>
+          <div class="card" style="margin-bottom:1rem">
+            <div class="section-header">
+              <div class="section-header-icon shi-teal">👁️</div>
+              <h2>Preview ao Vivo</h2>
+            </div>
+            <div class="wa-preview-wrap">
+              <div class="wa-bubble">
+                <div id="previewMensagem" style="font-size:.875rem"></div>
+                <div class="wa-bubble-time">agora ✓✓</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-banner info-banner-blue">
+            <span class="ib-icon">💡</span>
+            <div>
+              <strong>Como funciona:</strong> O ERP envia os dados da venda → o sistema substitui as variáveis e dispara a mensagem via WhatsApp com delay anti-banimento.
+            </div>
+          </div>
+
+          <div class="card" style="padding:1rem 1.25rem">
+            <div style="font-size:.72rem;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Variáveis disponíveis</div>
+            <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{nome}</span><span style="color:var(--text-mid)">Nome completo do cliente</span></div>
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{telefone}</span><span style="color:var(--text-mid)">Número com DDI</span></div>
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{data}</span><span style="color:var(--text-mid)">Data da compra</span></div>
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{produtos}</span><span style="color:var(--text-mid)">Lista de itens da venda</span></div>
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{valor_total_itens}</span><span style="color:var(--text-mid)">Soma dos itens</span></div>
+              <div style="display:flex;gap:.5rem;align-items:baseline"><span class="var-tag" style="cursor:default">{valor_total}</span><span style="color:var(--text-mid)">Total final com taxas</span></div>
+            </div>
           </div>
         </div>
-        <div class="form-group">
-          <label>Preview <span style="font-size:.75rem;color:var(--text-mid)">(com dados de exemplo)</span></label>
-          <div id="previewMensagem" style="background:var(--surface2);padding:.75rem 1rem;border-radius:8px;min-height:80px;font-size:.9rem;white-space:pre-wrap;border:1px solid var(--border)"></div>
-        </div>
-        <button class="btn btn-primary" id="btnSalvarMensagem">Salvar Template</button>
+
       </div>
     </div>
 
     <!-- WhatsApp -->
     <div class="page" id="page-whatsapp">
-      <div class="card" style="margin-bottom:1rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-          <div>
-            <h2 style="margin-bottom:.25rem">Números WhatsApp</h2>
-            <p style="font-size:.85rem;color:var(--text-mid)">Cada sessão representa um número conectado para envio de mensagens.</p>
-          </div>
-        </div>
-        <div class="alert" id="alertWA"></div>
-        <div id="listaSessoes"></div>
-        <div style="display:flex;gap:.75rem;align-items:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
-          <div class="form-group" style="flex:1;margin-bottom:0">
-            <label>Nome da nova sessão</label>
-            <input type="text" id="inputNovaSessao" placeholder="ex: Número Principal, Vendas, Suporte…" />
-          </div>
-          <button class="btn btn-primary" id="btnAddSessao">+ Adicionar</button>
+
+      <div class="page-hero hero-green">
+        <div class="page-hero-icon">📱</div>
+        <div class="page-hero-text">
+          <h1>Conectar WhatsApp</h1>
+          <p>Cada sessão representa um número conectado. Você pode ter múltiplos números ativos simultaneamente.</p>
         </div>
       </div>
-      <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.7;padding:1rem 1.25rem">
-        <strong style="color:var(--text)">Como conectar:</strong>
-        Clique em <strong style="color:var(--accent)">Mostrar QR</strong> na sessão → Abra o WhatsApp no celular
-        → toque em <strong style="color:var(--text)">⋮ Menu → Aparelhos conectados → Conectar aparelho</strong>
-        → aponte a câmera para o QR Code.
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start">
+
+        <!-- Sessões -->
+        <div class="card" style="margin-bottom:0">
+          <div class="section-header">
+            <div class="section-header-icon shi-green">📡</div>
+            <h2>Sessões Ativas</h2>
+            <button class="btn btn-ghost btn-sm" onclick="abrirWACfg()" style="margin-left:auto">⚙️ Configurações de Envio</button>
+          </div>
+          <div class="alert" id="alertWA"></div>
+          <div id="listaSessoes"></div>
+          <div style="display:flex;gap:.75rem;align-items:flex-end;margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--border)">
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label>Nome da nova sessão</label>
+              <input type="text" id="inputNovaSessao" placeholder="ex: Número Principal, Vendas, Suporte…" />
+            </div>
+            <button class="btn btn-primary" id="btnAddSessao" style="white-space:nowrap">＋ Adicionar</button>
+          </div>
+        </div>
+
+        <!-- Como conectar -->
+        <div>
+          <div class="card" style="margin-bottom:1rem;padding:1.25rem 1.5rem">
+            <div class="section-header" style="margin-bottom:1rem">
+              <div class="section-header-icon shi-blue">❓</div>
+              <h3>Como conectar</h3>
+            </div>
+            <div class="step-list">
+              <div class="step-item">
+                <div class="step-num">1</div>
+                <div class="step-body">Clique em <strong>＋ Adicionar</strong> e dê um nome à sessão</div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">2</div>
+                <div class="step-body">Clique em <strong>Mostrar QR</strong> para exibir o código</div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">3</div>
+                <div class="step-body">Abra o <strong>WhatsApp</strong> no celular</div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">4</div>
+                <div class="step-body">Toque em <strong>⋮ Menu → Aparelhos conectados</strong></div>
+              </div>
+              <div class="step-item">
+                <div class="step-num">5</div>
+                <div class="step-body">Toque em <strong>Conectar aparelho</strong> e aponte a câmera para o QR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-banner info-banner-yellow">
+            <span class="ib-icon">⚠️</span>
+            <div><strong>Atenção:</strong> O QR expira a cada ~60s. Se não funcionar, aguarde um novo código aparecer automaticamente.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Teste de Envio -->
+    <div class="page" id="page-teste">
+
+      <div class="page-hero hero-teal">
+        <div class="page-hero-icon">🧪</div>
+        <div class="page-hero-text">
+          <h1>Teste de Envio</h1>
+          <p>Verifique se o número WhatsApp está ativo enviando uma mensagem ou arquivo de teste agora.</p>
+        </div>
+      </div>
+
+      <!-- Seleção de sessão -->
+      <div class="card" style="margin-bottom:1.25rem;background:linear-gradient(135deg,#f0fdfa,#ccfbf1);border-color:#99f6e4">
+        <div class="section-header">
+          <div class="section-header-icon shi-teal">📡</div>
+          <h2 style="color:#134e4a">Selecionar Sessão</h2>
+        </div>
+        <div class="form-group" style="margin-bottom:.5rem">
+          <label style="color:#0f766e">Número WhatsApp conectado</label>
+          <select id="testeSelectSessao" style="width:100%;padding:.6rem .875rem;border:1px solid #99f6e4;border-radius:8px;background:rgba(255,255,255,.7);color:#134e4a;font-family:inherit;font-size:.9rem;font-weight:500">
+            <option value="">Carregando sessões…</option>
+          </select>
+        </div>
+        <div id="testeAlertSessao" style="margin-top:.5rem;padding:.65rem 1rem;border-radius:8px;font-size:.84rem;display:none"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+        <!-- Teste de Mensagem -->
+        <div class="card" style="margin-bottom:0;border-top:3px solid #3b82f6">
+          <div class="section-header">
+            <div class="section-header-icon shi-blue">💬</div>
+            <h3 style="color:#1e3a8a">Mensagem de Texto</h3>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:.4rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:.3rem .75rem;font-size:.75rem;color:#1d4ed8;font-weight:600;margin-bottom:1rem">
+            <span>🚀</span> Envio direto e imediato
+          </div>
+          <div class="form-group">
+            <label>Telefone destinatário</label>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="padding:.6rem .75rem;background:#dbeafe;border:1px solid #bfdbfe;border-radius:8px;color:#1d4ed8;font-size:.85rem;white-space:nowrap;font-weight:600">🇧🇷 +55</span>
+              <input type="text" id="testePgPhone" placeholder="11999998888" style="flex:1" maxlength="11" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Mensagem</label>
+            <textarea id="testePgMsg" rows="4" placeholder="Digite a mensagem de teste…"></textarea>
+          </div>
+          <button class="btn btn-primary" id="btnTestePgTexto" style="width:100%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);box-shadow:0 2px 10px rgba(59,130,246,.35)">📤 Enviar Mensagem</button>
+          <div id="testePgTextoResult" style="margin-top:.75rem;padding:.65rem 1rem;border-radius:8px;font-size:.84rem;display:none"></div>
+        </div>
+
+        <!-- Teste de Arquivo -->
+        <div class="card" style="margin-bottom:0;border-top:3px solid #7c3aed">
+          <div class="section-header">
+            <div class="section-header-icon shi-purple">📎</div>
+            <h3 style="color:#3b0764">Enviar Arquivo</h3>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:.4rem;background:#faf5ff;border:1px solid #ddd6fe;border-radius:6px;padding:.3rem .75rem;font-size:.75rem;color:#6d28d9;font-weight:600;margin-bottom:1rem">
+            <span>📁</span> PDF, imagem, documento
+          </div>
+          <div class="form-group">
+            <label>Telefone destinatário</label>
+            <div style="display:flex;align-items:center;gap:.5rem">
+              <span style="padding:.6rem .75rem;background:#ede9fe;border:1px solid #ddd6fe;border-radius:8px;color:#6d28d9;font-size:.85rem;white-space:nowrap;font-weight:600">🇧🇷 +55</span>
+              <input type="text" id="testePgPhoneArq" placeholder="11999998888" style="flex:1" maxlength="11" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Arquivo</label>
+            <input type="file" id="testePgFile" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.5rem .75rem" />
+          </div>
+          <div class="form-group">
+            <label>Legenda <span style="color:var(--text-mid);font-weight:400">(opcional)</span></label>
+            <input type="text" id="testePgCaption" placeholder="Ex: Segue sua nota fiscal…" />
+          </div>
+          <button class="btn btn-primary" id="btnTestePgArquivo" style="width:100%;background:linear-gradient(135deg,#8b5cf6,#7c3aed);box-shadow:0 2px 10px rgba(124,58,237,.35)">📤 Enviar Arquivo</button>
+          <div id="testePgArqResult" style="margin-top:.75rem;padding:.65rem 1rem;border-radius:8px;font-size:.84rem;display:none"></div>
+        </div>
+
       </div>
     </div>
 
     <!-- Token API -->
     <div class="page" id="page-token">
-      <!-- Token -->
-      <div class="card" style="margin-bottom:1rem">
-        <h2 style="margin-bottom:.25rem">Token API (ERP)</h2>
-        <p style="color:var(--text-mid);font-size:.875rem;margin-bottom:1.25rem">Este token deve ser enviado pelo ERP no header <code style="color:var(--accent)">x-token</code> em todas as chamadas à API.</p>
-        <div class="alert" id="alertToken"></div>
-        <div class="form-group">
-          <label>Token atual</label>
-          <div style="display:flex;gap:.5rem">
-            <input type="text" id="inputToken" placeholder="Clique em Gerar Token para criar um novo" readonly style="font-family:monospace;flex:1" />
-            <button class="btn btn-ghost" id="btnCopiarToken" title="Copiar token">📋 Copiar</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-          <button class="btn btn-primary" id="btnGerarToken">⚡ Gerar Novo Token</button>
-          <button class="btn btn-ghost" id="btnSalvarToken" style="display:none">Salvar</button>
+
+      <div class="page-hero hero-orange">
+        <div class="page-hero-icon">🔑</div>
+        <div class="page-hero-text">
+          <h1>Token de Integração ERP</h1>
+          <p>Gere e gerencie o token de acesso à API. Envie-o no header <code style="background:rgba(0,0,0,.1);padding:.1rem .35rem;border-radius:4px">x-token</code> em cada chamada.</p>
         </div>
       </div>
 
-      <!-- Status da conexão ERP -->
-      <div class="card" style="margin-bottom:1rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h3 style="font-size:.95rem;margin:0">Status da Conexão ERP</h3>
-          <button class="btn btn-ghost btn-sm" id="btnAtualizarErpStatus">↻ Atualizar</button>
-        </div>
-        <div id="erpStatusCard" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem">
-          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
-            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">STATUS</div>
-            <div id="erpStatStatus" style="font-weight:700">—</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
-            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">ÚLTIMA CHAMADA</div>
-            <div id="erpStatTs" style="font-weight:700;font-size:.9rem">—</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
-            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">IP DO ERP</div>
-            <div id="erpStatIp" style="font-weight:700;font-family:monospace">—</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
-            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">ENDPOINT</div>
-            <div id="erpStatEndpoint" style="font-weight:700;font-family:monospace;font-size:.85rem">—</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:.85rem 1rem">
-            <div style="font-size:.75rem;color:var(--text-mid);margin-bottom:.3rem">TOTAL DE CHAMADAS</div>
-            <div id="erpStatTotal" style="font-weight:700">—</div>
-          </div>
-        </div>
-      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start">
 
-      <!-- Campos que o ERP deve enviar -->
-      <div class="card">
-        <h3 style="font-size:.95rem;margin-bottom:1rem">Campos enviados pelo ERP</h3>
-        <table>
-          <thead><tr><th>Campo JSON</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
-          <tbody>
-            <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número do cliente — <strong>sem o DDI 55</strong>, o sistema insere automaticamente. Ex: <code>"11999990000"</code></td></tr>
-            <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome do cliente</td></tr>
-            <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de produtos: <code>nome</code>, <code>quantidade</code>, <code>valor_unitario</code></td></tr>
-            <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Valor total dos itens (ex: "150,00")</td></tr>
-            <tr><td><code>valor_total</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Valor total da compra com taxas/desconto</td></tr>
-            <tr><td><code>data</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Data da compra (padrão: data atual)</td></tr>
-            <tr><td><code>mensagem_custom</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Substitui o template configurado</td></tr>
-          </tbody>
-        </table>
+        <!-- Token + ERP Status -->
+        <div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <div class="section-header">
+              <div class="section-header-icon shi-orange">🔐</div>
+              <h2>Token Atual</h2>
+            </div>
+            <div class="alert" id="alertToken"></div>
+            <div class="form-group">
+              <label>Chave de acesso</label>
+              <div style="display:flex;gap:.5rem">
+                <input type="text" id="inputToken" placeholder="Clique em Gerar Novo Token para criar" readonly style="font-family:'JetBrains Mono','Fira Code',monospace;flex:1;font-size:.82rem;background:#f8fafc;letter-spacing:.04em" />
+                <button class="btn btn-ghost" id="btnCopiarToken" title="Copiar token">📋</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <button class="btn btn-primary" id="btnGerarToken">⚡ Gerar Novo Token</button>
+              <button class="btn btn-ghost" id="btnSalvarToken" style="display:none">Salvar</button>
+            </div>
+          </div>
+
+          <div class="info-banner info-banner-yellow">
+            <span class="ib-icon">⚠️</span>
+            <div><strong>Atenção:</strong> Ao gerar um novo token, o token anterior será invalidado imediatamente. Atualize o ERP antes de gerar.</div>
+          </div>
+
+          <!-- Campos ERP -->
+          <div class="card" style="margin-top:1.25rem">
+            <div class="section-header">
+              <div class="section-header-icon shi-green">📋</div>
+              <h3>Campos enviados pelo ERP</h3>
+            </div>
+            <table>
+              <thead><tr><th>Campo</th><th>Tipo</th><th>Req.</th><th>Descrição</th></tr></thead>
+              <tbody>
+                <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número, <strong>sem DDI 55</strong></td></tr>
+                <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome do cliente</td></tr>
+                <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de itens da venda</td></tr>
+                <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Soma dos itens (ex: "150,00")</td></tr>
+                <tr><td><code>valor_total</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Total final da compra</td></tr>
+                <tr><td><code>data</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Data da compra (padrão: hoje)</td></tr>
+                <tr><td><code>mensagem_custom</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Substitui o template configurado</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ERP Status -->
+        <div class="card" style="margin-bottom:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+            <div class="section-header" style="margin-bottom:0">
+              <div class="section-header-icon shi-blue">📊</div>
+              <h2>Status da Conexão ERP</h2>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btnAtualizarErpStatus">↻ Atualizar</button>
+          </div>
+          <div class="erp-stat-grid">
+            <div class="erp-stat-card erp-sc-blue">
+              <div class="esl">Status</div>
+              <div class="esv" id="erpStatStatus">—</div>
+            </div>
+            <div class="erp-stat-card erp-sc-purple">
+              <div class="esl">Total de Chamadas</div>
+              <div class="esv" id="erpStatTotal">—</div>
+            </div>
+            <div class="erp-stat-card erp-sc-gray" style="grid-column:1/-1">
+              <div class="esl">Última Chamada</div>
+              <div class="esv" id="erpStatTs">—</div>
+            </div>
+            <div class="erp-stat-card erp-sc-gray">
+              <div class="esl">IP do ERP</div>
+              <div class="esv" id="erpStatIp" style="font-family:monospace;font-size:.82rem">—</div>
+            </div>
+            <div class="erp-stat-card erp-sc-orange">
+              <div class="esl">Endpoint</div>
+              <div class="esv" id="erpStatEndpoint">—</div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.5rem;padding:1rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
+            <div style="font-size:.72rem;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Exemplo de chamada</div>
+            <div class="code-block" style="margin:0;font-size:.75rem">
+<span class="cb-method">POST</span> <span class="cb-path">/api/erp/venda</span>
+<span class="cb-header">x-token:</span> <span class="cb-string">seu_token_aqui</span>
+<span class="cb-header">Content-Type:</span> <span class="cb-string">application/json</span>
+
+{
+  <span class="cb-key">"telefone"</span>: <span class="cb-string">"11999990000"</span>,
+  <span class="cb-key">"nome"</span>: <span class="cb-string">"João Silva"</span>
+}</div>
+          </div>
+        </div>
+
       </div>
     </div>
 
     <!-- Envio de Arquivo -->
     <div class="page" id="page-arquivo">
+
+      <div class="page-hero hero-purple">
+        <div class="page-hero-icon">📎</div>
+        <div class="page-hero-text">
+          <h1>Envio de Arquivos</h1>
+          <p>Acompanhe em tempo real o status de entrega de cada arquivo enviado via WhatsApp.</p>
+        </div>
+      </div>
+
+      <!-- Mini stats -->
+      <div class="arquivo-stats" id="arquivoStats">
+        <div class="arq-stat as-yellow">
+          <span class="arq-stat-icon">⏳</span>
+          <div class="arq-stat-body">
+            <div class="arq-val" id="arqStNaFila">—</div>
+            <div class="arq-lbl">Na fila</div>
+          </div>
+        </div>
+        <div class="arq-stat as-gray">
+          <span class="arq-stat-icon">✓</span>
+          <div class="arq-stat-body">
+            <div class="arq-val" id="arqStEnviado">—</div>
+            <div class="arq-lbl">Enviado</div>
+          </div>
+        </div>
+        <div class="arq-stat as-blue">
+          <span class="arq-stat-icon">✓✓</span>
+          <div class="arq-stat-body">
+            <div class="arq-val" id="arqStEntregue">—</div>
+            <div class="arq-lbl">Entregue</div>
+          </div>
+        </div>
+        <div class="arq-stat as-green">
+          <span class="arq-stat-icon">👁</span>
+          <div class="arq-stat-body">
+            <div class="arq-val" id="arqStVisual">—</div>
+            <div class="arq-lbl">Visualizado</div>
+          </div>
+        </div>
+        <div class="arq-stat as-red">
+          <span class="arq-stat-icon">✗</span>
+          <div class="arq-stat-body">
+            <div class="arq-val" id="arqStFalhou">—</div>
+            <div class="arq-lbl">Falhou</div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-          <h2 style="margin:0">Arquivos Enviados</h2>
-          <button class="btn btn-secondary" id="btnRefreshArquivos" style="padding:.35rem .85rem;font-size:.82rem">&#8635; Atualizar</button>
+          <div class="section-header" style="margin-bottom:0">
+            <div class="section-header-icon shi-purple">📋</div>
+            <h2>Histórico de Envios</h2>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <span style="font-size:.75rem;color:var(--text-mid)">🔄 Auto-atualiza a cada 15s</span>
+            <button class="btn btn-ghost btn-sm" id="btnRefreshArquivos">↻ Atualizar</button>
+          </div>
         </div>
+
+        <!-- Legenda -->
+        <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:1.25rem;padding:.65rem 1rem;background:linear-gradient(135deg,#faf5ff,#ede9fe);border:1px solid #ddd6fe;border-radius:9px;align-items:center">
+          <span style="font-size:.7rem;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:.08em;margin-right:.25rem">Legenda:</span>
+          <span class="chip chip-yellow">⏳ Na fila</span>
+          <span class="chip chip-gray">✓ Enviado</span>
+          <span class="chip chip-blue">✓✓ Entregue</span>
+          <span class="chip chip-green">✓✓ Visualizado</span>
+          <span class="chip chip-red">✗ Falhou</span>
+        </div>
+
         <table>
-          <thead><tr><th>Arquivo</th><th>Destinatário</th><th>Status</th><th>Enviado</th><th>Entregue</th><th>Visualizado</th></tr></thead>
-          <tbody id="tbodyArquivos"><tr><td colspan="6" style="color:var(--text-mid);text-align:center">Carregando…</td></tr></tbody>
+          <thead>
+            <tr>
+              <th>Arquivo</th>
+              <th>Telefone</th>
+              <th>Data / Hora</th>
+              <th style="width:160px">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyArquivos"><tr><td colspan="4" style="color:var(--text-mid);text-align:center;padding:2rem">Carregando…</td></tr></tbody>
         </table>
       </div>
     </div>
 
     <!-- Docs -->
     <div class="page" id="page-docs">
-      <div class="card">
-        <h2 style="margin-bottom:.25rem">Documentação da API</h2>
-        <p style="color:var(--text-mid);margin-bottom:1rem;font-size:.875rem">
-          Todos os endpoints abaixo exigem o header <code style="color:var(--accent)">x-token: SEU_TOKEN</code>.<br>
-          O token é gerado em <strong>Integrações → Token API</strong>.
-        </p>
-        <div style="background:var(--accent-soft);border:1px solid var(--accent-mid);border-radius:8px;padding:.75rem 1rem;font-size:.84rem;color:var(--accent);margin-bottom:1.25rem">
-          <strong>Documento completo para o integrador ERP:</strong>
-          <a href="/doc-integracao-erp.html" target="_blank" style="color:var(--accent);font-weight:700;margin-left:.3rem">Abrir / Imprimir como PDF →</a>
-        </div>
-        <div style="background:var(--yellow-soft);border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;padding:.65rem 1rem;font-size:.84rem;margin-bottom:1.5rem">
-          ⚠️ <strong>Campo telefone:</strong> envie apenas <strong>DDD + número</strong> (sem o DDI 55).
-          O sistema adiciona o <code style="color:var(--accent)">55</code> automaticamente.<br>
-          Exemplo: envie <code style="color:var(--accent)">"11999990000"</code> — o sistema usa <code style="color:var(--accent)">"5511999990000"</code>.
-        </div>
 
-        <!-- Autenticação -->
-        <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--accent)">Autenticação</h3>
-          <div style="background:var(--surface2);border-radius:8px;padding:1rem;font-size:.85rem;line-height:1.8">
-            Todas as requisições ao ERP devem incluir o token no header HTTP:<br>
-            <code style="color:var(--accent)">x-token: rYq1OWgra44Nx_nlaSWF...</code><br><br>
-            O token é gerado automaticamente em <strong>Token API → ⚡ Gerar Novo Token</strong>.<br>
-            Respostas de erro possíveis: <code>401 Token inválido</code> · <code>503 Sem sessão WhatsApp ativa</code>
+      <div class="page-hero hero-blue">
+        <div class="page-hero-icon">📖</div>
+        <div class="page-hero-text">
+          <h1>Documentação da API</h1>
+          <p>Referência completa para integrar o ERP com o ZapDin. Todos os endpoints exigem o header <code style="background:rgba(0,0,0,.1);padding:.1rem .35rem;border-radius:4px">x-token</code>.</p>
+        </div>
+      </div>
+
+      <!-- Avisos -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+        <div class="info-banner info-banner-green" style="margin-bottom:0">
+          <span class="ib-icon">📄</span>
+          <div>
+            <strong>Documento para integrador:</strong><br>
+            <div style="display:flex;gap:.5rem;margin-top:.4rem;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="abrirDocErpBrowser()">🌐 Abrir no Navegador</button>
+              <button class="btn btn-ghost btn-sm" onclick="baixarDocErp()">⬇️ Baixar HTML</button>
+            </div>
+          </div>
+        </div>
+        <div class="info-banner info-banner-yellow" style="margin-bottom:0">
+          <span class="ib-icon">⚠️</span>
+          <div><strong>Telefone:</strong> envie apenas <strong>DDD + número</strong> (sem o 55). Ex: <code style="color:var(--accent)">"11999990000"</code></div>
+        </div>
+      </div>
+
+      <!-- Autenticação + Endpoints lado a lado -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem">
+
+        <div class="card" style="margin-bottom:0">
+          <div class="section-header">
+            <div class="section-header-icon shi-orange">🔐</div>
+            <h2>Autenticação</h2>
+          </div>
+          <p style="font-size:.84rem;color:var(--text-mid);margin-bottom:.75rem">Envie o token no header de toda requisição:</p>
+          <div class="code-block">
+<span class="cb-header">x-token:</span> <span class="cb-string">rYq1OWgra44Nx_nlaSWF...</span></div>
+          <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.82rem">
+            <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .65rem;background:#fef2f2;border-radius:6px;color:#b91c1c">
+              <span>❌</span> <code>401</code> Token inválido ou ausente
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .65rem;background:#fff7ed;border-radius:6px;color:#c2410c">
+              <span>⚠️</span> <code>503</code> Sem sessão WhatsApp ativa
+            </div>
           </div>
         </div>
 
-        <!-- Endpoints -->
-        <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.75rem;color:var(--accent)">Endpoints</h3>
-          <table>
-            <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
-            <tbody>
-              <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/venda</code></td><td>Notifica cliente via WhatsApp com dados da venda</td></tr>
-              <tr><td><span class="chip chip-green">POST</span></td><td><code>/api/erp/arquivo</code></td><td>Envia arquivo (PDF, imagem etc.) em base64 via WhatsApp</td></tr>
-              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/erp/status</code></td><td>Retorna status da última conexão do ERP</td></tr>
-              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/arquivos</code></td><td>Lista arquivos enviados</td></tr>
-              <tr><td><span class="chip chip-yellow">GET</span></td><td><code>/api/stats</code></td><td>Estatísticas gerais do painel</td></tr>
-            </tbody>
-          </table>
+        <div class="card" style="margin-bottom:0">
+          <div class="section-header">
+            <div class="section-header-icon shi-blue">🔗</div>
+            <h2>Endpoints</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0;border-radius:8px">
+              <span class="chip chip-green" style="flex-shrink:0">POST</span>
+              <div><code style="font-size:.8rem">/api/erp/venda</code><br><span style="font-size:.75rem;color:var(--text-mid)">Envia mensagem de venda</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #bbf7d0;border-radius:8px">
+              <span class="chip chip-green" style="flex-shrink:0">POST</span>
+              <div><code style="font-size:.8rem">/api/erp/arquivo</code><br><span style="font-size:.75rem;color:var(--text-mid)">Envia arquivo em base64</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:linear-gradient(135deg,#fffbeb,#fef9c3);border:1px solid #fde68a;border-radius:8px">
+              <span class="chip chip-yellow" style="flex-shrink:0">GET</span>
+              <div><code style="font-size:.8rem">/api/erp/status</code><br><span style="font-size:.75rem;color:var(--text-mid)">Última conexão ERP</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:linear-gradient(135deg,#fffbeb,#fef9c3);border:1px solid #fde68a;border-radius:8px">
+              <span class="chip chip-yellow" style="flex-shrink:0">GET</span>
+              <div><code style="font-size:.8rem">/api/arquivos &nbsp; /api/stats</code><br><span style="font-size:.75rem;color:var(--text-mid)">Listagem e estatísticas</span></div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <!-- POST /api/erp/venda -->
-        <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">POST /api/erp/venda</h3>
-          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Recebe os dados da venda e envia mensagem WhatsApp ao cliente usando o template configurado.</p>
-          <table style="margin-bottom:.75rem">
-            <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
-            <tbody>
-              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número — <strong>sem DDI</strong>, o sistema insere o 55. Ex: <code>"11999990000"</code></td></tr>
-              <tr><td><code>nome</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome completo do cliente</td></tr>
-              <tr><td><code>produtos</code></td><td>array</td><td><span class="chip chip-gray">Não</span></td><td>Lista de itens — ver estrutura abaixo</td></tr>
-              <tr><td><code>valor_total_itens</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Soma dos itens (ex: "179,70")</td></tr>
-              <tr><td><code>valor_total</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Total final da compra (com descontos/taxas)</td></tr>
-              <tr><td><code>data</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Data da compra — padrão: data atual</td></tr>
-              <tr><td><code>mensagem_custom</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Substitui o template configurado no painel</td></tr>
-            </tbody>
-          </table>
-          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.4rem">Estrutura de cada item em <code>produtos</code>:</p>
-          <table style="margin-bottom:.75rem">
-            <thead><tr><th>Campo</th><th>Tipo</th><th>Descrição</th></tr></thead>
-            <tbody>
-              <tr><td><code>nome</code></td><td>string</td><td>Nome do produto/serviço</td></tr>
-              <tr><td><code>quantidade</code></td><td>number</td><td>Quantidade consumida</td></tr>
-              <tr><td><code>valor_unitario</code></td><td>string</td><td>Valor unitário (ex: "5,99")</td></tr>
-            </tbody>
-          </table>
-          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.4rem">Exemplo completo:</p>
-          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--text)">POST /api/erp/venda
-x-token: SEU_TOKEN
-Content-Type: application/json
+      <!-- POST /api/erp/venda -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+          <span class="chip chip-green" style="font-size:.82rem">POST</span>
+          <h3 style="font-size:1rem;font-weight:700;margin:0;font-family:monospace">/api/erp/venda</h3>
+          <span style="font-size:.8rem;color:var(--text-mid)">— Notifica cliente com dados da venda</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+          <div>
+            <table style="margin-bottom:.5rem">
+              <thead><tr><th>Campo</th><th>Req.</th><th>Tipo</th></tr></thead>
+              <tbody>
+                <tr><td><code>telefone</code></td><td><span class="chip chip-green">Sim</span></td><td>string</td></tr>
+                <tr><td><code>nome</code></td><td><span class="chip chip-green">Sim</span></td><td>string</td></tr>
+                <tr><td><code>produtos</code></td><td><span class="chip chip-gray">Não</span></td><td>array</td></tr>
+                <tr><td><code>valor_total_itens</code></td><td><span class="chip chip-gray">Não</span></td><td>string</td></tr>
+                <tr><td><code>valor_total</code></td><td><span class="chip chip-gray">Não</span></td><td>string</td></tr>
+                <tr><td><code>data</code></td><td><span class="chip chip-gray">Não</span></td><td>string</td></tr>
+                <tr><td><code>mensagem_custom</code></td><td><span class="chip chip-gray">Não</span></td><td>string</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div class="code-block"><span class="cb-method">POST</span> <span class="cb-path">/api/erp/venda</span>
+<span class="cb-header">x-token:</span> <span class="cb-string">SEU_TOKEN</span>
 
 {
-  "telefone": "11999990000",
-  "nome": "João Silva",
-  "produtos": [
-    { "nome": "Gasolina Comum", "quantidade": 40, "valor_unitario": "5,99" },
-    { "nome": "Óleo Motor 5W30", "quantidade": 1, "valor_unitario": "42,00" }
+  <span class="cb-key">"telefone"</span>: <span class="cb-string">"11999990000"</span>,
+  <span class="cb-key">"nome"</span>: <span class="cb-string">"João Silva"</span>,
+  <span class="cb-key">"produtos"</span>: [
+    { <span class="cb-key">"nome"</span>: <span class="cb-string">"Gasolina"</span>, <span class="cb-key">"quantidade"</span>: <span class="cb-num">40</span> }
   ],
-  "valor_total_itens": "281,60",
-  "valor_total": "281,60",
-  "data": "21/04/2026"
-}</pre>
-          <p style="font-size:.8rem;color:var(--text-mid);margin-top:.5rem">Resposta de sucesso: <code style="color:var(--accent)">200 {"ok": true, "sessao": "a1b2c3d4"}</code></p>
+  <span class="cb-key">"valor_total"</span>: <span class="cb-string">"281,60"</span>
+}</div>
+            <div style="font-size:.78rem;color:var(--text-mid);padding:.4rem .65rem;background:var(--accent-soft);border-radius:6px">✅ Resposta: <code style="color:var(--accent)">{"ok": true, "queued": true}</code></div>
+          </div>
         </div>
+      </div>
 
-        <!-- POST /api/erp/arquivo -->
-        <div style="margin-bottom:2rem">
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">POST /api/erp/arquivo</h3>
-          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Envia um arquivo ao cliente via WhatsApp. O conteúdo deve ser enviado em base64.</p>
-          <table style="margin-bottom:.75rem">
-            <thead><tr><th>Campo</th><th>Tipo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
-            <tbody>
-              <tr><td><code>telefone</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>DDD + número — <strong>sem DDI</strong>, o sistema insere o 55. Ex: <code>"11999990000"</code></td></tr>
-              <tr><td><code>nome_arquivo</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Nome com extensão (ex: "nota_fiscal.pdf")</td></tr>
-              <tr><td><code>conteudo_base64</code></td><td>string</td><td><span class="chip chip-green">Sim</span></td><td>Conteúdo do arquivo codificado em base64</td></tr>
-              <tr><td><code>mensagem</code></td><td>string</td><td><span class="chip chip-gray">Não</span></td><td>Legenda do arquivo</td></tr>
-            </tbody>
-          </table>
-          <pre style="background:var(--surface2);padding:1rem;border-radius:8px;font-size:.8rem;overflow-x:auto;color:var(--text)">POST /api/erp/arquivo
-x-token: SEU_TOKEN
-Content-Type: application/json
+      <!-- POST /api/erp/arquivo -->
+      <div class="card" style="margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1rem">
+          <span class="chip chip-green" style="font-size:.82rem">POST</span>
+          <h3 style="font-size:1rem;font-weight:700;margin:0;font-family:monospace">/api/erp/arquivo</h3>
+          <span style="font-size:.8rem;color:var(--text-mid)">— Envia arquivo via WhatsApp (base64)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+          <div>
+            <table>
+              <thead><tr><th>Campo</th><th>Req.</th><th>Descrição</th></tr></thead>
+              <tbody>
+                <tr><td><code>telefone</code></td><td><span class="chip chip-green">Sim</span></td><td>DDD + número</td></tr>
+                <tr><td><code>nome_arquivo</code></td><td><span class="chip chip-green">Sim</span></td><td>Ex: nota_fiscal.pdf</td></tr>
+                <tr><td><code>conteudo_base64</code></td><td><span class="chip chip-green">Sim</span></td><td>Arquivo em base64</td></tr>
+                <tr><td><code>mensagem</code></td><td><span class="chip chip-gray">Não</span></td><td>Legenda do arquivo</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div class="code-block"><span class="cb-method">POST</span> <span class="cb-path">/api/erp/arquivo</span>
+<span class="cb-header">x-token:</span> <span class="cb-string">SEU_TOKEN</span>
 
 {
-  "telefone": "11999990000",
-  "nome_arquivo": "nota_fiscal_001.pdf",
-  "conteudo_base64": "JVBERi0xLjQKJ...",
-  "mensagem": "Segue sua nota fiscal eletrônica."
-}</pre>
+  <span class="cb-key">"telefone"</span>: <span class="cb-string">"11999990000"</span>,
+  <span class="cb-key">"nome_arquivo"</span>: <span class="cb-string">"nf_001.pdf"</span>,
+  <span class="cb-key">"conteudo_base64"</span>: <span class="cb-string">"JVBERi0..."</span>,
+  <span class="cb-key">"mensagem"</span>: <span class="cb-string">"Sua nota fiscal"</span>
+}</div>
+          </div>
         </div>
+      </div>
 
-        <!-- Variáveis do template -->
-        <div>
-          <h3 style="font-size:.95rem;margin-bottom:.5rem;color:var(--accent)">Variáveis do Template de Mensagem</h3>
-          <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">Configure o layout da mensagem em <strong>Configurar Mensagem</strong> usando estas variáveis:</p>
-          <table>
-            <thead><tr><th>Variável</th><th>Substituído por</th></tr></thead>
-            <tbody>
-              <tr><td><code>{nome}</code></td><td>Nome do cliente</td></tr>
-              <tr><td><code>{telefone}</code></td><td>Número de telefone</td></tr>
-              <tr><td><code>{data}</code></td><td>Data da compra</td></tr>
-              <tr><td><code>{produtos}</code></td><td>Lista formatada dos produtos com quantidade e valor unitário</td></tr>
-              <tr><td><code>{valor_total_itens}</code></td><td>Valor total dos itens</td></tr>
-              <tr><td><code>{valor_total}</code></td><td>Valor total da compra</td></tr>
-            </tbody>
-          </table>
+      <!-- Variáveis -->
+      <div class="card">
+        <div class="section-header">
+          <div class="section-header-icon shi-purple">🔤</div>
+          <h2>Variáveis do Template</h2>
+        </div>
+        <p style="font-size:.84rem;color:var(--text-mid);margin-bottom:1rem">Use estas variáveis em <strong>Configurar Mensagem</strong> para personalizar automaticamente o texto enviado.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.5rem">
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{nome}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Nome completo do cliente</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{telefone}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Número com DDI</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{data}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Data da compra</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{produtos}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Lista de itens da venda</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{valor_total_itens}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Soma dos itens</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .875rem;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px">
+            <code style="color:#4338ca;font-size:.85rem;font-weight:700">{valor_total}</code>
+            <span style="font-size:.82rem;color:var(--text-mid)">Total final da compra</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Telegram -->
     <div class="page" id="page-telegram">
-      <!-- Config -->
-      <div class="card" style="margin-bottom:1rem">
-        <h2 style="margin-bottom:.25rem">✈️ Integração Telegram</h2>
-        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:1.25rem">Configure um Bot para receber alertas de falhas e relatórios automáticos de status a cada 3 horas.</p>
-        <div class="alert" id="alertTelegram"></div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-          <div class="form-group" style="margin-bottom:0">
-            <label>Bot Token</label>
-            <input type="password" id="tgBotToken" placeholder="123456789:AABBccDD..." autocomplete="off" />
-            <div style="font-size:.75rem;color:var(--text-mid);margin-top:.3rem">Obtenha em <strong>@BotFather</strong> no Telegram</div>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Chat ID</label>
-            <input type="text" id="tgChatId" placeholder="-1001234567890" />
-            <div style="font-size:.75rem;color:var(--text-mid);margin-top:.3rem">ID do grupo ou canal. Use <strong>@userinfobot</strong> para descobrir</div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap">
-          <button class="btn btn-primary" id="btnSalvarTelegram">Salvar Configuração</button>
-          <button class="btn btn-ghost" id="btnTestarTelegram">🔔 Testar Conexão</button>
-          <button class="btn btn-ghost" id="btnRelatorioParcial">📊 Enviar Relatório Agora</button>
-        </div>
-
-        <div id="tgStatus" style="margin-top:1rem;padding:.65rem 1rem;border-radius:8px;font-size:.85rem;display:none"></div>
-      </div>
-
-      <!-- Alertas configurados -->
-      <div class="card" style="margin-bottom:1rem">
-        <h3 style="margin-bottom:1rem;font-size:.95rem">🔔 Alertas Automáticos</h3>
-        <div style="display:grid;gap:.6rem">
-          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
-            <span style="font-size:1.1rem">⚠️</span>
-            <div><strong>Falha no envio</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Notificação imediata quando uma mensagem ou arquivo falhar</span></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
-            <span style="font-size:1.1rem">🔴</span>
-            <div><strong>Sessão desconectada</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Alerta quando um número cair e precisar escanear o QR novamente</span></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
-            <span style="font-size:1.1rem">🚨</span>
-            <div><strong>Erro crítico na API</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Alerta quando o serviço interno travar ou crashar</span></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .9rem;background:var(--surface2);border-radius:8px">
-            <span style="font-size:1.1rem">📊</span>
-            <div><strong>Relatório a cada 3 horas</strong><br><span style="font-size:.8rem;color:var(--text-mid)">Status das sessões, mensagens enviadas, arquivos e erros</span></div>
-          </div>
+      <div class="page-hero hero-sky">
+        <div class="page-hero-icon">✈️</div>
+        <div class="page-hero-text">
+          <h1>Integração Telegram</h1>
+          <p>Receba alertas de falhas e relatórios automáticos a cada 3 horas diretamente no seu Telegram.</p>
         </div>
       </div>
 
-      <!-- Como configurar -->
-      <div class="card" style="font-size:.83rem;color:var(--text-mid);line-height:1.9">
-        <strong style="color:var(--text);font-size:.9rem">Como criar um Bot no Telegram:</strong><br>
-        1. Abra o Telegram e busque <strong style="color:var(--accent)">@BotFather</strong><br>
-        2. Envie <code style="color:var(--accent);background:var(--surface2);padding:.1rem .3rem;border-radius:4px">/newbot</code> e siga as instruções<br>
-        3. Copie o <strong>Token</strong> gerado e cole no campo acima<br>
-        4. Adicione o bot ao grupo/canal desejado e envie uma mensagem<br>
-        5. Use <strong style="color:var(--accent)">@userinfobot</strong> ou a API do Telegram para obter o <strong>Chat ID</strong><br>
-        6. Cole o Chat ID, salve e clique em <strong>Testar Conexão</strong>
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;align-items:start">
+
+        <!-- Config + Alertas -->
+        <div>
+          <div class="card" style="margin-bottom:1.25rem">
+            <div class="section-header">
+              <div class="section-header-icon shi-blue">⚙️</div>
+              <h2>Configuração do Bot</h2>
+            </div>
+            <div class="alert" id="alertTelegram"></div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+              <div class="form-group" style="margin-bottom:0">
+                <label>Bot Token</label>
+                <input type="password" id="tgBotToken" placeholder="123456789:AABBccDD..." autocomplete="off" />
+                <div style="font-size:.75rem;color:var(--text-mid);margin-top:.35rem">Obtenha em <strong style="color:var(--accent)">@BotFather</strong></div>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label>Chat ID</label>
+                <input type="text" id="tgChatId" placeholder="-1001234567890" />
+                <div style="font-size:.75rem;color:var(--text-mid);margin-top:.35rem">Use <strong style="color:var(--accent)">@userinfobot</strong> para descobrir</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+              <button class="btn btn-primary" id="btnSalvarTelegram">💾 Salvar Configuração</button>
+              <button class="btn btn-ghost" id="btnTestarTelegram">🔔 Testar Conexão</button>
+              <button class="btn btn-ghost" id="btnRelatorioParcial">📊 Enviar Relatório Agora</button>
+            </div>
+            <div id="tgStatus" style="margin-top:1rem;padding:.65rem 1rem;border-radius:8px;font-size:.85rem;display:none"></div>
+          </div>
+
+          <!-- Alertas -->
+          <div class="card">
+            <div class="section-header">
+              <div class="section-header-icon shi-red">🔔</div>
+              <h2>Alertas Automáticos</h2>
+            </div>
+            <div style="display:grid;gap:.6rem">
+              <div class="tg-alert-card tg-ac-red">
+                <div class="tg-alert-icon">⚠️</div>
+                <div class="tg-alert-text">
+                  <strong>Falha no envio</strong>
+                  <span>Notificação imediata quando uma mensagem ou arquivo falhar</span>
+                </div>
+              </div>
+              <div class="tg-alert-card tg-ac-orange">
+                <div class="tg-alert-icon">🔴</div>
+                <div class="tg-alert-text">
+                  <strong>Sessão desconectada</strong>
+                  <span>Alerta quando um número cair e precisar escanear o QR novamente</span>
+                </div>
+              </div>
+              <div class="tg-alert-card tg-ac-yellow">
+                <div class="tg-alert-icon">🚨</div>
+                <div class="tg-alert-text">
+                  <strong>Erro crítico na API</strong>
+                  <span>Alerta quando o serviço interno travar ou crashar</span>
+                </div>
+              </div>
+              <div class="tg-alert-card tg-ac-blue">
+                <div class="tg-alert-icon">📊</div>
+                <div class="tg-alert-text">
+                  <strong>Relatório a cada 3 horas</strong>
+                  <span>Status das sessões, mensagens enviadas, arquivos e erros</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Como configurar -->
+        <div class="card" style="margin-bottom:0">
+          <div class="section-header">
+            <div class="section-header-icon shi-teal">📖</div>
+            <h3>Como configurar</h3>
+          </div>
+          <div class="step-list">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-body">Abra o Telegram e busque <strong style="color:var(--accent)">@BotFather</strong></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-body">Envie <code style="background:var(--surface2);padding:.1rem .3rem;border-radius:4px;color:var(--accent)">/newbot</code> e siga as instruções</div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-body">Copie o <strong>Token</strong> gerado e cole no campo ao lado</div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-body">Adicione o bot ao grupo/canal desejado e envie uma mensagem</div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">5</div>
+              <div class="step-body">Use <strong style="color:var(--accent)">@userinfobot</strong> para descobrir o <strong>Chat ID</strong></div>
+            </div>
+            <div class="step-item">
+              <div class="step-num">6</div>
+              <div class="step-body">Cole o Chat ID, salve e clique em <strong>Testar Conexão</strong></div>
+            </div>
+          </div>
+
+          <div class="info-banner info-banner-blue" style="margin-top:1rem;margin-bottom:0">
+            <span class="ib-icon">💡</span>
+            <div>O bot só consegue enviar mensagens em grupos onde foi adicionado como membro.</div>
+          </div>
+        </div>
+
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── Confirm Dialog ── reutilizável, substitui confirm() nativo ── -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box" id="confirmBox">
+    <div class="confirm-header">
+      <div class="confirm-icon-wrap danger" id="confirmIconWrap">
+        <span id="confirmIcon">🗑️</span>
+      </div>
+      <div class="confirm-text">
+        <div class="confirm-title" id="confirmTitle">Confirmar ação</div>
+        <div class="confirm-body"  id="confirmBody">Tem certeza?</div>
+      </div>
+    </div>
+    <div class="confirm-footer">
+      <button class="confirm-btn confirm-btn-cancel" id="confirmBtnCancel">Cancelar</button>
+      <button class="confirm-btn confirm-btn-ok danger" id="confirmBtnOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Teste de Envio -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span id="modalTesteTitulo">Testar Envio</span>
+      <button class="modal-close" id="modalClosebtn">&times;</button>
+    </div>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" data-tab="texto">Mensagem de Texto</button>
+      <button class="modal-tab" data-tab="arquivo">Enviar Arquivo</button>
+    </div>
+
+    <!-- Painel Texto -->
+    <div class="modal-panel active" id="panel-texto">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Número de destino</label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
+          <input type="text" id="testePhone" placeholder="11999998888 (DDD + número)" style="flex:1" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Mensagem</label>
+        <textarea id="testeMsg" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.6rem .75rem;resize:vertical;font-family:inherit;font-size:.9rem" placeholder="Digite a mensagem de teste…"></textarea>
+      </div>
+      <button class="btn btn-primary" id="btnEnviarTexto">Enviar Mensagem</button>
+    </div>
+
+    <!-- Painel Arquivo -->
+    <div class="modal-panel" id="panel-arquivo">
+      <div class="form-group" style="margin-bottom:0">
+        <label>Número de destino</label>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
+          <input type="text" id="testePhoneArq" placeholder="11999998888 (DDD + número)" style="flex:1" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Arquivo</label>
+        <input type="file" id="testeFile" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.5rem .75rem" />
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label>Legenda (opcional)</label>
+        <input type="text" id="testeCaption" placeholder="Legenda do arquivo…" />
+      </div>
+      <button class="btn btn-primary" id="btnEnviarArquivo">Enviar Arquivo</button>
+    </div>
+
+    <div class="modal-result" id="modalTesteResult"></div>
+  </div>
+</div>
+
+<!-- Modal Configurações de Envio WA -->
+<div class="modal-overlay" id="waCfgOverlay">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-title">
+      <span>⚙️ Configurações de Envio</span>
+      <button class="modal-close" onclick="fecharWACfg()">&times;</button>
+    </div>
+
+    <div class="wa-cfg-grid">
+
+      <!-- Delay Randômico -->
+      <div class="wa-cfg-section">
+        <div class="wa-cfg-title">🔀 Delay Randômico</div>
+        <div class="wa-cfg-desc">Intervalo de espera aleatório entre cada mensagem para evitar detecção.</div>
+        <div class="wa-cfg-row">
+          <label>Mínimo</label>
+          <input type="number" class="wa-cfg-input" id="waCfgDelayMin" min="1" max="300" step="1" value="5" />
+          <span style="font-size:.78rem;color:var(--text-mid)">s</span>
+        </div>
+        <div class="wa-cfg-row">
+          <label>Máximo</label>
+          <input type="number" class="wa-cfg-input" id="waCfgDelayMax" min="1" max="600" step="1" value="15" />
+          <span style="font-size:.78rem;color:var(--text-mid)">s</span>
+        </div>
+      </div>
+
+      <!-- Limite Diário -->
+      <div class="wa-cfg-section">
+        <div class="wa-cfg-title">📊 Limite Diário</div>
+        <div class="wa-cfg-desc">Teto de mensagens enviadas por dia por número conectado. Use 0 para sem limite.</div>
+        <div class="wa-cfg-row">
+          <label>Máx/dia</label>
+          <input type="number" class="wa-cfg-input" id="waCfgDailyLimit" min="0" max="9999" step="1" value="0" style="width:90px" />
+          <span style="font-size:.72rem;color:var(--text-mid)">(0 = ilimitado)</span>
+        </div>
+      </div>
+
+      <!-- Horário de Funcionamento -->
+      <div class="wa-cfg-section">
+        <div class="wa-cfg-title">🕐 Horário de Funcionamento</div>
+        <div class="wa-cfg-desc">Disparos só dentro desta janela. Mensagens na fila aguardam automaticamente.</div>
+        <div class="wa-cfg-row">
+          <label>Início</label>
+          <input type="time" class="wa-cfg-input" id="waCfgHoraInicio" value="08:00" />
+        </div>
+        <div class="wa-cfg-row">
+          <label>Fim</label>
+          <input type="time" class="wa-cfg-input" id="waCfgHoraFim" value="18:00" />
+        </div>
+        <div class="wa-toggle-row" style="margin-top:.1rem">
+          <span class="wa-toggle-label">Restringir horário</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="waCfgHoraAtivo" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Spintax -->
+      <div class="wa-cfg-section">
+        <div class="wa-cfg-title">🎲 Suporte a Spintax</div>
+        <div class="wa-toggle-row">
+          <span class="wa-toggle-label">Ativar variações de texto</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="waCfgSpintax" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="wa-cfg-desc" style="margin-top:.1rem">
+          Use <code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:.05rem .3rem;font-size:.75rem">{Olá|Oi|Bom dia}</code> na mensagem para variar o texto.
+        </div>
+        <textarea class="spin-test-area" id="spinTestInput" placeholder="{Olá|Oi|Bom dia} {nome}, tudo bem?&#10;Seu pedido de {R$|valor} foi confirmado!"></textarea>
+        <button class="btn btn-ghost btn-sm" onclick="previewSpintax()" style="align-self:flex-start">▶ Testar</button>
+        <div class="spin-preview-box" id="spinPreviewBox"></div>
+      </div>
+
+    </div>
+
+    <div id="waCfgAlert" style="display:none;padding:.6rem 1rem;border-radius:8px;font-size:.84rem"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:.75rem;padding-top:.5rem;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" onclick="fecharWACfg()">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarWACfg">Salvar Configurações</button>
+    </div>
   </div>
 </div>
 
@@ -941,11 +2327,21 @@ Content-Type: application/json
     dashboard: 'Dashboard',
     mensagem: 'Configurar Mensagem',
     whatsapp: 'Conectar WhatsApp',
+    teste: 'Teste de Envio',
     token: 'Token API',
     arquivo: 'Envio de Arquivo',
     docs: 'Documentações',
     telegram: 'Telegram',
   };
+  const pageIcons = {
+    dashboard: '📊', mensagem: '✏️', whatsapp: '📱', teste: '🧪',
+    token: '🔑', arquivo: '📎', docs: '📖', telegram: '✈️',
+  };
+
+  function _setTopbarPage(p) {
+    document.getElementById('pageTitle').textContent = pages[p] || p;
+    document.getElementById('pageIcon').textContent  = pageIcons[p] || '📄';
+  }
 
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -954,18 +2350,90 @@ Content-Type: application/json
       document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
       item.classList.add('active');
       document.getElementById('page-' + p).classList.add('active');
-      document.getElementById('pageTitle').textContent = pages[p] || p;
+      _setTopbarPage(p);
       onPageLoad(p);
     });
   });
 
-  // ── Auth check ───────────────────────────────────────────────────────────────
+  // ── Topbar status pill ────────────────────────────────────────────────────────
+  async function _updateTopbarStatus() {
+    try {
+      const res = await fetch('/api/sessoes/live-status');
+      if (!res.ok) return;
+      const sessoes = await res.json();
+      const connected = sessoes.filter(s => s.status === 'connected').length;
+      const pill = document.getElementById('topbarStatusPill');
+      const txt  = document.getElementById('topbarStatusText');
+      if (connected > 0) {
+        pill.classList.add('active');
+        txt.textContent = connected === 1 ? '1 número ativo' : `${connected} números ativos`;
+      } else {
+        pill.classList.remove('active');
+        txt.textContent = 'Sem conexão WA';
+      }
+    } catch { /* silencioso */ }
+  }
+
+  // ── Auth check + permissões de menus ─────────────────────────────────────────
   async function checkAuth() {
     try {
       const res = await fetch('/api/auth/me');
       if (res.status === 401) { window.location.href = '/login'; return; }
       const data = await res.json();
-      document.getElementById('userBadge').textContent = data.username;
+
+      // Usuário logado
+      const name = data.username || '?';
+      document.getElementById('userBadge').textContent = name;
+      const av = document.getElementById('userAvatar');
+      if (av) av.textContent = name.charAt(0).toUpperCase();
+
+      // Nome do cliente (empresa licenciada)
+      const clientName = data.client_name || '';
+      if (clientName) {
+        const chip = document.getElementById('topbarClient');
+        const chipName = document.getElementById('topbarClientName');
+        if (chip && chipName) { chipName.textContent = clientName; chip.style.display = 'flex'; }
+        const sbBadge = document.getElementById('sidebarClientBadge');
+        const sbName  = document.getElementById('sidebarClientName');
+        if (sbBadge && sbName) { sbName.textContent = clientName; sbBadge.style.display = 'flex'; }
+      }
+
+      // ── Permissões de menus ──────────────────────────────────────────────────
+      // data.menus: null = todos permitidos; array = só esses menus visíveis
+      const allowedMenus = Array.isArray(data.menus) ? data.menus : null;
+      if (allowedMenus !== null) {
+        let firstAllowed = null;
+        document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+          const page = item.dataset.page;
+          if (allowedMenus.includes(page)) {
+            item.style.display = '';
+            if (!firstAllowed) firstAllowed = page;
+          } else {
+            item.style.display = 'none';
+            // Se a página atual for bloqueada, navegar para a primeira permitida
+            if (item.classList.contains('active') && firstAllowed) {
+              document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+              document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+              const targetItem = document.querySelector(`.nav-item[data-page="${firstAllowed}"]`);
+              if (targetItem) targetItem.classList.add('active');
+              const targetPage = document.getElementById('page-' + firstAllowed);
+              if (targetPage) targetPage.classList.add('active');
+              _setTopbarPage(firstAllowed);
+              onPageLoad(firstAllowed);
+            }
+          }
+        });
+        // Ocultar section labels da sidebar que ficaram sem itens visíveis
+        document.querySelectorAll('.sidebar-section').forEach(section => {
+          let next = section.nextElementSibling;
+          let hasVisible = false;
+          while (next && !next.classList.contains('sidebar-section')) {
+            if (next.classList.contains('nav-item') && next.style.display !== 'none') hasVisible = true;
+            next = next.nextElementSibling;
+          }
+          section.style.display = hasVisible ? '' : 'none';
+        });
+      }
     } catch { window.location.href = '/login'; }
   }
 
@@ -974,11 +2442,56 @@ Content-Type: application/json
     window.location.href = '/login';
   });
 
+  // ── Confirm dialog (substitui confirm() nativo) ───────────────────────────────
+  // Uso: const ok = await showConfirm({ title, body, okLabel, type })
+  // type: 'danger' (vermelho) | 'warning' (âmbar) | 'info' (verde)
+  (function _initConfirm() {
+    const overlay    = document.getElementById('confirmOverlay');
+    const iconWrap   = document.getElementById('confirmIconWrap');
+    const iconEl     = document.getElementById('confirmIcon');
+    const titleEl    = document.getElementById('confirmTitle');
+    const bodyEl     = document.getElementById('confirmBody');
+    const btnCancel  = document.getElementById('confirmBtnCancel');
+    const btnOk      = document.getElementById('confirmBtnOk');
+
+    let _resolve = null;
+
+    const _icons = { danger: '🗑️', warning: '⚠️', info: 'ℹ️' };
+
+    function _close(result) {
+      overlay.classList.remove('open');
+      if (_resolve) { _resolve(result); _resolve = null; }
+    }
+
+    btnCancel.addEventListener('click', () => _close(false));
+    btnOk.addEventListener('click',     () => _close(true));
+    overlay.addEventListener('click', e => { if (e.target === overlay) _close(false); });
+    document.addEventListener('keydown', e => {
+      if (!overlay.classList.contains('open')) return;
+      if (e.key === 'Escape') _close(false);
+      if (e.key === 'Enter')  { e.preventDefault(); _close(true); }
+    });
+
+    window.showConfirm = function({ title = 'Confirmar', body = '', okLabel = 'Confirmar', cancelLabel = 'Cancelar', type = 'danger', icon = null } = {}) {
+      titleEl.textContent    = title;
+      bodyEl.textContent     = body;
+      btnOk.textContent      = okLabel;
+      btnCancel.textContent  = cancelLabel;
+      iconEl.textContent     = icon || _icons[type] || '❓';
+      iconWrap.className     = 'confirm-icon-wrap ' + type;
+      btnOk.className        = 'confirm-btn confirm-btn-ok ' + type;
+      overlay.classList.add('open');
+      setTimeout(() => btnCancel.focus(), 50);
+      return new Promise(res => { _resolve = res; });
+    };
+  })();
+
   // ── API helpers ───────────────────────────────────────────────────────────────
   async function api(method, url, body) {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(url, opts);
+    if (res.status === 401) { window.location.href = '/login'; return { ok: false }; }
     try {
       const data = await res.json();
       return { ...data, _status: res.status, ok: res.ok };
@@ -1007,7 +2520,7 @@ Content-Type: application/json
       document.getElementById('statSessoes').textContent = d.sessoes_ativas ?? 0;
       const tbody = document.getElementById('tbodyRecentes');
       if (!d.recentes || d.recentes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-mid);text-align:center">Nenhuma mensagem</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2.5rem 1rem"><div style="font-size:1.75rem;margin-bottom:.4rem">💬</div><div style="color:var(--text-mid);font-size:.875rem">Nenhuma mensagem enviada ainda</div></td></tr>';
         return;
       }
       tbody.innerHTML = d.recentes.map(r => `
@@ -1040,10 +2553,24 @@ Content-Type: application/json
       .replace(/{valor_total_itens}/g, 'R$ 221,70')
       .replace(/{valor_total}/g, 'R$ 221,70')
       .replace(/{valor}/g, 'R$ 221,70');
-    document.getElementById('previewMensagem').textContent = preview;
+    document.getElementById('previewMensagem').textContent = preview || 'Digite o template ao lado para ver o preview aqui…';
   }
 
   document.getElementById('inputMensagem').addEventListener('input', e => updatePreview(e.target.value));
+
+  // Clique nas var-tags: insere a variável na posição do cursor no textarea
+  document.querySelectorAll('.var-tag[data-var]').forEach(tag => {
+    tag.addEventListener('click', () => {
+      const ta = document.getElementById('inputMensagem');
+      const v  = tag.dataset.var;
+      const start = ta.selectionStart;
+      const end   = ta.selectionEnd;
+      ta.value = ta.value.slice(0, start) + v + ta.value.slice(end);
+      ta.selectionStart = ta.selectionEnd = start + v.length;
+      ta.focus();
+      updatePreview(ta.value);
+    });
+  });
 
   document.getElementById('btnSalvarMensagem').addEventListener('click', async () => {
     const val = document.getElementById('inputMensagem').value;
@@ -1143,7 +2670,11 @@ Content-Type: application/json
     const sessoes = await res.json();
     const cont = document.getElementById('listaSessoes');
     if (sessoes.length === 0) {
-      cont.innerHTML = '<p style="color:var(--text-mid);font-size:.875rem;padding:.5rem 0">Nenhuma sessão. Adicione um número abaixo para começar.</p>';
+      cont.innerHTML = `<div style="text-align:center;padding:2rem 1rem;background:linear-gradient(135deg,#f0f7eb,#e8f5e0);border:1px dashed var(--accent-mid);border-radius:10px;margin-bottom:1rem">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">📱</div>
+        <div style="font-weight:600;color:var(--accent);margin-bottom:.25rem">Nenhum número conectado</div>
+        <div style="color:var(--text-mid);font-size:.84rem">Digite um nome abaixo e clique em <strong style="color:var(--accent)">Adicionar</strong> para começar.</div>
+      </div>`;
       return;
     }
     // Salva quais QR-areas estavam abertas ANTES de re-renderizar
@@ -1241,7 +2772,14 @@ Content-Type: application/json
   });
 
   async function deleteSessao(id) {
-    if (!confirm('Remover esta sessão WhatsApp?')) return;
+    const ok = await showConfirm({
+      title: 'Remover sessão WhatsApp?',
+      body: 'A sessão será desconectada e os dados do QR serão apagados. Você precisará escanear um novo código para reconectar.',
+      okLabel: 'Sim, remover',
+      type: 'danger',
+      icon: '📱',
+    });
+    if (!ok) return;
     _stopQrPoller(id);
     await fetch('/api/sessoes/' + id, { method: 'DELETE' });
     loadSessoes();
@@ -1264,17 +2802,19 @@ Content-Type: application/json
   }
 
   function _renderErpStatus(s) {
-    const hasCall = !!s.timestamp;
+    const hasCall  = !!s.timestamp;
     const statusEl = document.getElementById('erpStatStatus');
+    const cardEl   = statusEl ? statusEl.closest('.erp-stat-card') : null;
+
     if (!hasCall) {
       statusEl.textContent = '⭕ Aguardando';
-      statusEl.style.color = 'var(--text-mid)';
+      if (cardEl) { cardEl.className = 'erp-stat-card erp-sc-gray'; }
     } else if (s.status === 'ok') {
       statusEl.innerHTML = '✅ Conectado';
-      statusEl.style.color = 'var(--accent)';
+      if (cardEl) { cardEl.className = 'erp-stat-card erp-sc-green'; }
     } else {
       statusEl.innerHTML = '❌ Erro';
-      statusEl.style.color = '#f85149';
+      if (cardEl) { cardEl.className = 'erp-stat-card erp-sc-red'; cardEl.style.cssText += ';background:linear-gradient(135deg,#fff5f5,#fee2e2);border-color:#fecaca'; }
     }
     document.getElementById('erpStatTs').textContent       = s.timestamp   || '—';
     document.getElementById('erpStatIp').textContent       = s.ip          || '—';
@@ -1283,7 +2823,14 @@ Content-Type: application/json
   }
 
   document.getElementById('btnGerarToken').addEventListener('click', async () => {
-    if (!confirm('Gerar um novo token irá invalidar o token atual. O ERP precisará ser atualizado. Confirma?')) return;
+    const ok = await showConfirm({
+      title: 'Gerar novo token API?',
+      body: 'O token atual será invalidado imediatamente. Todas as integrações com o ERP precisarão ser atualizadas com o novo token.',
+      okLabel: 'Sim, gerar novo',
+      type: 'warning',
+      icon: '🔑',
+    });
+    if (!ok) return;
     const res = await api('POST', '/api/erp/gerar-token');
     if (res.ok) {
       document.getElementById('inputToken').value = res.token;
@@ -1315,6 +2862,7 @@ Content-Type: application/json
 
   function _arquivoStatusChip(a) {
     const map = {
+      queued:    ['chip-yellow', '&#x23F3; Na fila'],
       pending:   ['chip-yellow', '&#x23F3; Pendente'],
       failed:    ['chip-red',    '&#x2717; Falhou'],
       sent:      ['chip-gray',   '&#x2713; Enviado'],
@@ -1337,22 +2885,60 @@ Content-Type: application/json
     if (!res.ok) return;
     const arqs = await res.json();
     const tbody = document.getElementById('tbodyArquivos');
+
+    // Populate mini-stat counters
+    const counts = { queued: 0, pending: 0, sent: 0, delivered: 0, read: 0, failed: 0 };
+    arqs.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setEl('arqStNaFila',  counts.queued + counts.pending);
+    setEl('arqStEnviado', counts.sent);
+    setEl('arqStEntregue', counts.delivered);
+    setEl('arqStVisual',  counts.read);
+    setEl('arqStFalhou',  counts.failed);
+
     if (arqs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-mid);text-align:center">Nenhum arquivo</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:3rem 1rem">
+        <div style="font-size:2rem;margin-bottom:.5rem">📭</div>
+        <div style="color:var(--text-mid);font-size:.9rem">Nenhum arquivo enviado ainda.</div>
+        <div style="color:var(--text-light);font-size:.8rem;margin-top:.25rem">Os arquivos enviados pelo ERP aparecerão aqui.</div>
+      </td></tr>`;
       return;
     }
-    tbody.innerHTML = arqs.map(a => `
-      <tr>
-        <td style="font-size:.85rem">${a.nome_original}</td>
-        <td style="font-size:.82rem;color:var(--text-mid)">${a.destinatario || '—'}</td>
-        <td>${_arquivoStatusChip(a)}</td>
-        <td>${_fmtTs(a.sent_at || a.created_at)}</td>
-        <td>${_fmtTs(a.delivered_at)}</td>
-        <td>${_fmtTs(a.read_at)}</td>
-      </tr>`).join('');
 
-    // Agenda auto-refresh se houver arquivos aguardando entrega/visualização
-    const hasPending = arqs.some(a => a.status === 'sent' || a.status === 'delivered');
+    tbody.innerHTML = arqs.map(a => {
+      const ts = a.sent_at || a.created_at;
+      const dtLabel = _fmtTs(ts);
+      let detail = '';
+      if (a.delivered_at) detail += `<span style="color:#1a7db5">✓✓ ${a.delivered_at.slice(11,16)}</span> `;
+      if (a.read_at)       detail += `<span style="color:var(--accent)">✓✓ vis. ${a.read_at.slice(11,16)}</span>`;
+
+      // File type icon
+      const ext = (a.nome_original || '').split('.').pop().toLowerCase();
+      const icon = ext === 'pdf' ? '📄' : ['jpg','jpeg','png','gif','webp'].includes(ext) ? '🖼️' : '📁';
+
+      return `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:1.1rem">${icon}</span>
+            <div>
+              <div style="font-size:.85rem;font-weight:600;color:var(--text)">${a.nome_original}</div>
+              ${a.caption ? `<div style="font-size:.72rem;color:var(--text-mid);margin-top:.1rem">${a.caption}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td>
+          <span style="font-size:.8rem;font-family:monospace;background:var(--surface2);padding:.2rem .5rem;border-radius:5px;color:var(--text-mid)">${a.destinatario || '—'}</span>
+        </td>
+        <td>${dtLabel}</td>
+        <td>
+          ${_arquivoStatusChip(a)}
+          ${detail ? `<div style="font-size:.68rem;margin-top:.3rem;line-height:1.6">${detail}</div>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    const hasPending = arqs.some(a => ['queued','pending','sent','delivered'].includes(a.status));
     clearTimeout(_arquivosRefreshTimer);
     if (hasPending) _arquivosRefreshTimer = setTimeout(loadArquivos, 15_000);
   }
@@ -1361,11 +2947,13 @@ Content-Type: application/json
   function onPageLoad(page) {
     if (page !== 'whatsapp') _pararRefreshWA();
     if (page !== 'arquivo') { clearTimeout(_arquivosRefreshTimer); _arquivosRefreshTimer = null; }
+    if (page !== 'teste') _pararTestePoll();
     if (page === 'dashboard') loadStats();
     else if (page === 'mensagem') loadMensagem();
     else if (page === 'whatsapp') { loadSessoes(); _iniciarRefreshWA(); }
     else if (page === 'token') loadToken();
     else if (page === 'arquivo') loadArquivos();
+    else if (page === 'teste') loadTeste();
     else if (page === 'telegram') loadTelegram();
   }
 
@@ -1415,7 +3003,9 @@ Content-Type: application/json
   // ── Init ──────────────────────────────────────────────────────────────────────
   checkAuth().then(() => {
     loadStats();
+    _updateTopbarStatus();
     setInterval(loadStats, 30_000);
+    setInterval(_updateTopbarStatus, 30_000);
   });
 
   // ── Modal Teste de Envio ──────────────────────────────────────────────────────
@@ -1476,60 +3066,218 @@ Content-Type: application/json
     el.className = 'modal-result ' + (type === 'ok' ? 'ok' : 'err');
     el.textContent = msg;
   }
+
+  // ── Teste de Envio (página) ───────────────────────────────────────────────────
+  let _testePoller = null;
+
+  function _pararTestePoll() {
+    if (_testePoller) { clearInterval(_testePoller); _testePoller = null; }
+  }
+
+  function _testeResult(elId, type, msg) {
+    const el = document.getElementById(elId);
+    el.style.display = 'block';
+    el.style.background = type === 'ok' ? 'var(--accent-soft)' : type === 'loading' ? 'var(--surface2)' : 'var(--red-soft)';
+    el.style.border = `1px solid ${type === 'ok' ? 'var(--accent-mid)' : type === 'loading' ? 'var(--border)' : '#fecaca'}`;
+    el.style.color = type === 'ok' ? 'var(--accent)' : type === 'loading' ? 'var(--text-mid)' : 'var(--red)';
+    el.textContent = msg;
+  }
+
+  async function _refreshTeste() {
+    const res = await fetch('/api/sessoes/live-status');
+    if (!res.ok) return;
+    const sessoes = await res.json();
+    const sel = document.getElementById('testeSelectSessao');
+    const alertEl = document.getElementById('testeAlertSessao');
+    if (!sel) return; // página pode ter sido trocada
+    const connected = sessoes.filter(s => s.status === 'connected');
+    const prevId = sel.value;
+
+    if (connected.length === 0) {
+      sel.innerHTML = '<option value="">Nenhuma sessão conectada</option>';
+      alertEl.style.display = 'block';
+      alertEl.style.background = 'var(--red-soft)';
+      alertEl.style.border = '1px solid #fecaca';
+      alertEl.style.color = 'var(--red)';
+      alertEl.textContent = '⚠️ Nenhuma sessão WhatsApp conectada. Vá em Conectar WhatsApp para escanear o QR Code.';
+    } else {
+      sel.innerHTML = connected.map(s =>
+        `<option value="${s.id}"${s.id === prevId ? ' selected' : ''}>${s.nome}${s.phone ? ' — ' + s.phone : ''}</option>`
+      ).join('');
+      alertEl.style.display = 'none';
+    }
+  }
+
+  async function loadTeste() {
+    _pararTestePoll();
+    await _refreshTeste();
+    _testePoller = setInterval(_refreshTeste, 8000);
+  }
+
+  document.getElementById('btnTestePgTexto').addEventListener('click', async () => {
+    const sessaoId = document.getElementById('testeSelectSessao').value;
+    const phone    = '55' + document.getElementById('testePgPhone').value.trim().replace(/\D/g, '');
+    const msg      = document.getElementById('testePgMsg').value.trim();
+    const resEl    = 'testePgTextoResult';
+
+    if (!sessaoId) { _testeResult(resEl, 'error', 'Selecione uma sessão conectada.'); return; }
+    if (phone.length < 12) { _testeResult(resEl, 'error', 'Informe o número com DDD (ex: 11999998888).'); return; }
+    if (!msg) { _testeResult(resEl, 'error', 'Digite a mensagem.'); return; }
+
+    _testeResult(resEl, 'loading', 'Enviando mensagem…');
+    const res = await api('POST', `/api/sessoes/${sessaoId}/send-text`, { phone, message: msg });
+    if (res && res.ok) _testeResult(resEl, 'ok', '✅ Mensagem enviada com sucesso!');
+    else _testeResult(resEl, 'error', '❌ ' + (res?.detail || 'Erro ao enviar mensagem.'));
+  });
+
+  document.getElementById('btnTestePgArquivo').addEventListener('click', async () => {
+    const sessaoId  = document.getElementById('testeSelectSessao').value;
+    const phone     = '55' + document.getElementById('testePgPhoneArq').value.trim().replace(/\D/g, '');
+    const caption   = document.getElementById('testePgCaption').value.trim();
+    const fileInput = document.getElementById('testePgFile');
+    const resEl     = 'testePgArqResult';
+
+    if (!sessaoId) { _testeResult(resEl, 'error', 'Selecione uma sessão conectada.'); return; }
+    if (phone.length < 12) { _testeResult(resEl, 'error', 'Informe o número com DDD (ex: 11999998888).'); return; }
+    if (!fileInput.files.length) { _testeResult(resEl, 'error', 'Selecione um arquivo.'); return; }
+
+    const form = new FormData();
+    form.append('phone', phone);
+    form.append('caption', caption);
+    form.append('file', fileInput.files[0]);
+
+    _testeResult(resEl, 'loading', 'Enviando arquivo…');
+    const r = await fetch(`/api/sessoes/${sessaoId}/send-file`, { method: 'POST', body: form });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) _testeResult(resEl, 'ok', '✅ Arquivo enviado com sucesso!');
+    else _testeResult(resEl, 'error', '❌ ' + (d.detail || d.error || 'Erro ao enviar arquivo.'));
+  });
+
+  // ── Configurações de Envio WA ─────────────────────────────────────────────────
+  async function abrirWACfg() {
+    // Carrega configurações salvas
+    const res = await fetch('/api/config');
+    const cfg = res.ok ? await res.json() : {};
+
+    const toNum = (v, def) => isNaN(parseFloat(v)) ? def : parseFloat(v);
+
+    document.getElementById('waCfgDelayMin').value   = toNum(cfg.wa_delay_min,   5);
+    document.getElementById('waCfgDelayMax').value   = toNum(cfg.wa_delay_max,  15);
+    document.getElementById('waCfgDailyLimit').value = toNum(cfg.wa_daily_limit,  0);
+    document.getElementById('waCfgHoraInicio').value = cfg.wa_hora_inicio || '08:00';
+    document.getElementById('waCfgHoraFim').value    = cfg.wa_hora_fim    || '18:00';
+    document.getElementById('waCfgHoraAtivo').checked = !!(cfg.wa_hora_inicio && cfg.wa_hora_fim);
+    document.getElementById('waCfgSpintax').checked  = cfg.wa_spintax !== '0';
+
+    document.getElementById('waCfgAlert').style.display = 'none';
+    document.getElementById('spinPreviewBox').classList.remove('visible');
+    document.getElementById('waCfgOverlay').classList.add('open');
+  }
+
+  function fecharWACfg() {
+    document.getElementById('waCfgOverlay').classList.remove('open');
+  }
+
+  document.getElementById('waCfgOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) fecharWACfg();
+  });
+
+  document.getElementById('btnSalvarWACfg').addEventListener('click', async () => {
+    const min   = parseFloat(document.getElementById('waCfgDelayMin').value)  || 5;
+    const max   = parseFloat(document.getElementById('waCfgDelayMax').value)  || 15;
+    const limit = parseInt(document.getElementById('waCfgDailyLimit').value)  || 0;
+    const inicio = document.getElementById('waCfgHoraInicio').value;
+    const fim    = document.getElementById('waCfgHoraFim').value;
+    const horaOn = document.getElementById('waCfgHoraAtivo').checked;
+    const spintax = document.getElementById('waCfgSpintax').checked ? '1' : '0';
+
+    if (min >= max) {
+      _waCfgAlert('error', 'O delay mínimo deve ser menor que o máximo.');
+      return;
+    }
+
+    const payload = {
+      wa_delay_min:   String(min),
+      wa_delay_max:   String(max),
+      wa_daily_limit: String(limit),
+      wa_hora_inicio: horaOn ? inicio : '',
+      wa_hora_fim:    horaOn ? fim    : '',
+      wa_spintax:     spintax,
+    };
+
+    const res = await api('POST', '/api/config', payload);
+    if (res && res.ok) {
+      _waCfgAlert('ok', '✅ Configurações salvas com sucesso!');
+      setTimeout(fecharWACfg, 900);
+    } else {
+      _waCfgAlert('error', '❌ Erro ao salvar configurações.');
+    }
+  });
+
+  function _waCfgAlert(type, msg) {
+    const el = document.getElementById('waCfgAlert');
+    el.style.display = 'block';
+    const ok = type === 'ok';
+    el.style.background = ok ? 'var(--accent-soft)' : 'var(--red-soft)';
+    el.style.border     = ok ? '1px solid var(--accent-mid)' : '1px solid #fecaca';
+    el.style.color      = ok ? 'var(--accent)' : 'var(--red)';
+    el.textContent = msg;
+  }
+
+  // ── Spintax preview (client-side) ────────────────────────────────────────────
+  function _processSpintax(text) {
+    const pattern = /\{([^{}]+)\}/g;
+    let result = text, prev = '';
+    for (let i = 0; i < 10 && result !== prev; i++) {
+      prev = result;
+      result = result.replace(pattern, (_, opts) => {
+        const choices = opts.split('|');
+        return choices[Math.floor(Math.random() * choices.length)];
+      });
+    }
+    return result;
+  }
+
+  function previewSpintax() {
+    const input = document.getElementById('spinTestInput').value.trim();
+    const box   = document.getElementById('spinPreviewBox');
+    if (!input) return;
+    box.textContent = _processSpintax(input);
+    box.classList.add('visible');
+  }
+
+  // ── Documentação ERP ─────────────────────────────────────────────────────────
+  async function abrirDocErpBrowser() {
+    /**
+     * Abre o documento de integração ERP no browser padrão do SO.
+     * Funciona dentro do kiosk (pywebview) pois é o servidor que chama os.startfile / open.
+     * Após abrir, o usuário usa Ctrl+P → Salvar como PDF no browser nativo.
+     */
+    try {
+      const r = await fetch('/api/docs/abrir-erp');
+      const data = await r.json();
+      if (!data.ok) {
+        alert('Não foi possível abrir o documento: ' + (data.error || 'erro desconhecido'));
+      }
+    } catch (e) {
+      alert('Erro ao abrir o documento: ' + e.message);
+    }
+  }
+
+  function baixarDocErp() {
+    /**
+     * Faz o download do HTML da documentação ERP.
+     * O usuário pode abrir o arquivo em qualquer browser e salvar como PDF.
+     */
+    const a = document.createElement('a');
+    a.href = '/api/docs/erp';
+    a.download = 'ZapDin-Integracao-ERP.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
 </script>
 
-<!-- Modal Teste de Envio -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-box">
-    <div class="modal-title">
-      <span id="modalTesteTitulo">Testar Envio</span>
-      <button class="modal-close" id="modalClosebtn">&times;</button>
-    </div>
-
-    <div class="modal-tabs">
-      <button class="modal-tab active" data-tab="texto">Mensagem de Texto</button>
-      <button class="modal-tab" data-tab="arquivo">Enviar Arquivo</button>
-    </div>
-
-    <!-- Painel Texto -->
-    <div class="modal-panel active" id="panel-texto">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Número de destino</label>
-        <div style="display:flex;gap:.5rem;align-items:center">
-          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
-          <input type="text" id="testePhone" placeholder="11999998888 (DDD + número)" style="flex:1" />
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Mensagem</label>
-        <textarea id="testeMsg" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.6rem .75rem;resize:vertical;font-family:inherit;font-size:.9rem" placeholder="Digite a mensagem de teste…"></textarea>
-      </div>
-      <button class="btn btn-primary" id="btnEnviarTexto">Enviar Mensagem</button>
-    </div>
-
-    <!-- Painel Arquivo -->
-    <div class="modal-panel" id="panel-arquivo">
-      <div class="form-group" style="margin-bottom:0">
-        <label>Número de destino</label>
-        <div style="display:flex;gap:.5rem;align-items:center">
-          <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.55rem .75rem;color:var(--text-mid);font-size:.9rem;white-space:nowrap">🇧🇷 +55</span>
-          <input type="text" id="testePhoneArq" placeholder="11999998888 (DDD + número)" style="flex:1" />
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Arquivo</label>
-        <input type="file" id="testeFile" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.5rem .75rem" />
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label>Legenda (opcional)</label>
-        <input type="text" id="testeCaption" placeholder="Legenda do arquivo…" />
-      </div>
-      <button class="btn btn-primary" id="btnEnviarArquivo">Enviar Arquivo</button>
-    </div>
-
-    <div class="modal-result" id="modalTesteResult"></div>
-  </div>
-</div>
 
 </body>
 </html>

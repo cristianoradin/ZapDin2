@@ -15,6 +15,7 @@ class ClienteCreate(BaseModel):
     nome: str
     cnpj: Optional[str] = None
     representante_id: Optional[int] = None
+    grupo_id: Optional[int] = None
     endereco: Optional[str] = None
     cidade: Optional[str] = None
     uf: Optional[str] = None
@@ -31,11 +32,14 @@ async def list_clientes(
 ):
     async with db.execute(
         """SELECT c.id, c.nome, c.cnpj, c.token, c.ativo, c.versao_instalada,
-                  c.cidade, c.uf, c.created_at,
+                  c.cidade, c.uf, c.created_at, c.activation_token,
+                  c.grupo_id,
+                  g.nome as grupo_nome,
                   r.nome as rep_nome
            FROM clientes c
+           LEFT JOIN grupos g ON g.id = c.grupo_id
            LEFT JOIN representantes r ON r.id = c.representante_id
-           ORDER BY c.nome"""
+           ORDER BY g.nome NULLS LAST, c.nome"""
     ) as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]
@@ -49,9 +53,10 @@ async def create_cliente(
 ):
     token = secrets.token_urlsafe(24)
     cur = await db.execute(
-        """INSERT INTO clientes (nome, cnpj, token, representante_id, endereco, cidade, uf)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (body.nome, body.cnpj, token, body.representante_id, body.endereco, body.cidade, body.uf),
+        """INSERT INTO clientes (nome, cnpj, token, representante_id, grupo_id, endereco, cidade, uf)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        (body.nome, body.cnpj, token, body.representante_id, body.grupo_id,
+         body.endereco, body.cidade, body.uf),
     )
     await db.commit()
     return {"id": cur.lastrowid, "token": token, "nome": body.nome}
@@ -65,9 +70,11 @@ async def update_cliente(
     _: dict = Depends(get_current_user),
 ):
     await db.execute(
-        """UPDATE clientes SET nome=?, cnpj=?, representante_id=?, endereco=?, cidade=?, uf=?, ativo=?
+        """UPDATE clientes SET nome=?, cnpj=?, representante_id=?, grupo_id=?,
+                               endereco=?, cidade=?, uf=?, ativo=?
            WHERE id=?""",
-        (body.nome, body.cnpj, body.representante_id, body.endereco, body.cidade, body.uf, body.ativo, cliente_id),
+        (body.nome, body.cnpj, body.representante_id, body.grupo_id,
+         body.endereco, body.cidade, body.uf, body.ativo, cliente_id),
     )
     await db.commit()
     return {"ok": True}

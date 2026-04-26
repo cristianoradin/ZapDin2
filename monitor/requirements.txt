@@ -7,3 +7,5 @@ python-multipart>=0.0.12
 python-jose[cryptography]>=3.3.0
 itsdangerous>=2.2.0
 httpx>=0.28.0
+# ── Janela nativa sem barra de endereços (macOS/Windows) ─────────────────────
+pywebview>=5.0.0

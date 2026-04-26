@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from .core.config import settings
 from .core.database import init_db
 from .routers import auth, clientes, monitor_router, versoes
+from .routers.activation import router as activation_router
+from .routers.grupos import router as grupos_router
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
@@ -33,10 +35,12 @@ async def lifespan(app: FastAPI):
 
 
 # ── App ────────────────────────────────────────────────────────────────────────
-fastapi_app = FastAPI(title="ZapDin Monitor", version="1.0.0", lifespan=lifespan)
+fastapi_app = FastAPI(title="ZapDin Monitor", version="2.0.0", lifespan=lifespan)
 
+fastapi_app.include_router(activation_router)   # /api/activate/validate + token management
 fastapi_app.include_router(auth.router)
 fastapi_app.include_router(clientes.router)
+fastapi_app.include_router(grupos_router)
 fastapi_app.include_router(monitor_router.router)
 fastapi_app.include_router(versoes.router)
 
@@ -54,9 +58,16 @@ _static_dir = os.path.join(os.path.dirname(__file__), "static")
 fastapi_app.mount("/logo", StaticFiles(directory=os.path.join(_static_dir, "logo")), name="logo")
 
 
+_NO_CACHE = {
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
 @fastapi_app.get("/login")
 async def serve_login():
-    return FileResponse(os.path.join(_static_dir, "login.html"))
+    return FileResponse(os.path.join(_static_dir, "login.html"), headers=_NO_CACHE)
 
 
 @fastapi_app.get("/{full_path:path}")
@@ -65,7 +76,7 @@ async def spa_fallback(full_path: str):
         return JSONResponse({"error": "Not found"}, status_code=404)
     index = os.path.join(_static_dir, "index.html")
     if os.path.exists(index):
-        return FileResponse(index)
+        return FileResponse(index, headers=_NO_CACHE)
     return JSONResponse({"error": "Frontend not found"}, status_code=404)
 
 
