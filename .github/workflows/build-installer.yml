@@ -115,14 +115,16 @@ jobs:
           }
         shell: pwsh
 
-      # ── Download NSSM ──────────────────────────────────────────────────────
-      - name: Download NSSM
+      # ── Instalar NSSM via Chocolatey ───────────────────────────────────────
+      - name: Install NSSM
         run: |
-          Invoke-WebRequest -Uri "https://nssm.cc/release/nssm-2.24.zip" `
-            -OutFile nssm.zip -UseBasicParsing
-          Expand-Archive nssm.zip -DestinationPath nssm_tmp -Force
-          Copy-Item nssm_tmp\nssm-2.24\win64\nssm.exe -Destination payload\tools\nssm.exe
-          Remove-Item nssm_tmp -Recurse -Force
+          choco install nssm --yes --no-progress --ignore-checksums
+          $nssmPath = "C:\ProgramData\chocolatey\bin\nssm.exe"
+          if (-not (Test-Path $nssmPath)) {
+            $nssmPath = (Get-Command nssm -ErrorAction SilentlyContinue).Source
+          }
+          Copy-Item $nssmPath -Destination payload\tools\nssm.exe -Force
+          Write-Host "NSSM copiado de: $nssmPath"
         shell: pwsh
 
       # ── Download bootstrappers de deps (WebView2 + VC++) ──────────────────
