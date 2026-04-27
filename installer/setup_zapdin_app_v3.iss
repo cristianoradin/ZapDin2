@@ -24,6 +24,7 @@
 #define ServiceWorker     "ZapDinWorker"
 #define AppPort           "4000"
 #define UpdateChannelURL  "https://github.com/cristianoradin/ZapDin2/releases/latest/download"
+#define DefaultMonitorURL "http://zapdin.gruposgapetro.com.br:5000"
 
 ; ──── URLs de bootstrappers de dependência ────────────────────────────────────
 #define WebView2BootstrapURL "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
@@ -222,7 +223,7 @@ begin
   MonitorUrlEdit.Left := 0;
   MonitorUrlEdit.Top := 36;
   MonitorUrlEdit.Width := MonitorPage.SurfaceWidth;
-  MonitorUrlEdit.Text := 'http://';
+  MonitorUrlEdit.Text := '{#DefaultMonitorURL}';
   MonitorUrlEdit.Font.Size := 10;
 
   MonitorUrlHint := TLabel.Create(MonitorPage);
