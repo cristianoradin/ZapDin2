@@ -1,0 +1,26 @@
+# ============================================================
+#  Cloudflare Tunnel — Config do ZapDin Monitor
+# ============================================================
+# Este arquivo é gerado automaticamente por:
+#   bash scripts/setup_cloudflare_tunnel.sh
+#
+# Para configurar manualmente:
+#   1. Substitua TUNNEL_ID pelo ID do seu túnel
+#      (obtenha com: cloudflared tunnel list)
+#   2. Substitua monitor.seudominio.com pelo seu hostname
+#   3. Salve como ~/.cloudflared/config.yml
+# ============================================================
+
+tunnel: TUNNEL_ID_AQUI
+credentials-file: /home/SEU_USUARIO/.cloudflared/TUNNEL_ID_AQUI.json
+
+ingress:
+  # O monitor roda localmente na porta 5000
+  # O Cloudflare expõe via HTTPS sem abrir porta no servidor
+  - hostname: monitor.seudominio.com
+    service: http://localhost:5000
+    originRequest:
+      noTLSVerify: false
+
+  # Rota padrão — retorna 404 para qualquer outro hostname
+  - service: http_status:404

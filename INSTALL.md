@@ -183,6 +183,61 @@ Para publicar uma nova versão:
 
 ---
 
+## PARTE 6 — Segurança: Cloudflare Tunnel (opcional, recomendado)
+
+Por padrão o monitor escuta na porta 5000. Para **não abrir nenhuma porta** no servidor e ainda assim deixar o app acessar o monitor, use o Cloudflare Tunnel.
+
+> **Como funciona:** o servidor faz uma conexão de *saída* para o Cloudflare. Nenhuma porta fica exposta na internet. O app acessa o monitor via HTTPS normal.
+
+### Pré-requisitos
+
+- Domínio cadastrado no Cloudflare (ex: `seudominio.com`)
+- Conta Cloudflare gratuita em cloudflare.com
+
+### 6.1 — Executar o script de setup
+
+```bash
+cd ~/ZapDin2
+bash scripts/setup_cloudflare_tunnel.sh
+```
+
+O script irá:
+1. Instalar o `cloudflared` automaticamente
+2. Abrir autenticação com sua conta Cloudflare no navegador
+3. Criar o túnel `zapdin-monitor`
+4. Pedir o hostname (ex: `monitor.seudominio.com`)
+5. Criar o registro DNS no Cloudflare automaticamente
+6. Instalar o túnel como serviço systemd (inicia com o servidor)
+7. Atualizar `monitor/.env` com a URL pública
+
+### 6.2 — Resultado
+
+```
+App Windows → HTTPS → Cloudflare → túnel → servidor:5000
+```
+
+- Porta 5000: **FECHADA** (nunca exposta)
+- Porta 443: **não precisa abrir** (o Cloudflare usa a saída do servidor)
+- URL do monitor: `https://monitor.seudominio.com`
+
+### 6.3 — Configurar o app com a nova URL
+
+No instalador Windows, informe:
+```
+https://monitor.seudominio.com
+```
+
+Em vez de `http://IP:5000`.
+
+### 6.4 — Verificar o túnel
+
+```bash
+sudo systemctl status zapdin-tunnel
+sudo journalctl -u zapdin-tunnel -f
+```
+
+---
+
 ## Senhas padrão
 
 | Sistema | Usuário | Senha | **Troque após instalar!** |
@@ -216,5 +271,7 @@ curl http://localhost:4000/api/activate/status
 - [ ] Instalador executado no cliente com URL do monitor correta
 - [ ] App ativado com o token (status = active)
 - [ ] Serviços `ZapDinApp` e `ZapDinWorker` rodando no cliente
-- [ ] Firewall liberado nas duas pontas (porta 5000 servidor, 4000 cliente)
+- [ ] **Acesso ao monitor** — escolha uma das opções:
+  - [ ] Opção A: Firewall liberado (porta 5000 servidor) — acesso direto por IP
+  - [ ] Opção B: Cloudflare Tunnel configurado — **sem porta aberta** (recomendado)
 - [ ] Senhas padrão trocadas em ambos os sistemas
