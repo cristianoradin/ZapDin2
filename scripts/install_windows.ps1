@@ -29,7 +29,7 @@ $LOG_FILE       = "$INSTALL_DIR\logs\install.log"
 
 # Token de acesso ao repositório GitHub (leitura)
 # Deixe vazio se o repositório for público
-$GITHUB_TOKEN   = ""
+$GITHUB_TOKEN   = "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"
 
 # Endereço do Monitor pré-configurado (deixe vazio para perguntar ao instalar)
 $MONITOR_URL_DEFAULT = "http://cloud.gruposgapetro.com.br:5000"
