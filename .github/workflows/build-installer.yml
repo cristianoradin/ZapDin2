@@ -274,6 +274,15 @@ jobs:
           }
         shell: pwsh
 
+      # ── Diagnóstico antes do Inno Setup ──────────────────────────────────
+      - name: Listar payload antes do Inno Setup
+        run: |
+          Write-Host "=== payload/ ==="
+          Get-ChildItem payload -Recurse -Depth 2 | Select-Object FullName, Length | Format-Table
+          Write-Host "=== output/ ==="
+          Get-ChildItem output -ErrorAction SilentlyContinue | Select-Object Name, Length
+        shell: pwsh
+
       # ── Inno Setup: gera instalador final ─────────────────────────────────
       - name: Compile Inno Setup — setup_zapdin_app_v3.iss
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
@@ -281,11 +290,26 @@ jobs:
           path: installer/setup_zapdin_app_v3.iss
           options: /DAppVersion=${{ env.VERSION }}
 
+      # ── Verifica se o setup foi gerado ────────────────────────────────────
+      - name: Verificar setup gerado
+        run: |
+          $setup = "output\ZapDin-Setup-$env:VERSION.exe"
+          if (Test-Path $setup) {
+            $size = (Get-Item $setup).Length
+            Write-Host "OK: $setup ($size bytes)"
+          } else {
+            Write-Host "ERRO: $setup nao foi gerado!"
+            Get-ChildItem output -ErrorAction SilentlyContinue
+            exit 1
+          }
+        shell: pwsh
+
       # ── Upload artefatos ao GitHub Release ────────────────────────────────
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
+          fail_on_unmatched_files: true
           files: |
             payload/ZapDin-App.exe
             payload/ZapDin-Worker.exe
