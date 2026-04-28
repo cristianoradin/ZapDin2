@@ -212,6 +212,10 @@ jobs:
             --output-dir=payload `
             --windows-icon-from-ico=zapdin.ico `
             --include-package=webview `
+            --nofollow-import-to=webview.platforms.android `
+            --nofollow-import-to=webview.platforms.gtk `
+            --nofollow-import-to=webview.platforms.qt `
+            --nofollow-import-to=webview.platforms.cocoa `
             --noinclude-pytest-mode=nofollow `
             --assume-yes-for-downloads `
             app/launcher_gui.py
