@@ -116,7 +116,8 @@ jobs:
       # Usa o logo do repo; fallback para cor sólida. Sem here-string (evita
       # problemas de indentação YAML/PowerShell com @"..."@).
       - name: Generate ICO
-        run: python -c "from PIL import Image; import os; src='app/static/logo/Zapdin-removebg-preview.png'; img=Image.open(src).convert('RGBA') if os.path.exists(src) else Image.new('RGBA',(256,256),(47,108,0,255)); img.save('zapdin.ico',format='ICO',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]); print('ICO gerado:', os.path.getsize('zapdin.ico'), 'bytes')"
+        run: |
+          python -c "from PIL import Image; import os; src='app/static/logo/Zapdin-removebg-preview.png'; img=Image.open(src).convert('RGBA') if os.path.exists(src) else Image.new('RGBA',(256,256),(47,108,0,255)); img.save('zapdin.ico',format='ICO',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]); print('ICO gerado OK')"
         shell: pwsh
 
       # ── Pasta de payload ───────────────────────────────────────────────────
