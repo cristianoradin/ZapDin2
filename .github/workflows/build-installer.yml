@@ -202,21 +202,23 @@ jobs:
             app/worker_main.py
         shell: pwsh
 
-      # ── Nuitka: compila ZapDin-Launcher.exe (Kiosk WebView2) ──────────────
-      - name: Nuitka — ZapDin-Launcher.exe
+      # ── PyInstaller: compila ZapDin-Launcher.exe (Kiosk WebView2) ───────────
+      # Nuitka 4.x tem bug conhecido com pywebview (conflito de plugins).
+      # PyInstaller compila pywebview corretamente no Windows.
+      # pywebview NÃO está em requirements.txt (causaria erro pythonnet no cliente),
+      # mas é instalado aqui apenas para compilar o exe no CI.
+      - name: PyInstaller — ZapDin-Launcher.exe
         run: |
-          python -m nuitka `
+          pip install pyinstaller pywebview --quiet
+          pyinstaller `
             --onefile `
-            --windows-console-mode=disable `
-            --output-filename=ZapDin-Launcher.exe `
-            --output-dir=payload `
-            --windows-icon-from-ico=zapdin.ico `
-            --disable-plugin=pywebview `
-            --include-module=webview `
-            --include-module=webview.platforms.edgechromium `
-            --include-module=webview.platforms.mshtml `
-            --noinclude-pytest-mode=nofollow `
-            --assume-yes-for-downloads `
+            --noconsole `
+            --name ZapDin-Launcher `
+            --distpath payload `
+            --icon zapdin.ico `
+            --hidden-import webview.platforms.edgechromium `
+            --hidden-import webview.platforms.mshtml `
+            --collect-all webview `
             app/launcher_gui.py
         shell: pwsh
 

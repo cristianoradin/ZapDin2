@@ -13,7 +13,8 @@ qrcode>=7.4.0
 # ── Ativação por token (criptografia AES-256-GCM) ────────────────────────────
 cryptography>=42.0.0
 # ── Kiosk window sem barra de endereços (WebView2) ──────────────────────────
-# Instalado apenas no launcher_gui.exe — não necessário para o serviço Windows
-pywebview>=5.0.0
+# pywebview NÃO está aqui — instalado somente no ambiente de compilação do CI
+# O serviço Windows (uvicorn) não usa pywebview; apenas o ZapDin-Launcher.exe compilado usa.
+# Adicionar pywebview aqui causaria falha no pip install (pythonnet precisa de .NET SDK)
 # ── Worker standalone (ZapDin-Worker.exe) ────────────────────────────────────
 # httpx já incluído acima
