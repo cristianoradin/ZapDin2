@@ -66,6 +66,19 @@ class UsernamePayload(BaseModel):
 #  Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
 
+@router.get("/usuarios")
+async def list_usuarios(
+    db: aiosqlite.Connection = Depends(get_db),
+    _: None = Depends(_check_token),
+):
+    """Lista usuários do app — chamado pelo Monitor para exibir usuários do posto."""
+    async with db.execute(
+        "SELECT id, username, created_at FROM usuarios ORDER BY username"
+    ) as cur:
+        rows = await cur.fetchall()
+    return {"usuarios": [dict(r) for r in rows]}
+
+
 @router.post("/usuarios/sync")
 async def sync_usuario(
     body: UserSyncPayload,

@@ -113,14 +113,26 @@ jobs:
         shell: pwsh
 
       # ── Download ICO do release ────────────────────────────────────────────
+      # Se o download falhar, gera um ICO válido com Pillow (arquivo vazio
+      # causa ValueError no PyInstaller e no Inno Setup).
       - name: Download ICO
         run: |
           $url = "https://github.com/${{ github.repository }}/releases/download/v$env:VERSION/zapdin.ico"
+          $ok = $false
           try {
             Invoke-WebRequest -Uri $url -OutFile "zapdin.ico" -UseBasicParsing
+            $ok = $true
+            Write-Host "ICO baixado com sucesso."
           } catch {
-            Write-Host "ICO não encontrado na release, criando placeholder."
-            New-Item -ItemType File -Path "zapdin.ico" -Force | Out-Null
+            Write-Host "ICO nao encontrado na release — gerando placeholder valido com Pillow."
+          }
+          if (-not $ok) {
+            python -c @"
+from PIL import Image
+img = Image.new('RGBA', (256, 256), (47, 108, 0, 255))
+img.save('zapdin.ico', format='ICO', sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+print('ICO placeholder gerado com sucesso.')
+"@
           }
         shell: pwsh
 

@@ -511,10 +511,13 @@
     <span class="nav-icon">🗂️</span> Grupos
   </div>
   <div class="nav-item" data-page="clientes">
-    <span class="nav-icon">🏪</span> Postos / Clientes
+    <span class="nav-icon">🏪</span> Clientes
   </div>
   <div class="nav-item" data-page="usuarios">
-    <span class="nav-icon">👥</span> Usuários
+    <span class="nav-icon">👥</span> Usuários do App
+  </div>
+  <div class="nav-item" data-page="admins-monitor">
+    <span class="nav-icon">🔐</span> Admins do Monitor
   </div>
 
   <div class="sidebar-section">Configurações</div>
@@ -555,7 +558,7 @@
           <div class="stat-value" id="cntOffline">—</div>
         </div>
         <div class="stat-card orange">
-          <div class="stat-label">Total postos</div>
+          <div class="stat-label">Total clientes</div>
           <div class="stat-value" id="cntTotal">—</div>
         </div>
       </div>
@@ -575,7 +578,7 @@
     <div class="page" id="page-grupos">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Grupos de Postos</span>
+          <span class="card-title">Grupos de Clientes</span>
           <button class="btn btn-primary btn-sm" id="btnNovoGrupo">+ Novo Grupo</button>
         </div>
         <div class="alert" id="alertGrupos"></div>
@@ -585,7 +588,7 @@
               <tr>
                 <th>Nome do Grupo</th>
                 <th>Descrição</th>
-                <th>Postos</th>
+                <th>Clientes</th>
                 <th>Criado em</th>
                 <th></th>
               </tr>
@@ -602,8 +605,8 @@
     <div class="page" id="page-clientes">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Postos / Clientes</span>
-          <button class="btn btn-primary btn-sm" id="btnNovoCliente">+ Novo Posto</button>
+          <span class="card-title">Clientes</span>
+          <button class="btn btn-primary btn-sm" id="btnNovoCliente">+ Novo Cliente</button>
         </div>
         <div class="alert" id="alertClientes"></div>
         <div class="table-wrap">
@@ -628,26 +631,57 @@
       </div>
     </div>
 
-    <!-- ─── USUÁRIOS ──────────────────────────────────────────────────────── -->
+    <!-- ─── USUÁRIOS DO APP ──────────────────────────────────────────────── -->
     <div class="page" id="page-usuarios">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Usuários do Sistema</span>
+          <span class="card-title">👥 Usuários do App</span>
           <button class="btn btn-primary btn-sm" id="btnNovoUsuario">+ Novo Usuário</button>
         </div>
+        <p style="font-size:.82rem;color:var(--text-mid);margin:0 0 1rem">
+          Usuários que fazem login no <strong>app instalado em cada cliente</strong>. Defina quais clientes cada usuário acessa e quais menus ele pode ver.
+        </p>
         <div class="alert" id="alertUsuarios"></div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Usuário</th>
-                <th>Postos com Acesso</th>
+                <th>Administrador</th>
+                <th>Clientes com acesso</th>
                 <th>Criado em</th>
                 <th></th>
               </tr>
             </thead>
             <tbody id="tbodyUsuarios">
               <tr><td colspan="4"><div class="empty-state"><p>Carregando…</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ADMINS DO MONITOR ───────────────────────────────────────────── -->
+    <div class="page" id="page-admins-monitor">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🔐 Administradores do Monitor</span>
+          <button class="btn btn-primary btn-sm" id="btnNovoAdmin">+ Novo Admin</button>
+        </div>
+        <p style="font-size:.82rem;color:var(--text-mid);margin:0 0 1rem">
+          Contas que têm acesso a <strong>este painel</strong>. Independentes dos usuários do app.
+        </p>
+        <div class="alert" id="alertAdmins"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Administrador</th>
+                <th>Criado em</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAdmins">
+              <tr><td colspan="3"><div class="empty-state"><p>Carregando…</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -668,7 +702,7 @@
         </div>
         <div class="alert" id="alertVersao"></div>
         <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:1.1rem">
-          Os postos consultam esta versão a cada 15 minutos. Se a versão publicada for maior que a instalada, o posto atualiza automaticamente via Velopack.
+          Os clientes consultam esta versão a cada 15 minutos. Se a versão publicada for maior que a instalada, o cliente atualiza automaticamente via Velopack.
         </p>
         <div class="form-group">
           <label>Nova versão</label>
@@ -718,7 +752,7 @@
 <div class="modal-overlay" id="modalCliente">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="modalClienteTitulo">Novo Posto / Cliente</span>
+      <span class="modal-title" id="modalClienteTitulo">Novo Cliente</span>
       <button class="modal-close" data-close="modalCliente">✕</button>
     </div>
     <div class="form-group"><label>Nome *</label><input type="text" id="cNome" /></div>
@@ -735,7 +769,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" data-close="modalCliente">Cancelar</button>
-      <button class="btn btn-primary" id="btnConfirmCliente">Criar Posto</button>
+      <button class="btn btn-primary" id="btnConfirmCliente">Criar Cliente</button>
     </div>
   </div>
 </div>
@@ -748,7 +782,7 @@
       <button class="modal-close" data-close="modalToken">✕</button>
     </div>
     <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.25rem" id="tokenClienteNome"></p>
-    <p class="token-hint">Entregue este token ao responsável do posto para ativar o sistema:</p>
+    <p class="token-hint">Entregue este token ao responsável do cliente para ativar o sistema:</p>
     <div class="token-box" id="tokenBox">—</div>
     <p style="font-size:.78rem;color:var(--text-mid);text-align:center">
       ⚠️ Anote ou copie agora. Por segurança, este token não fica visível após fechar.
@@ -764,11 +798,11 @@
 <div class="modal-overlay" id="modalClienteCriado">
   <div class="modal" style="max-width:420px">
     <div class="modal-header">
-      <span class="modal-title">✅ Posto criado</span>
+      <span class="modal-title">✅ Cliente criado</span>
       <button class="modal-close" data-close="modalClienteCriado">✕</button>
     </div>
     <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:.5rem">
-      O posto <strong id="clienteCriadoNome"></strong> foi criado com sucesso.
+      O cliente <strong id="clienteCriadoNome"></strong> foi criado com sucesso.
     </p>
     <p class="token-hint">Token de comunicação (heartbeat) — anote:</p>
     <div class="token-box" id="clienteCriadoToken" style="font-size:.85rem;letter-spacing:.04em"></div>
@@ -799,11 +833,11 @@
 
     <div class="form-group" style="margin-top:.9rem">
       <label style="display:flex;align-items:center;justify-content:space-between">
-        <span>🏪 Postos com Acesso</span>
+        <span>🏪 Clientes com Acesso</span>
         <span style="font-weight:400;color:var(--text-light);font-size:.7rem">Clique para selecionar</span>
       </label>
       <div class="client-chips-grid" id="uClienteChips">
-        <span class="client-chips-empty">Carregando postos…</span>
+        <span class="client-chips-empty">Carregando clientes…</span>
       </div>
     </div>
 
@@ -833,7 +867,7 @@
       <button class="modal-close" data-close="modalAcessos">✕</button>
     </div>
     <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:.75rem">
-      Selecione os postos que este usuário poderá acessar. Clique em cada chip para ativar ou desativar.
+      Selecione os clientes que este usuário poderá acessar. Clique em cada chip para ativar ou desativar.
     </p>
     <div class="client-chips-grid" id="acessosClienteChips" style="min-height:64px">
       <span class="client-chips-empty">Carregando…</span>
@@ -940,6 +974,52 @@
 </div>
 
 <!-- Modal: Confirmar Delete Genérico -->
+<!-- Modal: Novo Administrador do Monitor -->
+<div class="modal-overlay" id="modalNovoAdmin">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">🔐 Novo Administrador</span>
+      <button class="modal-close" data-close="modalNovoAdmin">✕</button>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-mid);margin-bottom:1rem">
+      Esta conta terá acesso ao painel Monitor. Independente dos usuários do app.
+    </p>
+    <div class="form-group">
+      <label>Usuário *</label>
+      <input type="text" id="adminNovoUsername" autocomplete="off" placeholder="ex: joao.silva" />
+    </div>
+    <div class="form-group">
+      <label>Senha *</label>
+      <input type="password" id="adminNovaSenhaCreate" placeholder="mínimo 6 caracteres" />
+    </div>
+    <div class="alert" id="alertNovoAdmin"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalNovoAdmin">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmNovoAdmin">Criar Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Trocar Senha Admin -->
+<div class="modal-overlay" id="modalSenhaAdmin">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">🔒 Trocar Senha — <span id="adminSenhaUsername"></span></span>
+      <button class="modal-close" data-close="modalSenhaAdmin">✕</button>
+    </div>
+    <input type="hidden" id="adminSenhaId" />
+    <div class="form-group">
+      <label>Nova Senha *</label>
+      <input type="password" id="adminNovaSenha" placeholder="mínimo 6 caracteres" />
+    </div>
+    <div class="alert" id="alertSenhaAdmin"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" data-close="modalSenhaAdmin">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmSenhaAdmin">Salvar Senha</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalConfirm">
   <div class="modal" style="max-width:380px">
     <div class="modal-header">
@@ -992,11 +1072,12 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 const PAGE_TITLES = {
-  monitor:  'Monitor',
-  grupos:   'Grupos de Postos',
-  clientes: 'Postos / Clientes',
-  usuarios: 'Usuários',
-  versao:   'Versões',
+  monitor:          'Monitor',
+  grupos:           'Grupos de Clientes',
+  clientes:         'Clientes',
+  usuarios:         'Usuários do App',
+  'admins-monitor': 'Administradores do Monitor',
+  versao:           'Versões',
 };
 
 let _currentPage = 'monitor';
@@ -1018,11 +1099,12 @@ document.querySelectorAll('.nav-item').forEach(item => {
 document.getElementById('btnTopRefresh').addEventListener('click', () => onPageLoad(_currentPage));
 
 function onPageLoad(p) {
-  if (p === 'monitor')  loadMonitor();
-  if (p === 'grupos')   loadGrupos();
-  if (p === 'clientes') loadClientes();
-  if (p === 'usuarios') loadUsuarios();
-  if (p === 'versao')   loadVersao();
+  if (p === 'monitor')          loadMonitor();
+  if (p === 'grupos')           loadGrupos();
+  if (p === 'clientes')         loadClientes();
+  if (p === 'usuarios')         loadUsuarios();
+  if (p === 'admins-monitor')   loadAdminsMonitor();
+  if (p === 'versao')           loadVersao();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1068,7 +1150,7 @@ async function loadMonitor() {
 
     const grid = document.getElementById('postoGrid');
     if (postos.length === 0) {
-      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div><p>Nenhum posto cadastrado.</p></div>';
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🏪</div><p>Nenhum cliente cadastrado.</p></div>';
       return;
     }
     grid.innerHTML = postos.map(p => `
@@ -1106,7 +1188,7 @@ function renderGrupos() {
   const tbody = document.getElementById('tbodyGrupos');
   if (!tbody) return;
   if (_grupos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🗂️</div><p>Nenhum grupo cadastrado. Crie um grupo para organizar seus postos.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🗂️</div><p>Nenhum grupo cadastrado. Crie um grupo para organizar seus clientes.</p></div></td></tr>';
     return;
   }
   tbody.innerHTML = _grupos.map(g => `
@@ -1117,7 +1199,7 @@ function renderGrupos() {
       <td style="color:var(--text-mid)">${g.descricao || '—'}</td>
       <td>
         <span class="chip ${g.total_clientes > 0 ? 'chip-green' : 'chip-gray'}">
-          ${g.total_clientes} posto${g.total_clientes !== 1 ? 's' : ''}
+          ${g.total_clientes} cliente${g.total_clientes !== 1 ? 's' : ''}
         </span>
       </td>
       <td style="color:var(--text-mid)">${fmtDate(g.created_at)}</td>
@@ -1172,7 +1254,7 @@ document.getElementById('btnConfirmGrupo').addEventListener('click', async () =>
 
 function confirmDeleteGrupo(id, nome, totalClientes) {
   const msg = totalClientes > 0
-    ? `Remover o grupo "${nome}"? Os ${totalClientes} posto(s) vinculado(s) ficarão sem grupo, mas não serão excluídos.`
+    ? `Remover o grupo "${nome}"? Os ${totalClientes} cliente(s) vinculado(s) ficarão sem grupo, mas não serão excluídos.`
     : `Remover o grupo "${nome}"?`;
   document.getElementById('confirmTitle').textContent = 'Remover Grupo';
   document.getElementById('confirmMsg').textContent   = msg;
@@ -1277,7 +1359,7 @@ async function editCliente(id) {
   document.getElementById('cCidade').value  = c.cidade || '';
   document.getElementById('cUf').value      = c.uf     || '';
   document.getElementById('cGrupo').value   = c.grupo_id || '';
-  document.getElementById('modalClienteTitulo').textContent = 'Editar Posto';
+  document.getElementById('modalClienteTitulo').textContent = 'Editar Cliente';
   document.getElementById('btnConfirmCliente').textContent  = 'Salvar';
   document.getElementById('btnConfirmCliente').dataset.editId = id;
   openModal('modalCliente');
@@ -1289,8 +1371,8 @@ document.getElementById('btnNovoCliente').addEventListener('click', async () => 
   _populateGrupoSelect();
   ['cNome','cCnpj','cCidade','cUf'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('cGrupo').value = '';
-  document.getElementById('modalClienteTitulo').textContent = 'Novo Posto / Cliente';
-  document.getElementById('btnConfirmCliente').textContent  = 'Criar Posto';
+  document.getElementById('modalClienteTitulo').textContent = 'Novo Cliente';
+  document.getElementById('btnConfirmCliente').textContent  = 'Criar Cliente';
   delete document.getElementById('btnConfirmCliente').dataset.editId;
   openModal('modalCliente');
 });
@@ -1312,7 +1394,7 @@ document.getElementById('btnConfirmCliente').addEventListener('click', async () 
     const res = await fetch(`/api/clientes/${editId}`, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, ativo: 1 }),
     });
-    if (res.ok) { showAlert('alertClientes', 'Posto atualizado!'); closeModal('modalCliente'); loadClientes(); }
+    if (res.ok) { showAlert('alertClientes', 'Cliente atualizado!'); closeModal('modalCliente'); loadClientes(); }
     else showAlert('alertClientes', 'Erro ao atualizar.', 'error');
   } else {
     const res = await fetch('/api/clientes', {
@@ -1327,7 +1409,7 @@ document.getElementById('btnConfirmCliente').addEventListener('click', async () 
       loadClientes();
     } else {
       const d = await res.json();
-      showAlert('alertClientes', d.detail || 'Erro ao criar posto.', 'error');
+      showAlert('alertClientes', d.detail || 'Erro ao criar cliente.', 'error');
     }
   }
 });
@@ -1336,8 +1418,8 @@ document.getElementById('btnConfirmCliente').addEventListener('click', async () 
 let _pendingDeleteCliente = null;
 function confirmDeleteCliente(id, nome) {
   _pendingDeleteCliente = id;
-  document.getElementById('confirmTitle').textContent = 'Remover Posto';
-  document.getElementById('confirmMsg').textContent   = `Deseja remover o posto "${nome}"? Esta ação não pode ser desfeita.`;
+  document.getElementById('confirmTitle').textContent = 'Remover Cliente';
+  document.getElementById('confirmMsg').textContent   = `Deseja remover o cliente "${nome}"? Esta ação não pode ser desfeita.`;
   document.getElementById('btnConfirmAction').onclick = async () => {
     await fetch('/api/clientes/' + _pendingDeleteCliente, { method: 'DELETE' });
     closeModal('modalConfirm');
@@ -1510,13 +1592,143 @@ async function loadUsuarios() {
   }).join('');
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// USUÁRIOS DOS POSTOS (APP)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadUsuariosAppInit() {
+  // Popula o select de postos
+  const select = document.getElementById('selectPostoFiltro');
+  if (select.options.length <= 1 && _clientes.length === 0) {
+    await loadClientes();
+  }
+  // Limpa e repopula o select
+  select.innerHTML = '<option value="">— Todos os clientes —</option>';
+  _clientes.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.nome;
+    select.appendChild(opt);
+  });
+}
+
+async function loadUsuariosApp() {
+  const select = document.getElementById('selectPostoFiltro');
+  const postoId = select.value;
+  const tbody = document.getElementById('tbodyUsuariosApp');
+  const alert = document.getElementById('alertUsuariosApp');
+
+  if (!postoId) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>Selecione um cliente para ver os usuários.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>Carregando…</p></div></td></tr>';
+
+  try {
+    const res = await fetch(`/api/clientes/${postoId}/usuarios`);
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 503) {
+        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📡</div><p>Cliente offline ou sem conexão com o app.</p></div></td></tr>';
+      } else {
+        tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Erro ao buscar usuários deste cliente.</p></div></td></tr>';
+      }
+      return;
+    }
+    const data = await res.json();
+    const users = data.usuarios || data;
+    const postoNome = select.options[select.selectedIndex].textContent;
+
+    if (!users || users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">👤</div><p>Nenhum usuário cadastrado em <strong>${postoNome}</strong>.</p></div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <div style="width:30px;height:30px;border-radius:50%;background:#e8f5e9;
+                        display:flex;align-items:center;justify-content:center;
+                        font-weight:700;font-size:.8rem;color:#388e3c;flex-shrink:0">
+              ${(u.username || u.nome || '?')[0].toUpperCase()}
+            </div>
+            <span style="font-weight:600">${u.username || u.nome || '—'}</span>
+          </div>
+        </td>
+        <td><span class="chip chip-green" style="font-size:.7rem">🏪 ${postoNome}</span></td>
+        <td style="color:var(--text-mid)">${u.created_at ? fmtDate(u.created_at) : '—'}</td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Erro de conexão com o cliente.</p></div></td></tr>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ADMINS DO MONITOR
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadAdminsMonitor() {
+  const tbody = document.getElementById('tbodyAdmins');
+  tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>Carregando…</p></div></td></tr>';
+  const res = await fetch('/api/auth/admins');
+  if (!res.ok) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠️</div><p>Erro ao carregar admins.</p></div></td></tr>';
+    return;
+  }
+  const admins = await res.json();
+  if (admins.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">🔐</div><p>Nenhum administrador cadastrado.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = admins.map(a => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <div style="width:30px;height:30px;border-radius:50%;background:#e8eaf6;
+                      display:flex;align-items:center;justify-content:center;
+                      font-weight:700;font-size:.8rem;color:#3949ab;flex-shrink:0">
+            ${a.username[0].toUpperCase()}
+          </div>
+          <span style="font-weight:600">${a.username}</span>
+          ${a.id === _currentUserId ? '<span class="chip chip-blue" style="font-size:.65rem">você</span>' : ''}
+        </div>
+      </td>
+      <td style="color:var(--text-mid)">${fmtDate(a.created_at)}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openChangeSenhaAdmin(${a.id}, '${a.username}')">🔒 Senha</button>
+        ${a.id !== _currentUserId
+          ? `<button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDeleteAdmin(${a.id}, '${a.username}')">🗑️</button>`
+          : ''}
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('btnNovoAdmin')?.addEventListener('click', () => {
+  openModal('modalNovoAdmin');
+});
+
+async function confirmDeleteAdmin(id, username) {
+  if (!confirm(`Remover administrador "${username}"?`)) return;
+  const res = await fetch(`/api/auth/admins/${id}`, { method: 'DELETE' });
+  if (res.ok) loadAdminsMonitor();
+  else alert('Erro ao remover admin.');
+}
+
+function openChangeSenhaAdmin(id, username) {
+  document.getElementById('adminSenhaId').value = id;
+  document.getElementById('adminSenhaUsername').textContent = username;
+  document.getElementById('adminNovaSenha').value = '';
+  openModal('modalSenhaAdmin');
+}
+
 // ── Helpers: chip selector ────────────────────────────────────────────────
 
 function renderClienteChips(containerId, selectedIds = []) {
   const container = document.getElementById(containerId);
   if (!container) return;
   if (_clientes.length === 0) {
-    container.innerHTML = '<span class="client-chips-empty">Nenhum posto cadastrado ainda.</span>';
+    container.innerHTML = '<span class="client-chips-empty">Nenhum cliente cadastrado ainda.</span>';
     return;
   }
   container.innerHTML = _clientes.map(c => `
@@ -1756,6 +1968,44 @@ document.getElementById('btnConfirmMonitorUsuario').addEventListener('click', as
 // ══════════════════════════════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════════════════════════════
+// ── Criar novo admin ─────────────────────────────────────────────────────────
+document.getElementById('btnConfirmNovoAdmin')?.addEventListener('click', async () => {
+  const username = document.getElementById('adminNovoUsername').value.trim();
+  const senha    = document.getElementById('adminNovaSenhaCreate').value;
+  if (!username || !senha) return showAlert('alertNovoAdmin', 'Preencha usuário e senha.', 'error');
+  if (senha.length < 6)    return showAlert('alertNovoAdmin', 'Senha precisa ter pelo menos 6 caracteres.', 'error');
+  const res = await fetch('/api/auth/admins', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password: senha }),
+  });
+  if (res.ok) {
+    closeModal('modalNovoAdmin');
+    loadAdminsMonitor();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    showAlert('alertNovoAdmin', err.detail || 'Erro ao criar admin.', 'error');
+  }
+});
+
+// ── Trocar senha de admin ─────────────────────────────────────────────────────
+document.getElementById('btnConfirmSenhaAdmin')?.addEventListener('click', async () => {
+  const id    = document.getElementById('adminSenhaId').value;
+  const senha = document.getElementById('adminNovaSenha').value;
+  if (!senha || senha.length < 6) return showAlert('alertSenhaAdmin', 'Senha precisa ter pelo menos 6 caracteres.', 'error');
+  const res = await fetch(`/api/auth/admins/${id}/senha`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: senha }),
+  });
+  if (res.ok) {
+    closeModal('modalSenhaAdmin');
+    showAlert('alertAdmins', 'Senha alterada com sucesso.', 'success');
+  } else {
+    showAlert('alertSenhaAdmin', 'Erro ao alterar senha.', 'error');
+  }
+});
+
 checkAuth().then(() => {
   loadMonitor();
   setInterval(loadMonitor, 30_000); // auto-refresh monitor a cada 30s

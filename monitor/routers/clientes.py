@@ -1,10 +1,12 @@
 import secrets
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 import aiosqlite
 
+from ..core.config import settings
 from ..core.database import get_db
 from ..core.security import get_current_user
 
@@ -88,3 +90,35 @@ async def delete_cliente(
 ):
     await db.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
     await db.commit()
+
+
+@router.get("/{cliente_id}/usuarios")
+async def get_usuarios_do_posto(
+    cliente_id: int,
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    """Busca usuários do app instalado no posto via API interna do app."""
+    async with db.execute(
+        "SELECT token, nome FROM clientes WHERE id = ?", (cliente_id,)
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Posto não encontrado")
+
+    # O app expõe /api/internal/usuarios com autenticação pelo token do cliente
+    app_url = settings.app_url.rstrip("/") if hasattr(settings, "app_url") and settings.app_url else None
+    if not app_url:
+        raise HTTPException(status_code=503, detail="app_url não configurada no monitor")
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                f"{app_url}/api/monitor-sync/usuarios",
+                headers={"x-monitor-token": row["token"]},
+            )
+        if resp.status_code == 200:
+            return resp.json()
+        raise HTTPException(status_code=resp.status_code, detail="Erro ao buscar usuários do posto")
+    except httpx.RequestError:
+        raise HTTPException(status_code=503, detail="Posto offline ou inacessível")

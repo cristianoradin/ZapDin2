@@ -95,12 +95,18 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 async def login(body: LoginRequest, response: Response, db: aiosqlite.Connection = Depends(get_db)):
-    async with db.execute(
-        "SELECT id, username, password_hash FROM usuarios WHERE username = ?", (body.username,)
-    ) as cur:
-        row = await cur.fetchone()
+    # Verifica primeiro na tabela admins, depois em usuarios (legado)
+    row = None
+    for table in ("admins", "usuarios"):
+        async with db.execute(
+            f"SELECT id, username, password_hash FROM {table} WHERE username = ?", (body.username,)
+        ) as cur:
+            row = await cur.fetchone()
+        if row and verify_password(body.password, row["password_hash"]):
+            break
+        row = None
 
-    if not row or not verify_password(body.password, row["password_hash"]):
+    if not row:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
     token = create_session_token(row["id"], row["username"])
@@ -382,3 +388,78 @@ async def setup_cliente(token: str, db: aiosqlite.Connection = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail="Token não encontrado")
     return {"id": row["id"], "nome": row["nome"], "cnpj": row["cnpj"], "token": row["token"]}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  ADMINS DO MONITOR — CRUD
+#  Contas separadas que acessam APENAS o painel monitor (não sincronizadas com app)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class AdminCreate(BaseModel):
+    username: str
+    password: str
+
+
+class SenhaUpdate(BaseModel):
+    password: str
+
+
+@router.get("/admins")
+async def list_admins(
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    async with db.execute(
+        "SELECT id, username, created_at FROM admins ORDER BY username"
+    ) as cur:
+        return [dict(r) for r in await cur.fetchall()]
+
+
+@router.post("/admins", status_code=status.HTTP_201_CREATED)
+async def create_admin(
+    body: AdminCreate,
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    username = body.username.strip().lower()
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Senha precisa ter pelo menos 6 caracteres.")
+    try:
+        cur = await db.execute(
+            "INSERT INTO admins (username, password_hash) VALUES (?, ?)",
+            (username, hash_password(body.password)),
+        )
+        await db.commit()
+        return {"id": cur.lastrowid, "username": username}
+    except aiosqlite.IntegrityError:
+        raise HTTPException(status_code=409, detail="Usuário já existe.")
+
+
+@router.put("/admins/{admin_id}/senha")
+async def update_admin_senha(
+    admin_id: int,
+    body: SenhaUpdate,
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    if len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Senha precisa ter pelo menos 6 caracteres.")
+    await db.execute(
+        "UPDATE admins SET password_hash=? WHERE id=?",
+        (hash_password(body.password), admin_id),
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/admins/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_admin(
+    admin_id: int,
+    db: aiosqlite.Connection = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    # Não pode deletar a si mesmo
+    if admin_id == user.get("uid"):
+        raise HTTPException(status_code=400, detail="Não é possível remover seu próprio usuário.")
+    await db.execute("DELETE FROM admins WHERE id=?", (admin_id,))
+    await db.commit()

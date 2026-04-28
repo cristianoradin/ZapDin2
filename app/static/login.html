@@ -6,170 +6,157 @@
   <title>ZapDin — Login</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --accent:      #3d7f1f;
-      --accent-h:    #306618;
-      --accent-soft: #f0f7eb;
-      --accent-mid:  #d4edba;
-      --bg:          #f4f6f9;
+      --primary:     #2f6c00;
+      --primary-h:   #225100;
+      --primary-soft:#f0f7eb;
       --surface:     #ffffff;
-      --surface2:    #f2f3f5;
-      --border:      #e4e6ea;
-      --text:        #111318;
-      --text-mid:    #6b7280;
-      --text-light:  #9ca3af;
-      --red:         #dc2626;
-      --red-soft:    #fef2f2;
-      --shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-      --shadow-md:   0 4px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
-      --shadow-lg:   0 8px 32px rgba(0,0,0,.13), 0 4px 12px rgba(0,0,0,.07);
-      --grad:        linear-gradient(90deg, #3d7f1f 0%, #7cdc44 50%, #3b82f6 100%);
-      --radius:      10px;
+      --bg:          #f8f9ff;
+      --border:      #c0cab4;
+      --text:        #0b1c30;
+      --text-mid:    #404a39;
+      --text-light:  #717a67;
+      --red:         #ba1a1a;
+      --red-soft:    #ffdad6;
+      --radius-xl:   0.75rem;
+      --radius-full: 9999px;
     }
 
+    html, body { height: 100%; }
+
     body {
-      background: var(--bg);
-      background-image:
-        radial-gradient(ellipse 70% 50% at 0% 0%, rgba(61,127,31,.07) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(59,130,246,.05) 0%, transparent 60%);
-      color: var(--text);
-      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       font-size: 14px;
-      line-height: 1.5;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Barra gradiente no topo — mesma do topbar interno ─────────────── */
-    .topbar-grad {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-      background: var(--grad);
-      z-index: 100;
-    }
-
-    /* ── Wrapper ─────────────────────────────────────────────────────────── */
-    .wrapper {
-      width: 100%;
-      max-width: 960px;
-      padding: 24px 16px 40px;
+    main {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      animation: fadeUp .35s cubic-bezier(.22,1,.36,1) both;
-    }
-
-    /* O card de login mantém largura compacta mesmo com wrapper largo */
-    .card {
-      max-width: 420px;
+      height: 100vh;
       width: 100%;
     }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Logo ────────────────────────────────────────────────────────────── */
-    .logo-wrap {
-      margin-bottom: 28px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-img {
-      width: 960px;
-      max-width: 90vw;
-      height: auto;
-      object-fit: contain;
-      /* Suave sombra colorida para destacar sobre o fundo claro */
-      filter: drop-shadow(0 6px 24px rgba(61,127,31,.22));
-    }
-
-    /* Fallback: quando a imagem não carrega */
-    .logo-fallback {
+    /* ── Lado esquerdo: branding ──────────────────────────────────────────── */
+    .side-brand {
       display: none;
-      width: 96px;
-      height: 96px;
-      background: var(--accent);
-      border-radius: 22px;
+      width: 50%;
+      background: var(--primary);
+      position: relative;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 8px 24px rgba(61,127,31,.3);
+      padding: 3rem;
+      overflow: hidden;
     }
-    .logo-fallback svg { width: 52px; height: 52px; fill: #fff; }
 
-    .brand-name { display: none; }
-    .brand-sub  { display: none; }
+    @media (min-width: 1024px) {
+      .side-brand { display: flex; }
+    }
 
-    /* ── Card ────────────────────────────────────────────────────────────── */
-    .card {
+    /* Brilhos decorativos */
+    .side-brand::before {
+      content: '';
+      position: absolute;
+      top: -10%; right: -10%;
+      width: 80%; height: 80%;
+      background: radial-gradient(circle, rgba(161,249,105,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .side-brand::after {
+      content: '';
+      position: absolute;
+      bottom: -5%; left: -5%;
+      width: 60%; height: 60%;
+      background: radial-gradient(circle, rgba(255,255,255,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .brand-logo {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      height: auto;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
+
+    /* ── Lado direito: formulário ─────────────────────────────────────────── */
+    .side-form {
       width: 100%;
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 32px 28px;
-      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.5rem;
+      position: relative;
     }
 
-    /* Faixa accent fina no topo do card */
-    .card::before {
-      content: '';
-      display: block;
-      height: 3px;
-      margin: -32px -28px 28px;
-      border-radius: 14px 14px 0 0;
-      background: var(--grad);
+    @media (min-width: 1024px) {
+      .side-form { width: 50%; }
     }
 
-    .card-title {
-      font-size: 17px;
+    .form-inner {
+      width: 100%;
+      max-width: 26rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Título */
+    .form-title {
+      font-size: 32px;
       font-weight: 700;
+      letter-spacing: -0.02em;
       color: var(--text);
-      margin-bottom: 3px;
-    }
-    .card-sub {
-      font-size: 13px;
-      color: var(--text-mid);
-      margin-bottom: 24px;
+      line-height: 1.2;
     }
 
-    /* ── Campos ──────────────────────────────────────────────────────────── */
-    .field { margin-bottom: 16px; }
+    /* Campos */
+    .form-fields { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.25rem; }
 
     label {
-      display: block;
       font-size: 12px;
       font-weight: 600;
+      letter-spacing: 0.05em;
       color: var(--text-mid);
       text-transform: uppercase;
-      letter-spacing: .6px;
-      margin-bottom: 6px;
+      margin-left: 4px;
     }
 
     .input-wrap { position: relative; display: flex; align-items: center; }
 
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-light);
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+
     input[type="text"],
     input[type="password"] {
       width: 100%;
-      background: var(--surface2);
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 11px 40px 11px 13px;
+      border-radius: var(--radius-xl);
+      padding: 14px 44px;
       color: var(--text);
       font-family: inherit;
-      font-size: 14.5px;
+      font-size: 14px;
       outline: none;
       transition: border-color .18s, box-shadow .18s, background .18s;
     }
@@ -177,16 +164,16 @@
     input[type="text"]:focus,
     input[type="password"]:focus {
       background: var(--surface);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(61,127,31,.12);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(47,108,0,.12);
     }
 
-    input::placeholder { color: var(--text-light); }
+    input::placeholder { color: var(--border); }
 
-    /* Ícone de olho */
+    /* Botão olho */
     .eye-btn {
       position: absolute;
-      right: 11px;
+      right: 14px;
       background: none;
       border: none;
       padding: 4px;
@@ -199,31 +186,38 @@
     .eye-btn:hover { color: var(--text-mid); }
     .eye-btn svg { width: 16px; height: 16px; }
 
-    /* ── Botão ───────────────────────────────────────────────────────────── */
+    /* Botão submit */
     .btn-login {
       width: 100%;
-      margin-top: 6px;
-      padding: 12px;
-      background: var(--accent);
+      padding: 14px;
+      background: var(--primary);
       color: #fff;
       border: none;
-      border-radius: var(--radius);
+      border-radius: var(--radius-xl);
       font-family: inherit;
-      font-size: 14.5px;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      letter-spacing: -.01em;
-      transition: background .18s, transform .1s, box-shadow .18s;
-      box-shadow: 0 2px 8px rgba(61,127,31,.3);
+      box-shadow: 0 4px 14px rgba(47,108,0,.25);
+      transition: transform .15s, box-shadow .15s, background .15s;
     }
-    .btn-login:hover:not(:disabled)  { background: var(--accent-h); box-shadow: 0 4px 14px rgba(61,127,31,.35); }
-    .btn-login:active:not(:disabled) { transform: scale(.98); }
-    .btn-login:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; }
+    .btn-login:hover:not(:disabled)  {
+      background: var(--primary-h);
+      transform: scale(1.02);
+      box-shadow: 0 6px 20px rgba(47,108,0,.3);
+    }
+    .btn-login:active:not(:disabled) { transform: scale(.97); }
+    .btn-login:disabled               { opacity: .6; cursor: not-allowed; box-shadow: none; }
 
+    .btn-arrow { transition: transform .15s; }
+    .btn-login:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
+
+    /* Spinner */
     .spinner {
       width: 17px; height: 17px;
       border: 2px solid rgba(255,255,255,.35);
@@ -234,129 +228,174 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Erro ────────────────────────────────────────────────────────────── */
+    /* Erro */
     .err {
       background: var(--red-soft);
-      border: 1px solid rgba(220,38,38,.25);
-      border-radius: 8px;
+      border: 1px solid rgba(186,26,26,.25);
+      border-radius: 0.5rem;
       padding: 10px 13px;
       font-size: 13px;
       color: var(--red);
-      margin-bottom: 16px;
       display: none;
       line-height: 1.5;
     }
 
-    /* ── Badge rodapé ────────────────────────────────────────────────────── */
+    /* Rodapé */
+    footer {
+      position: absolute;
+      bottom: 2rem;
+      left: 0; right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+      text-decoration: underline;
+      transition: color .15s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    footer p {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+    }
+
+    /* Badge status (mobile, no topo) */
     .badge {
-      margin-top: 20px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--surface);
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: var(--radius-full);
       padding: 4px 12px;
       font-size: 11.5px;
-      color: var(--text-mid);
-      box-shadow: var(--shadow-sm);
+      color: var(--text-light);
+      align-self: flex-start;
     }
     .badge-dot {
       width: 7px; height: 7px;
       border-radius: 50%;
-      background: var(--accent);
+      background: var(--primary);
+      flex-shrink: 0;
     }
   </style>
 </head>
 <body>
+<main>
 
-<!-- Faixa gradiente fixa no topo -->
-<div class="topbar-grad"></div>
-
-<div class="wrapper">
-
-  <!-- ── Logo + nome ──────────────────────────────────────────────────── -->
-  <div class="logo-wrap">
+  <!-- ── Lado esquerdo: branding ────────────────────────────────────────── -->
+  <section class="side-brand">
     <img
       src="/logo/Zapdin-removebg-preview.png"
       alt="ZapDin"
-      class="logo-img"
-      id="logo-img"
-      onerror="this.style.display='none'; document.getElementById('logo-fb').style.display='flex';"
+      class="brand-logo"
+      onerror="this.style.opacity='.4'"
     />
-    <div class="logo-fallback" id="logo-fb">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-        <path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.554 4.118 1.528 5.855L.057 23.882l6.188-1.444A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.003-1.368l-.36-.213-3.668.856.897-3.552-.234-.374A9.818 9.818 0 0112 2.182c5.425 0 9.818 4.393 9.818 9.818S17.425 21.818 12 21.818z"/>
-      </svg>
-    </div>
+  </section>
 
-    <div class="brand-name">Zap<span>Din</span></div>
-    <div class="brand-sub">Sistema de Mensagens WhatsApp</div>
-  </div>
+  <!-- ── Lado direito: formulário ──────────────────────────────────────── -->
+  <section class="side-form">
+    <div class="form-inner">
 
-  <!-- ── Card ─────────────────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-title">Bem-vindo de volta</div>
-    <div class="card-sub">Acesse o painel com suas credenciais</div>
-
-    <div class="err" id="err"></div>
-
-    <form id="loginForm" novalidate>
-      <div class="field">
-        <label for="username">Usuário</label>
-        <div class="input-wrap">
-          <input
-            type="text"
-            id="username"
-            name="username"
-            placeholder="seu usuário"
-            autocomplete="username"
-            autofocus
-            required
-          />
-        </div>
+      <div class="badge" id="badge">
+        <div class="badge-dot"></div>
+        <span id="badge-text">Sistema online</span>
       </div>
 
-      <div class="field">
-        <label for="password">Senha</label>
-        <div class="input-wrap">
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
-          <button type="button" class="eye-btn" onclick="togglePwd()" tabindex="-1" title="Mostrar/ocultar senha">
-            <svg id="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-              <line x1="1" y1="1" x2="23" y2="23"/>
-            </svg>
-            <svg id="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
+      <h2 class="form-title">Bem-vindo de volta</h2>
+
+      <div class="form-fields">
+        <div class="err" id="err"></div>
+
+        <form id="loginForm" novalidate style="display:contents">
+
+          <div class="field">
+            <label for="username">Usuário</label>
+            <div class="input-wrap">
+              <!-- ícone usuário -->
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                placeholder="Digite seu usuário"
+                autocomplete="username"
+                autofocus
+                required
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password">Senha</label>
+            <div class="input-wrap">
+              <!-- ícone cadeado -->
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <button type="button" class="eye-btn" onclick="togglePwd()" tabindex="-1" title="Mostrar/ocultar senha">
+                <svg id="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                <svg id="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-login" id="btn">
+            <div class="spinner" id="spinner"></div>
+            <span id="btn-text">Entrar na ZapDin</span>
+            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
             </svg>
           </button>
-        </div>
+
+        </form>
       </div>
+    </div>
 
-      <button type="submit" class="btn-login" id="btn">
-        <div class="spinner" id="spinner"></div>
-        <span id="btn-text">Entrar</span>
-      </button>
-    </form>
-  </div>
+    <!-- Rodapé -->
+    <footer>
+      <div class="footer-links">
+        <a href="#">Suporte</a>
+        <a href="#">Privacidade</a>
+        <a href="#">Termos</a>
+      </div>
+      <p>© 2024 ZapDin. Sistema online.</p>
+    </footer>
+  </section>
 
-  <!-- ── Badge status ──────────────────────────────────────────────────── -->
-  <div class="badge" id="badge">
-    <div class="badge-dot"></div>
-    <span id="badge-text">Sistema online</span>
-  </div>
-
-</div>
+</main>
 
 <script>
   function togglePwd() {
@@ -375,9 +414,9 @@
   }
 
   function setLoading(v) {
-    document.getElementById('btn').disabled        = v;
-    document.getElementById('spinner').style.display = v ? 'block' : 'none';
-    document.getElementById('btn-text').textContent  = v ? 'Entrando…' : 'Entrar';
+    document.getElementById('btn').disabled           = v;
+    document.getElementById('spinner').style.display  = v ? 'block' : 'none';
+    document.getElementById('btn-text').textContent   = v ? 'Entrando…' : 'Entrar na ZapDin';
   }
 
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -388,7 +427,7 @@
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     if (!username || !password) {
-      err.textContent = 'Preencha usuário e senha.';
+      err.textContent   = 'Preencha usuário e senha.';
       err.style.display = 'block';
       return;
     }

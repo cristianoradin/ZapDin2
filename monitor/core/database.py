@@ -90,8 +90,20 @@ async def init_db() -> None:
                 updated_at TEXT DEFAULT (datetime('now'))
             );
 
+            -- Tabela de administradores do painel Monitor (separada dos usuários do app)
+            CREATE TABLE IF NOT EXISTS admins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
             -- Admin default: cristiano / radin123
             INSERT OR IGNORE INTO usuarios (username, password_hash)
+            VALUES ('cristiano', '$2b$12$Mco23X5AA8/pnXclNHGS7eMqlVEfou.ww4k1XVJQPa8HIL.Bzs30S');
+
+            -- Admin padrão também na tabela admins
+            INSERT OR IGNORE INTO admins (username, password_hash)
             VALUES ('cristiano', '$2b$12$Mco23X5AA8/pnXclNHGS7eMqlVEfou.ww4k1XVJQPa8HIL.Bzs30S');
 
             INSERT OR IGNORE INTO versoes (app, versao)
