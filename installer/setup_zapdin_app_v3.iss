@@ -46,8 +46,8 @@ DisableProgramGroupPage=yes
 DisableDirPage=auto
 
 OutputBaseFilename=ZapDin-Setup-{#AppVersion}
-OutputDir=output
-SetupIconFile=payload\branding\zapdin.ico
+OutputDir=..\output
+SetupIconFile=..\payload\branding\zapdin.ico
 
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -72,35 +72,35 @@ Name: "desktopicon"; Description: "Criar atalho na Área de Trabalho"; \
 ; =============================================================================
 [Files]
 ; ── Executáveis (compilados por Nuitka no CI) ─────────────────────────────────
-Source: "payload\ZapDin-App.exe";      DestDir: "{app}"; Flags: ignoreversion
-Source: "payload\ZapDin-Worker.exe";   DestDir: "{app}"; Flags: ignoreversion
-Source: "payload\ZapDin-Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\payload\ZapDin-App.exe";      DestDir: "{app}"; Flags: ignoreversion
+Source: "..\payload\ZapDin-Worker.exe";   DestDir: "{app}"; Flags: ignoreversion
+Source: "..\payload\ZapDin-Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; ── Velopack — runtime de atualização ────────────────────────────────────────
-Source: "payload\Update.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\payload\Update.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; ── NSSM — gerenciador de serviços Windows ────────────────────────────────────
-Source: "payload\tools\nssm.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
+Source: "..\payload\tools\nssm.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
 
 ; ── Playwright Chromium (pré-baixado no CI) ───────────────────────────────────
-Source: "payload\playwright-browsers\*"; DestDir: "{app}\playwright-browsers"; \
+Source: "..\payload\playwright-browsers\*"; DestDir: "{app}\playwright-browsers"; \
   Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; ── Frontend SPA ──────────────────────────────────────────────────────────────
-Source: "payload\static\*"; DestDir: "{app}\static"; \
+Source: "..\payload\static\*"; DestDir: "{app}\static"; \
   Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; ── Branding / ícone ──────────────────────────────────────────────────────────
-Source: "payload\branding\zapdin.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
+Source: "..\payload\branding\zapdin.ico"; DestDir: "{app}\branding"; Flags: ignoreversion
 
 ; ── Template de configuração (sem segredos) ───────────────────────────────────
-Source: "payload\.env.template"; DestDir: "{app}"; DestName: ".env.template"; \
+Source: "..\payload\.env.template"; DestDir: "{app}"; DestName: ".env.template"; \
   Flags: ignoreversion
 
 ; ── Bootstrappers de deps (deletados após uso) ────────────────────────────────
-Source: "payload\deps\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; \
+Source: "..\payload\deps\MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; \
   Flags: deleteafterinstall; Check: not IsWebView2Installed
-Source: "payload\deps\vc_redist.x64.exe"; DestDir: "{tmp}"; \
+Source: "..\payload\deps\vc_redist.x64.exe"; DestDir: "{tmp}"; \
   Flags: deleteafterinstall; Check: not IsVCRedistInstalled
 
 ; =============================================================================
