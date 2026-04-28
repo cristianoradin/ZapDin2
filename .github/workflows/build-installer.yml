@@ -211,11 +211,10 @@ jobs:
             --output-filename=ZapDin-Launcher.exe `
             --output-dir=payload `
             --windows-icon-from-ico=zapdin.ico `
-            --include-package=webview `
-            --nofollow-import-to=webview.platforms.android `
-            --nofollow-import-to=webview.platforms.gtk `
-            --nofollow-import-to=webview.platforms.qt `
-            --nofollow-import-to=webview.platforms.cocoa `
+            --disable-plugin=pywebview `
+            --include-module=webview `
+            --include-module=webview.platforms.edgechromium `
+            --include-module=webview.platforms.mshtml `
             --noinclude-pytest-mode=nofollow `
             --assume-yes-for-downloads `
             app/launcher_gui.py
