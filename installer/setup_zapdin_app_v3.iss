@@ -17,7 +17,9 @@
 ; =============================================================================
 
 #define AppName           "ZapDin"
-#define AppVersion        "2.0.0"
+#ifndef AppVersion
+  #define AppVersion      "2.0.0"
+#endif
 #define AppPublisher      "ZapDin Sistemas"
 #define AppURL            "https://zapdin.com.br"
 #define ServiceApp        "ZapDinApp"
