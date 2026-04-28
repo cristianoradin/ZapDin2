@@ -9,6 +9,7 @@ on:
       - "installer/**"
       - "setup_app.iss"
       - "setup_monitor.iss"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
