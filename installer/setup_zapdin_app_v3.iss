@@ -56,7 +56,6 @@ LZMAUseSeparateProcess=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-MinVersion=10.0.17763     ; Windows 10 1809 — mínimo para WebView2
 WizardStyle=modern
 CloseApplications=force
 RestartApplications=no
