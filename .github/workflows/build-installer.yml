@@ -284,11 +284,19 @@ jobs:
         shell: pwsh
 
       # ── Inno Setup: gera instalador final ─────────────────────────────────
+      - name: Inject version into ISS file
+        run: |
+          (Get-Content installer/setup_zapdin_app_v3.iss -Raw) `
+            -replace '(?m)^(#define AppVersion\s+)"[^"]*"', "`$1`"$env:VERSION`"" |
+            Set-Content installer/setup_zapdin_app_v3.iss
+          Write-Host "AppVersion no .iss agora:"
+          Select-String "AppVersion" installer/setup_zapdin_app_v3.iss | Select-Object -First 5
+        shell: pwsh
+
       - name: Compile Inno Setup — setup_zapdin_app_v3.iss
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
         with:
           path: installer/setup_zapdin_app_v3.iss
-          options: /DAppVersion=${{ env.VERSION }}
 
       # ── Verifica se o setup foi gerado ────────────────────────────────────
       - name: Verificar setup gerado
