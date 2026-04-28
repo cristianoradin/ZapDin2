@@ -286,11 +286,13 @@ jobs:
       # ── Inno Setup: gera instalador final ─────────────────────────────────
       - name: Inject version into ISS file
         run: |
-          (Get-Content installer/setup_zapdin_app_v3.iss -Raw) `
-            -replace '(?m)^(#define AppVersion\s+)"[^"]*"', "`$1`"$env:VERSION`"" |
-            Set-Content installer/setup_zapdin_app_v3.iss
-          Write-Host "AppVersion no .iss agora:"
-          Select-String "AppVersion" installer/setup_zapdin_app_v3.iss | Select-Object -First 5
+          $iss = Get-Content installer/setup_zapdin_app_v3.iss
+          $iss = $iss | ForEach-Object {
+            $_ -replace '#define AppVersion\s+"[^"]+"', "#define AppVersion        `"$env:VERSION`""
+          }
+          $iss | Set-Content installer/setup_zapdin_app_v3.iss
+          Write-Host "Versao injetada:"
+          $iss | Select-String "AppVersion"
         shell: pwsh
 
       - name: Compile Inno Setup — setup_zapdin_app_v3.iss
