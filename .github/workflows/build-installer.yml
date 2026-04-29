@@ -216,7 +216,6 @@ jobs:
             --include-package=cryptography `
             --include-package=bcrypt `
             --include-package=passlib `
-            --include-package=jose `
             --noinclude-pytest-mode=nofollow `
             --assume-yes-for-downloads `
             app/launcher_service.py
