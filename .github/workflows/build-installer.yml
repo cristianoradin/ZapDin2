@@ -284,12 +284,28 @@ jobs:
         shell: pwsh
 
       # ── Inno Setup: gera instalador final ─────────────────────────────────
-      - name: Compile Inno Setup — setup_zapdin_app_v3.iss
+      - name: Inject AppVersion into ISS
         run: |
-          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-          & $iscc /DAppVersion=$env:VERSION installer\setup_zapdin_app_v3.iss
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -c "
+import os, sys
+ver = os.environ['VERSION']
+path = 'installer/setup_zapdin_app_v3.iss'
+with open(path, 'r', encoding='utf-8') as f:
+    content = f.read()
+inject = '#define AppVersion        \"' + ver + '\"\n'
+content = inject + content
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+print('AppVersion injetado: ' + ver)
+"
         shell: pwsh
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Compile Inno Setup — setup_zapdin_app_v3.iss
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.4
+        with:
+          path: installer/setup_zapdin_app_v3.iss
 
       # ── Verifica se o setup foi gerado ────────────────────────────────────
       - name: Verificar setup gerado
