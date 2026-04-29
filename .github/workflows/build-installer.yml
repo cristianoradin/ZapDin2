@@ -139,12 +139,15 @@ jobs:
       - name: Install NSSM
         run: |
           choco install nssm --yes --no-progress --ignore-checksums
-          $nssmPath = "C:\ProgramData\chocolatey\bin\nssm.exe"
-          if (-not (Test-Path $nssmPath)) {
-            $nssmPath = (Get-Command nssm -ErrorAction SilentlyContinue).Source
+          # Copiar o binario REAL, nao o shim do Chocolatey
+          $nssmReal = "C:\ProgramData\chocolatey\lib\NSSM\tools\nssm.exe"
+          if (-not (Test-Path $nssmReal)) {
+            $nssmReal = Get-ChildItem "C:\ProgramData\chocolatey\lib" -Recurse -Filter "nssm.exe" |
+                        Where-Object { $_.FullName -notlike "*shim*" } |
+                        Select-Object -First 1 -ExpandProperty FullName
           }
-          Copy-Item $nssmPath -Destination payload\tools\nssm.exe -Force
-          Write-Host "NSSM copiado de: $nssmPath"
+          Copy-Item $nssmReal -Destination payload\tools\nssm.exe -Force
+          Write-Host "NSSM real copiado de: $nssmReal"
         shell: pwsh
 
       # ── Download bootstrappers de deps (WebView2 + VC++) ──────────────────
@@ -176,7 +179,7 @@ jobs:
       - name: Create .env.template
         run: |
           @"
-          # ZapDin — Bootstrap template (gerado pelo CI)
+          # ZapDin - Bootstrap template (gerado pelo CI)
           APP_STATE=locked
           PORT=4000
           CLIENT_TOKEN=
@@ -211,6 +214,9 @@ jobs:
             --include-package=playwright `
             --include-package=httpx `
             --include-package=cryptography `
+            --include-package=bcrypt `
+            --include-package=passlib `
+            --include-package=jose `
             --noinclude-pytest-mode=nofollow `
             --assume-yes-for-downloads `
             app/launcher_service.py
@@ -284,23 +290,13 @@ jobs:
         shell: pwsh
 
       # ── Inno Setup: gera instalador final ─────────────────────────────────
-      - name: Inject AppVersion into ISS
+      - name: Create version.iss
         run: |
-          python -c "
-import os, sys
-ver = os.environ['VERSION']
-path = 'installer/setup_zapdin_app_v3.iss'
-with open(path, 'r', encoding='utf-8') as f:
-    content = f.read()
-inject = '#define AppVersion        \"' + ver + '\"\n'
-content = inject + content
-with open(path, 'w', encoding='utf-8') as f:
-    f.write(content)
-print('AppVersion injetado: ' + ver)
-"
+          $ver = $env:VERSION
+          $line = '#define AppVersion        "' + $ver + '"'
+          Set-Content -Path installer\version.iss -Value $line
+          Write-Host "version.iss criado: $line"
         shell: pwsh
-        env:
-          VERSION: ${{ env.VERSION }}
 
       - name: Compile Inno Setup — setup_zapdin_app_v3.iss
         uses: Minionguyjpro/Inno-Setup-Action@v1.2.4

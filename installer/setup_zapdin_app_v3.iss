@@ -16,6 +16,7 @@
 ;  6. Inno Setup compila este .iss → output/ZapDin-Setup-{VER}.exe
 ; =============================================================================
 
+#include "version.iss"
 #define AppName           "ZapDin"
 #define AppPublisher      "ZapDin Sistemas"
 #define AppURL            "https://zapdin.com.br"
@@ -283,8 +284,8 @@ begin
   MonitorUrl := Trim(MonitorUrlEdit.Text);
 
   SetArrayLength(Lines, 18);
-  Lines[0]  := '# ZapDin — Bootstrap gerado pelo instalador v3';
-  Lines[1]  := '# Segredos serão preenchidos pelo fluxo de ativação (/activate).';
+  Lines[0]  := '# ZapDin - Bootstrap gerado pelo instalador v3';
+  Lines[1]  := '# Segredos serao preenchidos pelo fluxo de ativacao (/activate).';
   Lines[2]  := '';
   Lines[3]  := 'APP_STATE=locked';
   Lines[4]  := 'PORT={#AppPort}';

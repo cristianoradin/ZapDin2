@@ -45,7 +45,7 @@ def _read_port() -> int:
     if not os.path.exists(env_file):
         return 4000
 
-    for line in open(env_file, encoding="utf-8"):
+    for line in open(env_file, encoding="utf-8", errors="replace"):
         line = line.strip()
         if line.startswith("PORT=") or line.startswith("APP_PORT="):
             try:
