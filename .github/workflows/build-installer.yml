@@ -124,7 +124,6 @@ jobs:
       # ── Pasta de payload ───────────────────────────────────────────────────
       - name: Create payload structure
         run: |
-          New-Item -ItemType Directory -Force -Path payload\tools    | Out-Null
           New-Item -ItemType Directory -Force -Path payload\branding  | Out-Null
           New-Item -ItemType Directory -Force -Path payload\deps      | Out-Null
           New-Item -ItemType Directory -Force -Path payload\static    | Out-Null
@@ -133,21 +132,6 @@ jobs:
           if (Test-Path app\static) {
             Copy-Item app\static\* -Destination payload\static -Recurse -Force
           }
-        shell: pwsh
-
-      # ── Instalar NSSM via Chocolatey ───────────────────────────────────────
-      - name: Install NSSM
-        run: |
-          choco install nssm --yes --no-progress --ignore-checksums
-          # Copiar o binario REAL, nao o shim do Chocolatey
-          $nssmReal = "C:\ProgramData\chocolatey\lib\NSSM\tools\nssm.exe"
-          if (-not (Test-Path $nssmReal)) {
-            $nssmReal = Get-ChildItem "C:\ProgramData\chocolatey\lib" -Recurse -Filter "nssm.exe" |
-                        Where-Object { $_.FullName -notlike "*shim*" } |
-                        Select-Object -First 1 -ExpandProperty FullName
-          }
-          Copy-Item $nssmReal -Destination payload\tools\nssm.exe -Force
-          Write-Host "NSSM real copiado de: $nssmReal"
         shell: pwsh
 
       # ── Download bootstrappers de deps (WebView2 + VC++) ──────────────────

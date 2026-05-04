@@ -79,9 +79,6 @@ Source: "..\payload\ZapDin-Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; ── Velopack — runtime de atualização ────────────────────────────────────────
 Source: "..\payload\Update.exe"; DestDir: "{app}"; Flags: ignoreversion
 
-; ── NSSM — gerenciador de serviços Windows ────────────────────────────────────
-Source: "..\payload\tools\nssm.exe"; DestDir: "{app}\tools"; Flags: ignoreversion
-
 ; ── Playwright Chromium (pré-baixado no CI) ───────────────────────────────────
 Source: "..\payload\playwright-browsers\*"; DestDir: "{app}\playwright-browsers"; \
   Flags: ignoreversion recursesubdirs createallsubdirs
@@ -108,7 +105,6 @@ Source: "..\payload\deps\vc_redist.x64.exe"; DestDir: "{tmp}"; \
 Name: "{app}\data";  Permissions: authusers-modify
 Name: "{app}\logs";  Permissions: authusers-modify
 Name: "{app}\cache"; Permissions: authusers-modify
-Name: "{app}\tools"
 
 ; =============================================================================
 [Icons]
@@ -139,13 +135,20 @@ Filename: "{tmp}\vc_redist.x64.exe"; \
   Flags: waituntilterminated; \
   Check: not IsVCRedistInstalled
 
-; ── 2. Registro de serviços Windows via NSSM ─────────────────────────────────
-Filename: "{cmd}"; \
-  Parameters: "/C ""{app}\tools\register_services.bat"""; \
-  StatusMsg: "Configurando serviços do Windows…"; \
+; ── 2. Registrar tarefas agendadas via PowerShell (sem NSSM) ─────────────────
+Filename: "powershell.exe"; \
+  Parameters: "-ExecutionPolicy Bypass -File ""{app}\tools\register_tasks.ps1"""; \
+  StatusMsg: "Configurando inicializacao automatica..."; \
   Flags: runhidden waituntilterminated
 
-; ── 3. Abre janela de ativação (first-run, opcional no fim da instalação) ─────
+; ── 3. Iniciar o app imediatamente ───────────────────────────────────────────
+Filename: "schtasks.exe"; \
+  Parameters: "/run /tn ZapDinApp"; \
+  StatusMsg: "Iniciando ZapDin..."; \
+  Flags: runhidden waituntilterminated
+
+; ── 4. Abre janela de ativacao (first-run, opcional no fim da instalacao) ────
+
 Filename: "{app}\ZapDin-Launcher.exe"; \
   Description: "Ativar {#AppName} agora"; \
   Flags: nowait postinstall skipifsilent unchecked
@@ -154,9 +157,12 @@ Filename: "{app}\ZapDin-Launcher.exe"; \
 ; [UninstallRun] — antes da remoção dos arquivos
 ; =============================================================================
 [UninstallRun]
-Filename: "{cmd}"; \
-  Parameters: "/C ""{app}\tools\unregister_services.bat"""; \
-  Flags: runhidden waituntilterminated
+Filename: "schtasks.exe"; Parameters: "/end /tn ZapDinApp";    Flags: runhidden waituntilterminated
+Filename: "schtasks.exe"; Parameters: "/end /tn ZapDinWorker"; Flags: runhidden waituntilterminated
+Filename: "schtasks.exe"; Parameters: "/delete /tn ZapDinApp    /f"; Flags: runhidden waituntilterminated
+Filename: "schtasks.exe"; Parameters: "/delete /tn ZapDinWorker /f"; Flags: runhidden waituntilterminated
+Filename: "taskkill.exe"; Parameters: "/IM ZapDin-App.exe /F";    Flags: runhidden waituntilterminated
+Filename: "taskkill.exe"; Parameters: "/IM ZapDin-Worker.exe /F"; Flags: runhidden waituntilterminated
 
 ; =============================================================================
 [UninstallDelete]
@@ -269,134 +275,90 @@ begin
   end;
 end;
 
-// ── Cria .env de bootstrap com MONITOR_URL preenchido ────────────────────────
+// ── Gera SECRET_KEY aleatoria (48 chars alfanumericos) ───────────────────────
+function GenerateSecretKey: string;
+var
+  i, idx: Integer;
+  chars: string;
+  key: string;
+  seed: Cardinal;
+begin
+  chars := 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  key   := '';
+  seed  := GetTickCount;
+  for i := 1 to 48 do
+  begin
+    seed := seed * 1664525 + 1013904223;
+    idx  := (seed mod 62) + 1;
+    key  := key + chars[idx];
+  end;
+  Result := key;
+end;
+
+// ── Cria .env de bootstrap com MONITOR_URL e SECRET_KEY ──────────────────────
 procedure WriteBootstrapEnv;
 var
-  EnvFile, MonitorUrl: string;
-  Lines: TArrayOfString;
+  EnvFile, AppDir, MonitorUrl, SecretKey: string;
 begin
-  EnvFile := ExpandConstant('{app}\.env');
+  EnvFile    := ExpandConstant('{app}\.env');
+  AppDir     := ExpandConstant('{app}');
+  MonitorUrl := Trim(MonitorUrlEdit.Text);
+  SecretKey  := GenerateSecretKey;
+
   if FileExists(EnvFile) then begin
-    Log('[ZapDin] .env existente preservado (reinstalação).');
+    Log('[ZapDin] .env existente preservado (reinstalacao).');
     Exit;
   end;
 
-  MonitorUrl := Trim(MonitorUrlEdit.Text);
-
-  SetArrayLength(Lines, 18);
-  Lines[0]  := '# ZapDin - Bootstrap gerado pelo instalador v3';
-  Lines[1]  := '# Segredos serao preenchidos pelo fluxo de ativacao (/activate).';
-  Lines[2]  := '';
-  Lines[3]  := 'APP_STATE=locked';
-  Lines[4]  := 'PORT={#AppPort}';
-  Lines[5]  := 'DATABASE_URL=data\app.db';
-  Lines[6]  := '';
-  Lines[7]  := '# Endereço do servidor Monitor (configurado na instalação)';
-  Lines[8]  := 'MONITOR_URL=' + MonitorUrl;
-  Lines[9]  := '';
-  Lines[10] := '# Preenchidos automaticamente após ativação por token:';
-  Lines[11] := 'MONITOR_CLIENT_TOKEN=';
-  Lines[12] := 'CLIENT_NAME=';
-  Lines[13] := 'CLIENT_CNPJ=';
-  Lines[14] := 'ERP_TOKEN=';
-  Lines[15] := 'SECRET_KEY=';
-  Lines[16] := '';
-  Lines[17] := '# Configurados pelo instalador:';
-  SaveStringsToFile(EnvFile, Lines, False);
-
-  // Append linhas extras (evita problema de índice)
   SaveStringToFile(EnvFile,
-    'PLAYWRIGHT_BROWSERS_PATH=' + ExpandConstant('{app}') + '\playwright-browsers' + #13#10 +
-    'VELOPACK_CHANNEL_URL={#UpdateChannelURL}' + #13#10 +
-    'VELOPACK_UPDATE_EXE=' + ExpandConstant('{app}') + '\Update.exe' + #13#10,
-    True
+    'APP_STATE=locked'                                              + #13#10 +
+    'PORT={#AppPort}'                                              + #13#10 +
+    'DATABASE_URL=' + AppDir + '\data\app.db'                     + #13#10 +
+    'SECRET_KEY=' + SecretKey                                      + #13#10 +
+    'MONITOR_URL=' + MonitorUrl                                    + #13#10 +
+    'MONITOR_CLIENT_TOKEN='                                        + #13#10 +
+    'CLIENT_NAME='                                                 + #13#10 +
+    'CLIENT_CNPJ='                                                 + #13#10 +
+    'ERP_TOKEN='                                                   + #13#10 +
+    'PLAYWRIGHT_BROWSERS_PATH=' + AppDir + '\playwright-browsers'  + #13#10 +
+    'VELOPACK_CHANNEL_URL={#UpdateChannelURL}'                     + #13#10 +
+    'VELOPACK_UPDATE_EXE=' + AppDir + '\Update.exe'               + #13#10,
+    False
   );
 
-  Log('[ZapDin] .env de bootstrap criado — MONITOR_URL=' + MonitorUrl);
+  Log('[ZapDin] .env criado com SECRET_KEY e MONITOR_URL=' + MonitorUrl);
 end;
 
-// ── Gera register_services.bat e unregister_services.bat ─────────────────────
-procedure WriteServiceBatches;
+// ── Gera register_tasks.ps1 (Task Scheduler, sem NSSM) ───────────────────────
+procedure WriteRegisterTasksScript;
 var
-  AppDir, RegBat, UnregBat: string;
-  RegLines, UnregLines: TArrayOfString;
+  AppDir, ScriptFile: string;
 begin
-  AppDir  := ExpandConstant('{app}');
-  RegBat  := AppDir + '\tools\register_services.bat';
-  UnregBat := AppDir + '\tools\unregister_services.bat';
+  AppDir     := ExpandConstant('{app}');
+  ScriptFile := AppDir + '\tools\register_tasks.ps1';
 
-  // ── register_services.bat ────────────────────────────────────────────────
-  SetArrayLength(RegLines, 55);
-  RegLines[0]  := '@echo off';
-  RegLines[1]  := 'setlocal';
-  RegLines[2]  := 'set NSSM="' + AppDir + '\tools\nssm.exe"';
-  RegLines[3]  := 'set APPDIR=' + AppDir;
-  RegLines[4]  := 'set LOG=%APPDIR%\logs\install.log';
-  RegLines[5]  := '';
-  RegLines[6]  := 'echo [%date% %time%] Registrando servicos ZapDin... >> "%LOG%"';
-  RegLines[7]  := '';
-  RegLines[8]  := ':: Para instâncias anteriores';
-  RegLines[9]  := '%NSSM% stop {#ServiceApp}    >nul 2>&1';
-  RegLines[10] := '%NSSM% stop {#ServiceWorker} >nul 2>&1';
-  RegLines[11] := 'timeout /t 3 /nobreak >nul';
-  RegLines[12] := '%NSSM% remove {#ServiceApp}    confirm >nul 2>&1';
-  RegLines[13] := '%NSSM% remove {#ServiceWorker} confirm >nul 2>&1';
-  RegLines[14] := '';
-  RegLines[15] := ':: =========================================================';
-  RegLines[16] := ':: Serviço 1 — Backend FastAPI (porta {#AppPort})';
-  RegLines[17] := ':: =========================================================';
-  RegLines[18] := '%NSSM% install {#ServiceApp} "%APPDIR%\ZapDin-App.exe"';
-  RegLines[19] := '%NSSM% set {#ServiceApp} AppParameters --service';
-  RegLines[20] := '%NSSM% set {#ServiceApp} AppDirectory "%APPDIR%"';
-  RegLines[21] := '%NSSM% set {#ServiceApp} DisplayName "ZapDin — Backend"';
-  RegLines[22] := '%NSSM% set {#ServiceApp} Description "API FastAPI + WhatsApp Web (porta {#AppPort})."';
-  RegLines[23] := '%NSSM% set {#ServiceApp} Start SERVICE_AUTO_START';
-  RegLines[24] := '%NSSM% set {#ServiceApp} ObjectName LocalSystem';
-  RegLines[25] := '%NSSM% set {#ServiceApp} AppStdout "%APPDIR%\logs\app.stdout.log"';
-  RegLines[26] := '%NSSM% set {#ServiceApp} AppStderr "%APPDIR%\logs\app.stderr.log"';
-  RegLines[27] := '%NSSM% set {#ServiceApp} AppRotateFiles 1';
-  RegLines[28] := '%NSSM% set {#ServiceApp} AppRotateBytes 10485760';
-  RegLines[29] := '%NSSM% set {#ServiceApp} AppExit Default Restart';
-  RegLines[30] := '%NSSM% set {#ServiceApp} AppRestartDelay 5000';
-  RegLines[31] := '%NSSM% set {#ServiceApp} AppEnvironmentExtra PLAYWRIGHT_BROWSERS_PATH="%APPDIR%\playwright-browsers"';
-  RegLines[32] := '';
-  RegLines[33] := ':: =========================================================';
-  RegLines[34] := ':: Serviço 2 — Worker (fila de envios com anti-ban)';
-  RegLines[35] := ':: Depende do Backend (DependOnService)';
-  RegLines[36] := ':: =========================================================';
-  RegLines[37] := '%NSSM% install {#ServiceWorker} "%APPDIR%\ZapDin-Worker.exe"';
-  RegLines[38] := '%NSSM% set {#ServiceWorker} AppDirectory "%APPDIR%"';
-  RegLines[39] := '%NSSM% set {#ServiceWorker} DisplayName "ZapDin — Worker"';
-  RegLines[40] := '%NSSM% set {#ServiceWorker} Description "Processa fila de mensagens WhatsApp."';
-  RegLines[41] := '%NSSM% set {#ServiceWorker} Start SERVICE_AUTO_START';
-  RegLines[42] := '%NSSM% set {#ServiceWorker} DependOnService {#ServiceApp}';
-  RegLines[43] := '%NSSM% set {#ServiceWorker} ObjectName LocalSystem';
-  RegLines[44] := '%NSSM% set {#ServiceWorker} AppStdout "%APPDIR%\logs\worker.stdout.log"';
-  RegLines[45] := '%NSSM% set {#ServiceWorker} AppStderr "%APPDIR%\logs\worker.stderr.log"';
-  RegLines[46] := '%NSSM% set {#ServiceWorker} AppExit Default Restart';
-  RegLines[47] := '%NSSM% set {#ServiceWorker} AppRestartDelay 8000';
-  RegLines[48] := '';
-  RegLines[49] := ':: Inicia Backend (Worker sobe automaticamente via DependOnService)';
-  RegLines[50] := '%NSSM% start {#ServiceApp}';
-  RegLines[51] := '';
-  RegLines[52] := 'echo [%date% %time%] Servicos registrados com sucesso. >> "%LOG%"';
-  RegLines[53] := 'endlocal';
-  RegLines[54] := '';
-  SaveStringsToFile(RegBat, RegLines, False);
+  ForceDirectories(AppDir + '\tools');
 
-  // ── unregister_services.bat ──────────────────────────────────────────────
-  SetArrayLength(UnregLines, 10);
-  UnregLines[0] := '@echo off';
-  UnregLines[1] := 'set NSSM="' + AppDir + '\tools\nssm.exe"';
-  UnregLines[2] := 'echo [%date% %time%] Removendo servicos ZapDin... >> "' + AppDir + '\logs\install.log"';
-  UnregLines[3] := '%NSSM% stop {#ServiceWorker} >nul 2>&1';
-  UnregLines[4] := '%NSSM% stop {#ServiceApp}    >nul 2>&1';
-  UnregLines[5] := 'timeout /t 3 /nobreak >nul';
-  UnregLines[6] := '%NSSM% remove {#ServiceWorker} confirm >nul 2>&1';
-  UnregLines[7] := '%NSSM% remove {#ServiceApp}    confirm >nul 2>&1';
-  UnregLines[8] := 'echo [%date% %time%] Servicos removidos. >> "' + AppDir + '\logs\install.log"';
-  UnregLines[9] := '';
-  SaveStringsToFile(UnregBat, UnregLines, False);
+  SaveStringToFile(ScriptFile,
+    '$app = "' + AppDir + '"'                                                          + #13#10 +
+    '$log = "$app\logs\install.log"'                                                   + #13#10 +
+    'Add-Content $log ("[$(Get-Date)] Registrando tarefas ZapDin...")'                + #13#10 +
+    ''                                                                                 + #13#10 +
+    '# Limpar tarefas anteriores'                                                      + #13#10 +
+    'schtasks /end    /tn "ZapDinApp"    >$null 2>&1'                                 + #13#10 +
+    'schtasks /end    /tn "ZapDinWorker" >$null 2>&1'                                 + #13#10 +
+    'schtasks /delete /tn "ZapDinApp"    /f >$null 2>&1'                             + #13#10 +
+    'schtasks /delete /tn "ZapDinWorker" /f >$null 2>&1'                             + #13#10 +
+    ''                                                                                 + #13#10 +
+    '# Registrar ZapDinApp — inicia no boot como SYSTEM'                              + #13#10 +
+    'schtasks /create /tn "ZapDinApp" /tr "`"$app\ZapDin-App.exe`"" /sc onstart /ru SYSTEM /rl HIGHEST /f' + #13#10 +
+    ''                                                                                 + #13#10 +
+    '# Registrar ZapDinWorker — inicia 20s apos o boot'                              + #13#10 +
+    'schtasks /create /tn "ZapDinWorker" /tr "`"$app\ZapDin-Worker.exe`"" /sc onstart /ru SYSTEM /rl HIGHEST /delay 0000:20 /f' + #13#10 +
+    ''                                                                                 + #13#10 +
+    'Add-Content $log ("[$(Get-Date)] Tarefas registradas com sucesso.")'             + #13#10,
+    False
+  );
 end;
 
 // ── Hooks de ciclo de vida ────────────────────────────────────────────────────
@@ -409,7 +371,7 @@ begin
   end;
   if CurStep = ssPostInstall then begin
     WriteBootstrapEnv;
-    WriteServiceBatches;
+    WriteRegisterTasksScript;
   end;
 end;
 
