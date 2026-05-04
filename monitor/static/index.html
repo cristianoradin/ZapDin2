@@ -1112,6 +1112,8 @@ function onPageLoad(p) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 let _currentUserId = null;
+let _currentRole   = 'admin';
+let _selectedCliente = null; // { id, nome } — usado por usuarios
 
 async function checkAuth() {
   try {
@@ -1119,14 +1121,60 @@ async function checkAuth() {
     if (res.status === 401) { window.location.href = '/login'; return; }
     const d = await res.json();
     _currentUserId = d.uid;
+    _currentRole   = d.role || 'admin';
     const name = d.username || '?';
     document.getElementById('userNameSidebar').textContent = name;
     document.getElementById('userAvatar').textContent = name[0].toUpperCase();
+
+    // Para usuarios: verifica se há cliente selecionado
+    if (_currentRole === 'usuario') {
+      const raw = sessionStorage.getItem('zapdin_cliente');
+      if (!raw) {
+        // Sem cliente selecionado → volta para login
+        window.location.href = '/login';
+        return;
+      }
+      try { _selectedCliente = JSON.parse(raw); } catch { _selectedCliente = null; }
+      if (!_selectedCliente || !_selectedCliente.id) {
+        window.location.href = '/login';
+        return;
+      }
+      // Exibe indicador de cliente ativo na sidebar
+      _renderClienteBadge(_selectedCliente.nome);
+    }
   } catch { window.location.href = '/login'; }
 }
 
+function _renderClienteBadge(nome) {
+  // Cria ou atualiza o badge do cliente ativo na sidebar-footer
+  let badge = document.getElementById('clienteBadge');
+  if (!badge) {
+    const footer = document.querySelector('.sidebar-footer');
+    if (!footer) return;
+    badge = document.createElement('div');
+    badge.id = 'clienteBadge';
+    badge.style.cssText = `
+      display:flex; align-items:center; gap:6px;
+      padding:6px 10px; margin:0 .5rem .5rem;
+      background:var(--accent-soft); border:1px solid var(--accent-mid);
+      border-radius:8px; font-size:.75rem; color:var(--accent); font-weight:600;
+      cursor:pointer; transition:background .15s;
+    `;
+    badge.title = 'Trocar cliente';
+    badge.innerHTML = `<span>🏢</span><span id="clienteBadgeName" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><span style="font-size:.7rem;opacity:.7">trocar</span>`;
+    badge.addEventListener('click', async () => {
+      await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+      sessionStorage.removeItem('zapdin_cliente');
+      window.location.href = '/login';
+    });
+    footer.parentElement.insertBefore(badge, footer);
+  }
+  document.getElementById('clienteBadgeName').textContent = nome;
+}
+
 document.getElementById('btnLogout').addEventListener('click', async () => {
-  await fetch('/api/logout', { method: 'POST' });
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+  sessionStorage.removeItem('zapdin_cliente');
   window.location.href = '/login';
 });
 

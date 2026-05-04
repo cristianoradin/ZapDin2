@@ -66,6 +66,7 @@
       align-items: center;
       animation: fadeUp .35s cubic-bezier(.22,1,.36,1) both;
     }
+    .wrapper.wide { max-width: 520px; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -243,6 +244,135 @@
       80%       { transform: translateX(3px); }
     }
 
+    /* ── Tela de seleção de cliente ───────────────────────────────── */
+    #selectPanel { display: none; }
+
+    .select-intro {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .select-intro .icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .select-intro h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .select-intro p {
+      font-size: .82rem;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+    .select-intro .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-mid);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-top: 10px;
+    }
+
+    .cliente-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 340px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+    .cliente-list::-webkit-scrollbar { width: 5px; }
+    .cliente-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .cliente-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color .18s, background .18s, box-shadow .18s, transform .1s;
+    }
+    .cliente-card:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      box-shadow: 0 2px 10px rgba(61,127,31,.12);
+      transform: translateY(-1px);
+    }
+    .cliente-card:active { transform: scale(.98); }
+
+    .cliente-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .cliente-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .cliente-nome {
+      font-weight: 600;
+      font-size: .92rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cliente-label {
+      font-size: .75rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+    .cliente-arrow {
+      color: var(--text-light);
+      font-size: .9rem;
+      transition: transform .15s, color .15s;
+    }
+    .cliente-card:hover .cliente-arrow {
+      transform: translateX(3px);
+      color: var(--accent);
+    }
+
+    .btn-back {
+      width: 100%;
+      margin-top: 16px;
+      padding: .6rem;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: 9px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--text-mid);
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+    }
+    .btn-back:hover {
+      border-color: var(--text-mid);
+      color: var(--text);
+      background: var(--surface2);
+    }
+
     /* Rodapé */
     .footer {
       margin-top: 28px;
@@ -256,7 +386,7 @@
 
 <div class="topbar-grad"></div>
 
-<div class="wrapper">
+<div class="wrapper" id="mainWrapper">
   <div class="logo-wrap">
     <img src="/logo/Zapdin-removebg-preview.png"
          alt="ZapDin"
@@ -264,7 +394,8 @@
          onerror="this.style.display='none'" />
   </div>
 
-  <div class="card">
+  <!-- ── Card de Login ───────────────────────────────────────────── -->
+  <div class="card" id="loginCard">
     <div class="card-head">
       <div class="card-title">ZapDin Monitor</div>
       <div class="card-sub">Painel Administrativo Central</div>
@@ -307,12 +438,28 @@
     </form>
   </div>
 
+  <!-- ── Card de Seleção de Cliente ─────────────────────────────── -->
+  <div class="card" id="selectPanel">
+    <div class="select-intro">
+      <div class="icon">🏢</div>
+      <h2>Selecione o Cliente</h2>
+      <p>Escolha com qual posto deseja trabalhar</p>
+      <div class="user-badge" id="userBadge">👤 —</div>
+    </div>
+
+    <div class="err-box" id="selectErrBox"></div>
+
+    <div class="cliente-list" id="clienteList"></div>
+
+    <button class="btn-back" id="btnBack">← Trocar usuário</button>
+  </div>
+
   <div class="footer">ZapDin © 2025 — Acesso restrito</div>
 </div>
 
 <script>
-  // Toggle mostrar/ocultar senha
-  const eyeBtn  = document.getElementById('eyeBtn');
+  // ── Toggle mostrar/ocultar senha ──────────────────────────────────────
+  const eyeBtn   = document.getElementById('eyeBtn');
   const pwdInput = document.getElementById('password');
   eyeBtn.addEventListener('click', () => {
     const show = pwdInput.type === 'password';
@@ -320,13 +467,71 @@
     eyeBtn.textContent = show ? '🙈' : '👁';
   });
 
-  // Submit
+  // ── Helpers ───────────────────────────────────────────────────────────
+  function showError(boxId, msg) {
+    const box = document.getElementById(boxId);
+    box.textContent = msg;
+    box.style.display = 'block';
+    box.style.animation = 'none';
+    box.offsetHeight; // reflow para re-disparar
+    box.style.animation = '';
+  }
+  function hideError(boxId) {
+    document.getElementById(boxId).style.display = 'none';
+  }
+
+  function showSelectPanel(username, clientes) {
+    // Atualiza badge do usuário
+    document.getElementById('userBadge').textContent = '👤 ' + username;
+
+    // Monta lista de clientes
+    const list = document.getElementById('clienteList');
+    list.innerHTML = '';
+    clientes.forEach(c => {
+      const initials = c.nome.trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+      const card = document.createElement('div');
+      card.className = 'cliente-card';
+      card.innerHTML = `
+        <div class="cliente-avatar">${initials}</div>
+        <div class="cliente-info">
+          <div class="cliente-nome">${c.nome}</div>
+          <div class="cliente-label">Clique para acessar</div>
+        </div>
+        <span class="cliente-arrow">›</span>
+      `;
+      card.addEventListener('click', () => selectCliente(c.id, c.nome));
+      list.appendChild(card);
+    });
+
+    // Troca exibição
+    document.getElementById('loginCard').style.display = 'none';
+    document.getElementById('selectPanel').style.display = 'block';
+    document.getElementById('mainWrapper').classList.add('wide');
+  }
+
+  function selectCliente(id, nome) {
+    sessionStorage.setItem('zapdin_cliente', JSON.stringify({ id, nome }));
+    window.location.href = '/';
+  }
+
+  // ── Voltar para login ─────────────────────────────────────────────────
+  document.getElementById('btnBack').addEventListener('click', async () => {
+    // Faz logout para limpar cookie e volta para tela de login
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    sessionStorage.removeItem('zapdin_cliente');
+    document.getElementById('selectPanel').style.display = 'none';
+    document.getElementById('loginCard').style.display = 'block';
+    document.getElementById('mainWrapper').classList.remove('wide');
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    hideError('errBox');
+  });
+
+  // ── Submit do login ───────────────────────────────────────────────────
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const errBox = document.getElementById('errBox');
-    const btn    = document.getElementById('btnLogin');
-
-    errBox.style.display = 'none';
+    const btn = document.getElementById('btnLogin');
+    hideError('errBox');
     btn.disabled = true;
     btn.classList.add('loading');
 
@@ -341,21 +546,37 @@
       });
 
       if (res.ok) {
-        window.location.href = '/';
+        const data = await res.json();
+
+        if (data.role === 'usuario') {
+          const clientes = data.clientes || [];
+
+          if (clientes.length === 0) {
+            // Sem clientes vinculados
+            showError('errBox', 'Nenhum cliente vinculado ao seu usuário. Contate o administrador.');
+            btn.disabled = false;
+            btn.classList.remove('loading');
+          } else if (clientes.length === 1) {
+            // Único cliente — seleciona automaticamente
+            selectCliente(clientes[0].id, clientes[0].nome);
+          } else {
+            // Múltiplos clientes — exibe tela de seleção
+            btn.disabled = false;
+            btn.classList.remove('loading');
+            showSelectPanel(data.username, clientes);
+          }
+        } else {
+          // Admin: vai direto para o painel
+          window.location.href = '/';
+        }
       } else {
         const data = await res.json().catch(() => ({}));
-        errBox.textContent  = data.detail || 'Credenciais inválidas. Tente novamente.';
-        errBox.style.display = 'block';
-        // Re-dispara a animação de shake
-        errBox.style.animation = 'none';
-        errBox.offsetHeight;
-        errBox.style.animation = '';
+        showError('errBox', data.detail || 'Credenciais inválidas. Tente novamente.');
         btn.disabled = false;
         btn.classList.remove('loading');
       }
     } catch {
-      errBox.textContent  = 'Erro de conexão com o servidor.';
-      errBox.style.display = 'block';
+      showError('errBox', 'Erro de conexão com o servidor.');
       btn.disabled = false;
       btn.classList.remove('loading');
     }

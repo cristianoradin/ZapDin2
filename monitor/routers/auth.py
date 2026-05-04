@@ -95,21 +95,23 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 async def login(body: LoginRequest, response: Response, db: aiosqlite.Connection = Depends(get_db)):
-    # Verifica primeiro na tabela admins, depois em usuarios (legado)
+    # Verifica primeiro na tabela admins, depois em usuarios
     row = None
+    role = "admin"
     for table in ("admins", "usuarios"):
         async with db.execute(
             f"SELECT id, username, password_hash FROM {table} WHERE username = ?", (body.username,)
         ) as cur:
             row = await cur.fetchone()
         if row and verify_password(body.password, row["password_hash"]):
+            role = "admin" if table == "admins" else "usuario"
             break
         row = None
 
     if not row:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
-    token = create_session_token(row["id"], row["username"])
+    token = create_session_token(row["id"], row["username"], role)
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
@@ -117,7 +119,22 @@ async def login(body: LoginRequest, response: Response, db: aiosqlite.Connection
         samesite="lax",
         max_age=86400,
     )
-    return {"ok": True, "username": row["username"]}
+
+    result: dict = {"ok": True, "username": row["username"], "role": role}
+
+    # Para usuarios: busca os clientes vinculados para exibir a tela de seleção
+    if role == "usuario":
+        async with db.execute(
+            """SELECT c.id, c.nome
+               FROM clientes c
+               JOIN usuario_clientes uc ON uc.cliente_id = c.id
+               WHERE uc.usuario_id = ?
+               ORDER BY c.nome""",
+            (row["id"],),
+        ) as cur:
+            result["clientes"] = [dict(r) for r in await cur.fetchall()]
+
+    return result
 
 
 @router.post("/logout")
@@ -128,7 +145,7 @@ async def logout(response: Response):
 
 @router.get("/me")
 async def me(user: dict = Depends(get_current_user)):
-    return {"username": user["usr"], "uid": user["uid"]}
+    return {"username": user["usr"], "uid": user["uid"], "role": user.get("role", "admin")}
 
 
 # ── Listagem de usuários com clientes vinculados ──────────────────────────────
