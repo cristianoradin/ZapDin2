@@ -195,9 +195,6 @@ async def init_db() -> None:
                 sent_at      TIMESTAMPTZ
             )
         """)
-        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_empresa ON mensagens(empresa_id)")
-        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens(empresa_id, status)")
-
         # ── Arquivos por empresa ──────────────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS arquivos (
@@ -217,5 +214,92 @@ async def init_db() -> None:
                 erro          TEXT
             )
         """)
+
+        # ── Migration: adiciona empresa_id em tabelas que já existiam ─────────
+        # Necessário ao atualizar banco single-tenant → multi-tenant.
+        # ADD COLUMN IF NOT EXISTS é idempotente — seguro rodar sempre.
+        for _tbl in ('usuarios', 'config', 'sessoes_wa', 'mensagens', 'arquivos'):
+            try:
+                await conn.execute(
+                    f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS empresa_id BIGINT"
+                )
+            except Exception:
+                pass
+
+        # Corrige PRIMARY KEY de config: (key) → (empresa_id, key)
+        await conn.execute("""
+            DO $$ BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                      ON tc.constraint_name = kcu.constraint_name
+                     AND tc.table_name = 'config'
+                     AND tc.constraint_type = 'PRIMARY KEY'
+                     AND kcu.column_name = 'key'
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM information_schema.key_column_usage kcu2
+                    JOIN information_schema.table_constraints tc2
+                      ON kcu2.constraint_name = tc2.constraint_name
+                     AND tc2.table_name = 'config'
+                     AND tc2.constraint_type = 'PRIMARY KEY'
+                     AND kcu2.column_name = 'empresa_id'
+                ) THEN
+                    ALTER TABLE config DROP CONSTRAINT config_pkey;
+                    ALTER TABLE config ADD PRIMARY KEY (empresa_id, key);
+                END IF;
+            END $$;
+        """)
+
+        # Corrige PRIMARY KEY de sessoes_wa: (id) → (empresa_id, id)
+        await conn.execute("""
+            DO $$ BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                      ON tc.constraint_name = kcu.constraint_name
+                     AND tc.table_name = 'sessoes_wa'
+                     AND tc.constraint_type = 'PRIMARY KEY'
+                     AND kcu.column_name = 'id'
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM information_schema.key_column_usage kcu2
+                    JOIN information_schema.table_constraints tc2
+                      ON kcu2.constraint_name = tc2.constraint_name
+                     AND tc2.table_name = 'sessoes_wa'
+                     AND tc2.constraint_type = 'PRIMARY KEY'
+                     AND kcu2.column_name = 'empresa_id'
+                ) THEN
+                    ALTER TABLE sessoes_wa DROP CONSTRAINT sessoes_wa_pkey;
+                    ALTER TABLE sessoes_wa ADD PRIMARY KEY (empresa_id, id);
+                END IF;
+            END $$;
+        """)
+
+        # Corrige UNIQUE de usuarios: (username) → (empresa_id, username)
+        await conn.execute("""
+            DO $$ BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints
+                    WHERE table_name = 'usuarios'
+                      AND constraint_type = 'UNIQUE'
+                      AND constraint_name = 'usuarios_username_key'
+                ) THEN
+                    ALTER TABLE usuarios DROP CONSTRAINT usuarios_username_key;
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints
+                    WHERE table_name = 'usuarios'
+                      AND constraint_type = 'UNIQUE'
+                      AND constraint_name = 'usuarios_empresa_id_username_key'
+                ) THEN
+                    ALTER TABLE usuarios
+                        ADD CONSTRAINT usuarios_empresa_id_username_key
+                        UNIQUE (empresa_id, username);
+                END IF;
+            END $$;
+        """)
+
+        # Índices (seguros mesmo se coluna empresa_id foi adicionada agora)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_empresa ON mensagens(empresa_id)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens(empresa_id, status)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_empresa ON arquivos(empresa_id)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_status ON arquivos(empresa_id, status)")
