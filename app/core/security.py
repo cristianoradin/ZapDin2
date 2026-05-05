@@ -19,8 +19,11 @@ def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
 
-def create_session_token(user_id: int, username: str) -> str:
-    return _serializer.dumps({"uid": user_id, "usr": username}, salt="session")
+def create_session_token(user_id: int, username: str, empresa_id: int) -> str:
+    return _serializer.dumps(
+        {"uid": user_id, "usr": username, "empresa_id": empresa_id},
+        salt="session",
+    )
 
 
 def decode_session_token(token: str) -> Optional[dict]:
@@ -39,6 +42,11 @@ def get_current_user(
     if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sessão expirada")
     return payload
+
+
+def normalize_cnpj(cnpj: str) -> str:
+    """Remove pontuação e retorna apenas dígitos do CNPJ."""
+    return "".join(c for c in cnpj if c.isdigit())
 
 
 def verify_erp_token(token: str, stored_token: str) -> bool:

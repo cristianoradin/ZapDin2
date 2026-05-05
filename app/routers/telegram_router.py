@@ -16,9 +16,13 @@ class TelegramConfig(BaseModel):
 @router.get("/config")
 async def get_config(
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
-    async with db.execute("SELECT key, value FROM config WHERE key IN ('tg_bot_token','tg_chat_id')") as cur:
+    empresa_id = user["empresa_id"]
+    async with db.execute(
+        "SELECT key, value FROM config WHERE empresa_id=? AND key IN ('tg_bot_token','tg_chat_id')",
+        (empresa_id,),
+    ) as cur:
         rows = await cur.fetchall()
     data = {r["key"]: r["value"] for r in rows}
     return {
@@ -32,11 +36,15 @@ async def get_config(
 async def save_config(
     body: TelegramConfig,
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
-    _upsert = "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
-    await db.execute(_upsert, ('tg_bot_token', body.bot_token))
-    await db.execute(_upsert, ('tg_chat_id', body.chat_id))
+    empresa_id = user["empresa_id"]
+    _upsert = (
+        "INSERT INTO config (empresa_id, key, value) VALUES (?, ?, ?) "
+        "ON CONFLICT (empresa_id, key) DO UPDATE SET value = EXCLUDED.value"
+    )
+    await db.execute(_upsert, (empresa_id, 'tg_bot_token', body.bot_token))
+    await db.execute(_upsert, (empresa_id, 'tg_chat_id', body.chat_id))
     await db.commit()
     telegram_service.configure(body.bot_token, body.chat_id)
     return {"ok": True}

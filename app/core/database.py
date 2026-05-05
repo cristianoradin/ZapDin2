@@ -1,20 +1,15 @@
 """
-app/core/database.py — Camada de acesso ao PostgreSQL via asyncpg.
+app/core/database.py — PostgreSQL multi-tenant via asyncpg.
 
-O AsyncPGAdapter emula a interface do aiosqlite para que os routers
-não precisem de grandes alterações:
-  - execute(sql, params)  → _Cursor  (await ou async with)
-  - cursor.fetchone()     → Record | None
-  - cursor.fetchall()     → list[Record]
-  - cursor.lastrowid      → int | None  (via RETURNING id)
-  - commit()              → no-op (autocommit fora de transação)
+Cada empresa (CNPJ ativado) tem um registro em `empresas`.
+Todos os dados (usuarios, config, sessoes_wa, mensagens, arquivos)
+são isolados por empresa_id.
 """
 from __future__ import annotations
 
 import asyncpg
 from contextlib import asynccontextmanager
 from .config import settings
-
 
 # ── Pool global ───────────────────────────────────────────────────────────────
 _pool: asyncpg.Pool | None = None
@@ -55,7 +50,6 @@ class _Cursor:
 
 
 class _ExecProxy:
-    """Retornado por execute() — suporta tanto 'await expr' quanto 'async with expr'."""
     __slots__ = ('_coro',)
 
     def __init__(self, coro):
@@ -74,8 +68,6 @@ class _ExecProxy:
 # ── Adapter principal ─────────────────────────────────────────────────────────
 
 class AsyncPGAdapter:
-    """Envolve asyncpg.Connection e expõe interface compatível com aiosqlite."""
-
     def __init__(self, conn: asyncpg.Connection):
         self._conn = conn
 
@@ -87,12 +79,10 @@ class AsyncPGAdapter:
         args = list(params)
         head = pg.lstrip().upper()
 
-        # SELECT / WITH → retorna linhas
         if head.startswith('SELECT') or head.startswith('WITH'):
             rows = await self._conn.fetch(pg, *args)
             return _Cursor(rows=rows)
 
-        # INSERT → tenta capturar id via RETURNING
         if head.startswith('INSERT') and 'RETURNING' not in head:
             pg_ret = pg.rstrip().rstrip(';') + ' RETURNING id'
             try:
@@ -114,7 +104,6 @@ class AsyncPGAdapter:
         await self._conn.executemany(pg, [list(p) for p in params_list])
 
     async def executescript(self, script: str):
-        """Executa múltiplos statements separados por ';'."""
         for stmt in script.split(';'):
             s = stmt.strip()
             if s:
@@ -134,54 +123,86 @@ async def get_db_direct():
         yield AsyncPGAdapter(conn)
 
 
-# ── Inicialização do banco ────────────────────────────────────────────────────
+# ── Inicialização multi-tenant ────────────────────────────────────────────────
 
 async def init_db() -> None:
     global _pool
     _pool = await asyncpg.create_pool(settings.database_url, min_size=2, max_size=10)
 
     async with _pool.acquire() as conn:
+
+        # ── Empresas (tenants) ────────────────────────────────────────────────
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS empresas (
+                id         BIGSERIAL PRIMARY KEY,
+                cnpj       TEXT UNIQUE NOT NULL,
+                nome       TEXT NOT NULL,
+                token      TEXT UNIQUE NOT NULL,
+                ativo      BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+
+        # ── Usuários (scoped por empresa) ─────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
                 id            BIGSERIAL PRIMARY KEY,
-                username      TEXT UNIQUE NOT NULL,
+                empresa_id    BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                username      TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
-                created_at    TIMESTAMPTZ DEFAULT NOW()
+                created_at    TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (empresa_id, username)
             )
         """)
+
+        # ── Config por empresa ────────────────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS config (
-                key   TEXT PRIMARY KEY,
-                value TEXT NOT NULL
+                empresa_id BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                key        TEXT NOT NULL,
+                value      TEXT NOT NULL,
+                PRIMARY KEY (empresa_id, key)
             )
         """)
+
+        # ── Sessões WhatsApp por empresa ──────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS sessoes_wa (
-                id         TEXT PRIMARY KEY,
+                empresa_id BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                id         TEXT NOT NULL,
                 nome       TEXT NOT NULL,
                 status     TEXT DEFAULT 'disconnected',
                 qr_data    TEXT,
                 phone      TEXT,
                 created_at TIMESTAMPTZ DEFAULT NOW(),
-                last_seen  TIMESTAMPTZ
+                last_seen  TIMESTAMPTZ,
+                PRIMARY KEY (empresa_id, id)
             )
         """)
+
+        # ── Mensagens por empresa ─────────────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS mensagens (
-                id          BIGSERIAL PRIMARY KEY,
-                sessao_id   TEXT,
+                id           BIGSERIAL PRIMARY KEY,
+                empresa_id   BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                sessao_id    TEXT,
                 destinatario TEXT NOT NULL,
-                mensagem    TEXT,
-                tipo        TEXT DEFAULT 'text',
-                status      TEXT DEFAULT 'pending',
-                erro        TEXT,
-                created_at  TIMESTAMPTZ DEFAULT NOW(),
-                sent_at     TIMESTAMPTZ
+                mensagem     TEXT,
+                tipo         TEXT DEFAULT 'text',
+                status       TEXT DEFAULT 'pending',
+                erro         TEXT,
+                created_at   TIMESTAMPTZ DEFAULT NOW(),
+                sent_at      TIMESTAMPTZ
             )
         """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_empresa ON mensagens(empresa_id)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens(empresa_id, status)")
+
+        # ── Arquivos por empresa ──────────────────────────────────────────────
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS arquivos (
                 id            BIGSERIAL PRIMARY KEY,
+                empresa_id    BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
                 nome_original TEXT NOT NULL,
                 nome_arquivo  TEXT NOT NULL,
                 tamanho       INTEGER,
@@ -196,22 +217,5 @@ async def init_db() -> None:
                 erro          TEXT
             )
         """)
-        # Seed: admin padrão (senha: admin123)
-        await conn.execute("""
-            INSERT INTO usuarios (username, password_hash)
-            VALUES ('admin', '$2b$12$Hwep0wwj.dmjNcQ7HEKcsO3gaxCl3Ptuegep21Q7kIxC3f50dhbnm')
-            ON CONFLICT DO NOTHING
-        """)
-        # Config padrão
-        await conn.execute("""
-            INSERT INTO config (key, value)
-            VALUES
-                ('mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),
-                ('wa_delay_min',    '5'),
-                ('wa_delay_max',    '15'),
-                ('wa_daily_limit',  '100'),
-                ('wa_hora_inicio',  '08:00'),
-                ('wa_hora_fim',     '18:00'),
-                ('wa_spintax',      '1')
-            ON CONFLICT DO NOTHING
-        """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_empresa ON arquivos(empresa_id)")
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_status ON arquivos(empresa_id, status)")

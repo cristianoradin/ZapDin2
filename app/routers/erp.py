@@ -15,32 +15,40 @@ router = APIRouter(prefix="/api/erp", tags=["erp"])
 
 UPLOAD_DIR = "data/arquivos"
 
-# In-memory: last ERP connection info
-_last_call: dict = {
-    "timestamp": None,
-    "ip": None,
-    "endpoint": None,
-    "status": None,   # "ok" | "error"
-    "total_calls": 0,
-}
+# In-memory: last ERP connection info (per empresa_id)
+_last_call: dict = {}
 
 
-def _record_call(request: Request, endpoint: str, ok: bool) -> None:
-    _last_call["timestamp"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    _last_call["ip"] = request.client.host if request.client else "?"
-    _last_call["endpoint"] = endpoint
-    _last_call["status"] = "ok" if ok else "error"
-    _last_call["total_calls"] += 1
+def _record_call(empresa_id: int, request: Request, endpoint: str, ok: bool) -> None:
+    _last_call[empresa_id] = {
+        "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        "ip": request.client.host if request.client else "?",
+        "endpoint": endpoint,
+        "status": "ok" if ok else "error",
+        "total_calls": _last_call.get(empresa_id, {}).get("total_calls", 0) + 1,
+    }
 
 
-async def _verify_token(x_token: Optional[str], db) -> None:
-    async with db.execute("SELECT value FROM config WHERE key = 'erp_token'") as cur:
+async def _verify_token(x_token: Optional[str], db) -> int:
+    """
+    Verifica o token ERP e retorna o empresa_id correspondente.
+    Cada empresa tem seu próprio token na tabela config.
+    """
+    if not x_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token ERP não informado",
+        )
+    async with db.execute(
+        "SELECT empresa_id FROM config WHERE key='erp_token' AND value=?", (x_token,)
+    ) as cur:
         row = await cur.fetchone()
-    stored = row["value"] if row else ""
-    if not stored:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token ERP não configurado")
-    if not x_token or x_token != stored:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token ERP inválido",
+        )
+    return row["empresa_id"]
 
 
 class Produto(BaseModel):
@@ -113,11 +121,12 @@ async def receber_venda(
     x_token: Optional[str] = Header(default=None),
     db=Depends(get_db),
 ):
-    await _verify_token(x_token, db)
-
+    empresa_id = await _verify_token(x_token, db)
     telefone = _normalizar_telefone(body.telefone)
 
-    async with db.execute("SELECT value FROM config WHERE key = 'mensagem_padrao'") as cur:
+    async with db.execute(
+        "SELECT value FROM config WHERE key='mensagem_padrao' AND empresa_id=?", (empresa_id,)
+    ) as cur:
         row = await cur.fetchone()
 
     template = row["value"] if row else "Olá {nome}, obrigado pela sua compra de {valor_total} em {data}!"
@@ -125,11 +134,11 @@ async def receber_venda(
 
     # Enfileira para disparo assíncrono — API retorna imediatamente
     await db.execute(
-        "INSERT INTO mensagens (destinatario, mensagem, tipo, status) VALUES (?, ?, 'text', 'queued')",
-        (telefone, mensagem),
+        "INSERT INTO mensagens (empresa_id, destinatario, mensagem, tipo, status) VALUES (?, ?, ?, 'text', 'queued')",
+        (empresa_id, telefone, mensagem),
     )
     await db.commit()
-    _record_call(request, "/api/erp/venda", True)
+    _record_call(empresa_id, request, "/api/erp/venda", True)
     return {"ok": True, "queued": True}
 
 
@@ -140,8 +149,7 @@ async def receber_arquivo(
     x_token: Optional[str] = Header(default=None),
     db=Depends(get_db),
 ):
-    await _verify_token(x_token, db)
-
+    empresa_id = await _verify_token(x_token, db)
     telefone = _normalizar_telefone(body.telefone)
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -155,25 +163,33 @@ async def receber_arquivo(
 
     # Enfileira para disparo assíncrono — API retorna imediatamente
     await db.execute(
-        "INSERT INTO arquivos (nome_original, nome_arquivo, tamanho, destinatario, status, caption) VALUES (?, ?, ?, ?, 'queued', ?)",
-        (body.nome_arquivo, nome_salvo, len(conteudo), telefone, body.mensagem),
+        """INSERT INTO arquivos
+               (empresa_id, nome_original, nome_arquivo, tamanho, destinatario, status, caption)
+           VALUES (?, ?, ?, ?, ?, 'queued', ?)""",
+        (empresa_id, body.nome_arquivo, nome_salvo, len(conteudo), telefone, body.mensagem),
     )
     await db.commit()
-    _record_call(request, "/api/erp/arquivo", True)
+    _record_call(empresa_id, request, "/api/erp/arquivo", True)
     return {"ok": True, "queued": True}
 
 
 @router.get("/status")
-async def erp_status(_: dict = Depends(get_current_user)):
-    return _last_call
+async def erp_status(user: dict = Depends(get_current_user)):
+    empresa_id = user["empresa_id"]
+    return _last_call.get(empresa_id, {
+        "timestamp": None, "ip": None, "endpoint": None, "status": None, "total_calls": 0,
+    })
 
 
 @router.get("/config")
 async def get_erp_config(
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
-    async with db.execute("SELECT value FROM config WHERE key = 'erp_token'") as cur:
+    empresa_id = user["empresa_id"]
+    async with db.execute(
+        "SELECT value FROM config WHERE key='erp_token' AND empresa_id=?", (empresa_id,)
+    ) as cur:
         row = await cur.fetchone()
     return {"token": row["value"] if row else ""}
 
@@ -182,10 +198,15 @@ async def get_erp_config(
 async def set_erp_config(
     body: dict,
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
+    empresa_id = user["empresa_id"]
     token = body.get("token", "")
-    await db.execute("INSERT INTO config (key, value) VALUES ('erp_token', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (token,))
+    await db.execute(
+        """INSERT INTO config (empresa_id, key, value) VALUES (?, 'erp_token', ?)
+           ON CONFLICT (empresa_id, key) DO UPDATE SET value = EXCLUDED.value""",
+        (empresa_id, token),
+    )
     await db.commit()
     return {"ok": True}
 
@@ -193,9 +214,14 @@ async def set_erp_config(
 @router.post("/gerar-token")
 async def gerar_token(
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
+    empresa_id = user["empresa_id"]
     novo_token = secrets.token_urlsafe(32)
-    await db.execute("INSERT INTO config (key, value) VALUES ('erp_token', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (novo_token,))
+    await db.execute(
+        """INSERT INTO config (empresa_id, key, value) VALUES (?, 'erp_token', ?)
+           ON CONFLICT (empresa_id, key) DO UPDATE SET value = EXCLUDED.value""",
+        (empresa_id, novo_token),
+    )
     await db.commit()
     return {"ok": True, "token": novo_token}

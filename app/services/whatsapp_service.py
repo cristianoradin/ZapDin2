@@ -68,9 +68,10 @@ _DIALOG_BTN_SEL = '[role="dialog"] button'
 
 
 class WhatsAppSession:
-    def __init__(self, session_id: str, nome: str) -> None:
+    def __init__(self, session_id: str, nome: str, empresa_id: int) -> None:
         self.session_id = session_id
         self.nome       = nome
+        self.empresa_id = empresa_id
         self.status: str        = "disconnected"
         self.qr_data: Optional[str] = None
         self.phone: Optional[str]   = None
@@ -573,8 +574,8 @@ class WhatsAppSession:
             from ..core.database import get_db_direct
             async with get_db_direct() as db:
                 await db.execute(
-                    "UPDATE sessoes_wa SET status=?, last_seen=? WHERE id=?",
-                    (new_status, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.session_id),
+                    "UPDATE sessoes_wa SET status=?, last_seen=NOW() WHERE id=? AND empresa_id=?",
+                    (new_status, self.session_id, self.empresa_id),
                 )
                 await db.commit()
         except Exception as exc:
@@ -600,68 +601,97 @@ _STATUS_ORDER = {"sent": 1, "delivered": 2, "read": 3}
 
 class WhatsAppManager:
     def __init__(self) -> None:
+        # Chave composta: "{empresa_id}:{session_id}"
         self._sessions: Dict[str, WhatsAppSession] = {}
         self._rr_index: int = 0
-        # arquivo_id -> {session_id, phone, last_status, first_check}
+        # arquivo_id -> {key, phone, last_status, first_check}
         self._pending_checks: Dict[int, dict] = {}
         self._checker_started: bool = False
 
+    def _key(self, empresa_id: int, session_id: str) -> str:
+        return f"{empresa_id}:{session_id}"
+
     async def load_from_db(self, db) -> None:
-        async with db.execute("SELECT id, nome FROM sessoes_wa") as cur:
+        """Carrega todas as sessões de todas as empresas no startup."""
+        async with db.execute("SELECT id, nome, empresa_id FROM sessoes_wa") as cur:
             rows = await cur.fetchall()
         for row in rows:
-            await self.add_session(row["id"], row["nome"])
+            await self.add_session(row["id"], row["nome"], row["empresa_id"])
         if not self._checker_started:
             self._checker_started = True
             asyncio.create_task(self._status_checker_loop())
 
-    async def add_session(self, session_id: str, nome: str) -> None:
-        if session_id in self._sessions:
+    async def add_session(self, session_id: str, nome: str, empresa_id: int) -> None:
+        key = self._key(empresa_id, session_id)
+        if key in self._sessions:
             return
-        sess = WhatsAppSession(session_id, nome)
-        self._sessions[session_id] = sess
+        sess = WhatsAppSession(session_id, nome, empresa_id)
+        self._sessions[key] = sess
         asyncio.create_task(sess.start())
 
-    async def remove_session(self, session_id: str) -> None:
-        sess = self._sessions.pop(session_id, None)
+    async def remove_session(self, session_id: str, empresa_id: int) -> None:
+        key = self._key(empresa_id, session_id)
+        sess = self._sessions.pop(key, None)
         if sess:
             await sess.stop()
 
-    def pick_session(self) -> Optional[str]:
-        connected = [sid for sid, s in self._sessions.items() if s.status == "connected"]
+    def pick_session(self, empresa_id: int) -> Optional[str]:
+        """Retorna o session_id de uma sessão conectada desta empresa (round-robin)."""
+        prefix = f"{empresa_id}:"
+        connected = [
+            k.split(":", 1)[1]
+            for k, s in self._sessions.items()
+            if k.startswith(prefix) and s.status == "connected"
+        ]
         if not connected:
             return None
         idx = self._rr_index % len(connected)
         self._rr_index += 1
         return connected[idx]
 
-    def get_qr(self, session_id: str) -> Optional[str]:
-        sess = self._sessions.get(session_id)
+    def get_qr(self, session_id: str, empresa_id: int) -> Optional[str]:
+        key = self._key(empresa_id, session_id)
+        sess = self._sessions.get(key)
         return sess.qr_data if sess else None
 
-    def get_status(self) -> list:
+    def get_status(self, empresa_id: int) -> list:
+        """Retorna status apenas das sessões desta empresa."""
+        prefix = f"{empresa_id}:"
         return [
-            {"id": sid, "nome": s.nome, "status": s.status, "phone": s.phone}
-            for sid, s in self._sessions.items()
+            {"id": k.split(":", 1)[1], "nome": s.nome, "status": s.status, "phone": s.phone}
+            for k, s in self._sessions.items()
+            if k.startswith(prefix)
         ]
 
-    async def send_text(self, session_id: str, phone: str, message: str) -> Tuple[bool, Optional[str]]:
-        sess = self._sessions.get(session_id)
+    async def send_text(
+        self, session_id: str, empresa_id: int, phone: str, message: str
+    ) -> Tuple[bool, Optional[str]]:
+        key = self._key(empresa_id, session_id)
+        sess = self._sessions.get(key)
         if not sess:
             return False, "Sessão não encontrada"
         return await sess.send_text(phone, message)
 
     async def send_file(
-        self, session_id: str, phone: str, file_path: str, filename: str, caption: Optional[str] = None
+        self,
+        session_id: str,
+        empresa_id: int,
+        phone: str,
+        file_path: str,
+        filename: str,
+        caption: Optional[str] = None,
     ) -> Tuple[bool, Optional[str]]:
-        sess = self._sessions.get(session_id)
+        key = self._key(empresa_id, session_id)
+        sess = self._sessions.get(key)
         if not sess:
             return False, "Sessão não encontrada"
         return await sess.send_file(phone, file_path, caption or filename)
 
-    def schedule_status_check(self, arquivo_id: int, session_id: str, phone: str) -> None:
+    def schedule_status_check(
+        self, arquivo_id: int, session_id: str, empresa_id: int, phone: str
+    ) -> None:
         self._pending_checks[arquivo_id] = {
-            "session_id": session_id,
+            "key": self._key(empresa_id, session_id),
             "phone": phone,
             "last_status": "sent",
             "first_check": time.time(),
@@ -684,7 +714,7 @@ class WhatsAppManager:
                     ids_to_remove.append(arquivo_id)
                     continue
 
-                sess = self._sessions.get(info["session_id"])
+                sess = self._sessions.get(info["key"])
                 if not sess or sess.status != "connected":
                     continue
 
@@ -697,7 +727,7 @@ class WhatsAppManager:
                     continue
 
                 info["last_status"] = new_status
-                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                now = datetime.now()
 
                 try:
                     async with get_db_direct() as db:

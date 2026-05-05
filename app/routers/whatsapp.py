@@ -18,9 +18,13 @@ class SessaoCreate(BaseModel):
 @router.get("")
 async def list_sessoes(
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
-    async with db.execute("SELECT id, nome, status, phone, last_seen FROM sessoes_wa ORDER BY created_at") as cur:
+    empresa_id = user["empresa_id"]
+    async with db.execute(
+        "SELECT id, nome, status, phone, last_seen FROM sessoes_wa WHERE empresa_id=? ORDER BY created_at",
+        (empresa_id,),
+    ) as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]
 
@@ -29,16 +33,17 @@ async def list_sessoes(
 async def create_sessao(
     body: SessaoCreate,
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
     import uuid
+    empresa_id = user["empresa_id"]
     sessao_id = str(uuid.uuid4())[:8]
     await db.execute(
-        "INSERT INTO sessoes_wa (id, nome, status) VALUES (?, ?, 'disconnected')",
-        (sessao_id, body.nome),
+        "INSERT INTO sessoes_wa (empresa_id, id, nome, status) VALUES (?, ?, ?, 'disconnected')",
+        (empresa_id, sessao_id, body.nome),
     )
     await db.commit()
-    await wa_manager.add_session(sessao_id, body.nome)
+    await wa_manager.add_session(sessao_id, body.nome, empresa_id)
     return {"id": sessao_id, "nome": body.nome, "status": "disconnected"}
 
 
@@ -46,21 +51,24 @@ async def create_sessao(
 async def delete_sessao(
     sessao_id: str,
     db=Depends(get_db),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
-    await wa_manager.remove_session(sessao_id)
-    await db.execute("DELETE FROM sessoes_wa WHERE id = ?", (sessao_id,))
+    empresa_id = user["empresa_id"]
+    await wa_manager.remove_session(sessao_id, empresa_id)
+    await db.execute(
+        "DELETE FROM sessoes_wa WHERE id=? AND empresa_id=?", (sessao_id, empresa_id)
+    )
     await db.commit()
 
 
 @router.get("/live-status")
-async def live_status(_: dict = Depends(get_current_user)):
-    return wa_manager.get_status()
+async def live_status(user: dict = Depends(get_current_user)):
+    return wa_manager.get_status(user["empresa_id"])
 
 
 @router.get("/qr/{sessao_id}")
-async def get_qr(sessao_id: str, _: dict = Depends(get_current_user)):
-    qr = wa_manager.get_qr(sessao_id)
+async def get_qr(sessao_id: str, user: dict = Depends(get_current_user)):
+    qr = wa_manager.get_qr(sessao_id, user["empresa_id"])
     if qr is None:
         raise HTTPException(status_code=404, detail="QR não disponível")
     return {"qr": qr}
@@ -72,8 +80,12 @@ class SendTextBody(BaseModel):
 
 
 @router.post("/{sessao_id}/send-text")
-async def send_text(sessao_id: str, body: SendTextBody, _: dict = Depends(get_current_user)):
-    ok, err = await wa_manager.send_text(sessao_id, body.phone, body.message)
+async def send_text(
+    sessao_id: str,
+    body: SendTextBody,
+    user: dict = Depends(get_current_user),
+):
+    ok, err = await wa_manager.send_text(sessao_id, user["empresa_id"], body.phone, body.message)
     if not ok:
         raise HTTPException(status_code=400, detail=err or "Erro ao enviar mensagem")
     return {"ok": True}
@@ -85,14 +97,17 @@ async def send_file(
     phone: str = Form(...),
     caption: str = Form(""),
     file: UploadFile = File(...),
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
+    empresa_id = user["empresa_id"]
     suffix = os.path.splitext(file.filename)[1]
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         tmp.write(await file.read())
         tmp_path = tmp.name
     try:
-        ok, err = await wa_manager.send_file(sessao_id, phone, tmp_path, file.filename, caption or None)
+        ok, err = await wa_manager.send_file(
+            sessao_id, empresa_id, phone, tmp_path, file.filename, caption or None
+        )
     finally:
         os.unlink(tmp_path)
     if not ok:

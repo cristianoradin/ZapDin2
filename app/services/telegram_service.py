@@ -97,7 +97,12 @@ async def notify_api_error(detail: str) -> None:
 async def _send_status_report() -> None:
     from ..services.whatsapp_service import wa_manager
 
-    sessoes = wa_manager.get_status()
+    # Coleta status de todas as empresas (relatório global)
+    sessoes = [
+        s
+        for sess in wa_manager._sessions.values()
+        for s in [{"id": sess.session_id, "nome": sess.nome, "status": sess.status, "phone": sess.phone}]
+    ]
     total = len(sessoes)
     conectadas = [s for s in sessoes if s["status"] == "connected"]
     qr_pendente = [s for s in sessoes if s["status"] == "qr"]

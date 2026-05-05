@@ -69,16 +69,20 @@ async def lifespan(app: FastAPI):
     await init_db()
 
     if not settings.is_locked:
-        # Carrega sessões WA e config Telegram apenas quando o sistema está ativo
+        # Carrega sessões WA de todas as empresas
         async with get_db_direct() as db:
             await wa_manager.load_from_db(db)
+            # Telegram: carrega config do primeiro tenant que tiver configurado
             async with db.execute(
-                "SELECT key, value FROM config WHERE key IN ('tg_bot_token','tg_chat_id')"
+                "SELECT value FROM config WHERE key='tg_bot_token' LIMIT 1"
             ) as cur:
-                rows = await cur.fetchall()
-            cfg = {r["key"]: r["value"] for r in rows}
-            if cfg.get("tg_bot_token") and cfg.get("tg_chat_id"):
-                telegram_service.configure(cfg["tg_bot_token"], cfg["tg_chat_id"])
+                tg_token_row = await cur.fetchone()
+            async with db.execute(
+                "SELECT value FROM config WHERE key='tg_chat_id' LIMIT 1"
+            ) as cur:
+                tg_chat_row = await cur.fetchone()
+            if tg_token_row and tg_chat_row:
+                telegram_service.configure(tg_token_row["value"], tg_chat_row["value"])
 
         reporter.start()
         updater.start()
@@ -132,14 +136,6 @@ async def logout_alias(request: Request):
     resp = JSONResponse({"ok": True})
     resp.delete_cookie(SESSION_COOKIE)
     return resp
-
-
-@fastapi_app.get("/api/qr/{sessao_id}")
-async def qr_alias(sessao_id: str):
-    qr = wa_manager.get_qr(sessao_id)
-    if qr is None:
-        return JSONResponse({"error": "QR não disponível"}, status_code=404)
-    return {"qr": qr}
 
 
 @fastapi_app.post("/api/report")

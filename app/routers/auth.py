@@ -1,80 +1,106 @@
+"""
+app/routers/auth.py — Autenticação multi-tenant com CNPJ.
+
+Fluxo de login em 2 etapas:
+  1. POST /api/auth/check-cnpj  → verifica se o CNPJ está ativo
+  2. POST /api/auth/login       → valida usuário vinculado àquele CNPJ
+
+Ativação de empresa (onboarding):
+  POST /api/auth/registrar-empresa → valida token no Monitor, cria empresa no DB
+"""
+from __future__ import annotations
+
 import logging
+import secrets
 
 import httpx
+import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
 from ..core.config import settings
 from ..core.database import get_db
-from ..core.security import verify_password, hash_password, create_session_token, SESSION_COOKIE, get_current_user
+from ..core.security import (
+    verify_password, hash_password, create_session_token,
+    SESSION_COOKIE, get_current_user, normalize_cnpj,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
+# ── Modelos ───────────────────────────────────────────────────────────────────
+
+class CNPJCheck(BaseModel):
+    cnpj: str
+
+
 class LoginRequest(BaseModel):
+    cnpj: str
     username: str
     password: str
 
 
-async def _verificar_no_monitor(username: str, password: str) -> bool:
-    """
-    Valida credenciais no monitor quando o usuário não existe localmente.
-    Retorna True se o monitor confirmar, False em qualquer outro caso.
-    """
-    try:
-        if not settings.monitor_url or not settings.monitor_client_token:
-            return False
-        url = f"{settings.monitor_url.rstrip('/')}/api/auth/verificar"
-        async with httpx.AsyncClient(timeout=4.0) as client:
-            r = await client.post(url, json={
-                "username": username,
-                "password": password,
-                "client_token": settings.monitor_client_token,
-            })
-        return r.status_code == 200
-    except Exception as e:
-        logger.warning("Verificação no monitor falhou: %s", e)
-        return False
+class RegistrarEmpresaRequest(BaseModel):
+    token: str          # token do cliente (do Monitor)
+    admin_username: str
+    admin_password: str
 
 
-@router.post("/login")
-async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
-    username = body.username.strip().lower()
+# ── Passo 1: Verifica CNPJ ────────────────────────────────────────────────────
+
+@router.post("/check-cnpj")
+async def check_cnpj(body: CNPJCheck, db=Depends(get_db)):
+    """
+    Verifica se o CNPJ está cadastrado e ativo.
+    Retorna o nome da empresa para exibição antes de pedir credenciais.
+    """
+    cnpj = normalize_cnpj(body.cnpj)
+    if len(cnpj) != 14:
+        raise HTTPException(status_code=400, detail="CNPJ inválido. Informe os 14 dígitos.")
 
     async with db.execute(
-        "SELECT id, username, password_hash FROM usuarios WHERE username = ?", (username,)
+        "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
     ) as cur:
         row = await cur.fetchone()
 
-    if row and verify_password(body.password, row["password_hash"]):
-        # Usuário existe localmente e senha confere
-        uid = row["id"]
-    else:
-        # Não encontrado localmente (ou senha diferente) — tenta o monitor
-        if not await _verificar_no_monitor(username, body.password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail="CNPJ não cadastrado ou sem token ativo. "
+                   "Entre em contato com o suporte para ativar seu acesso.",
+        )
+    return {"ok": True, "nome": row["nome"], "cnpj": cnpj}
 
-        # Monitor validou: faz upsert no banco local para sessões futuras
-        try:
-            cur2 = await db.execute(
-                """INSERT INTO usuarios (username, password_hash)
-                   VALUES (?, ?)
-                   ON CONFLICT(username) DO UPDATE SET password_hash=excluded.password_hash""",
-                (username, hash_password(body.password)),
-            )
-            uid = cur2.lastrowid or (
-                (await (await db.execute(
-                    "SELECT id FROM usuarios WHERE username=?", (username,)
-                )).fetchone())["id"]
-            )
-            await db.commit()
-        except Exception as e:
-            logger.warning("Upsert local após validação do monitor falhou: %s", e)
-            # Mesmo assim deixa logar — usa uid=0 como fallback
-            uid = 0
 
-    token = create_session_token(uid, username)
+# ── Passo 2: Login com usuário/senha ──────────────────────────────────────────
+
+@router.post("/login")
+async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
+    cnpj = normalize_cnpj(body.cnpj)
+    username = body.username.strip().lower()
+
+    # Verifica empresa
+    async with db.execute(
+        "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
+    ) as cur:
+        empresa = await cur.fetchone()
+    if not empresa:
+        raise HTTPException(status_code=401, detail="CNPJ não autorizado.")
+
+    empresa_id = empresa["id"]
+
+    # Verifica usuário vinculado a essa empresa
+    async with db.execute(
+        "SELECT id, username, password_hash FROM usuarios WHERE username = ? AND empresa_id = ?",
+        (username, empresa_id),
+    ) as cur:
+        row = await cur.fetchone()
+
+    if not row or not verify_password(body.password, row["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")
+
+    token = create_session_token(row["id"], row["username"], empresa_id)
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
@@ -82,7 +108,7 @@ async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
         samesite="lax",
         max_age=86400,
     )
-    return {"ok": True, "username": username}
+    return {"ok": True, "username": row["username"], "empresa": empresa["nome"]}
 
 
 @router.post("/logout")
@@ -92,30 +118,179 @@ async def logout(response: Response):
 
 
 @router.get("/me")
-async def me(user: dict = Depends(get_current_user)):
-    import httpx
-    from ..core.config import settings
+async def me(user: dict = Depends(get_current_user), db=Depends(get_db)):
+    empresa_id = user.get("empresa_id")
+    empresa_nome = None
+    empresa_cnpj = None
 
-    menus = None  # None = todos os menus liberados (fallback seguro)
-    try:
-        if settings.monitor_url and settings.monitor_client_token:
-            url = (
-                f"{settings.monitor_url.rstrip('/')}"
-                f"/api/auth/usuario-menus/{user['usr']}"
-                f"?client_token={settings.monitor_client_token}"
-            )
-            async with httpx.AsyncClient(timeout=3.0) as client:
-                r = await client.get(url)
-            if r.status_code == 200:
-                data = r.json()
-                if not data.get("all_allowed", True):
-                    menus = data.get("menus")
-    except Exception:
-        pass  # monitor offline ou erro → libera todos os menus
+    if empresa_id:
+        async with db.execute(
+            "SELECT nome, cnpj FROM empresas WHERE id = ?", (empresa_id,)
+        ) as cur:
+            emp = await cur.fetchone()
+        if emp:
+            empresa_nome = emp["nome"]
+            empresa_cnpj = emp["cnpj"]
 
     return {
         "username": user["usr"],
         "uid": user["uid"],
-        "client_name": settings.client_name,
-        "menus": menus,  # None = todos; lista = apenas esses menus
+        "empresa_id": empresa_id,
+        "empresa": empresa_nome,
+        "cnpj": empresa_cnpj,
     }
+
+
+# ── Registrar nova empresa (onboarding) ───────────────────────────────────────
+
+@router.post("/registrar-empresa", status_code=status.HTTP_201_CREATED)
+async def registrar_empresa(body: RegistrarEmpresaRequest, db=Depends(get_db)):
+    """
+    Registra um novo tenant (empresa) validando o token com o Monitor.
+
+    Fluxo:
+      1. Valida token com Monitor → obtém nome, CNPJ, token permanente
+      2. Cria registro em `empresas` (ou atualiza se já existe)
+      3. Cria usuário admin para a empresa
+      4. Retorna credenciais de acesso
+    """
+    token = body.token.strip().replace("-", "").upper()
+    admin_username = body.admin_username.strip().lower()
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token não pode ser vazio.")
+    if not admin_username or len(body.admin_password) < 6:
+        raise HTTPException(status_code=400, detail="Usuário inválido ou senha muito curta (mín. 6 chars).")
+
+    # ── Valida token no Monitor ───────────────────────────────────────────────
+    monitor_url = settings.monitor_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(f"{monitor_url}/api/auth/cliente/{token}")
+    except Exception as exc:
+        logger.error("Erro ao chamar Monitor: %s", exc)
+        raise HTTPException(status_code=503, detail="Não foi possível conectar ao servidor de ativação.")
+
+    if r.status_code == 404:
+        raise HTTPException(status_code=404, detail="Token não encontrado. Verifique o token informado.")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Monitor retornou erro {r.status_code}.")
+
+    data = r.json()
+    cnpj = normalize_cnpj(data.get("cnpj", ""))
+    nome = data.get("nome", "Empresa")
+    client_token = data.get("token", token)
+
+    if not cnpj:
+        raise HTTPException(status_code=422, detail="Monitor não retornou CNPJ válido.")
+
+    # ── Cria ou atualiza empresa ──────────────────────────────────────────────
+    try:
+        cur = await db.execute(
+            """INSERT INTO empresas (cnpj, nome, token, ativo)
+               VALUES (?, ?, ?, TRUE)
+               ON CONFLICT (cnpj) DO UPDATE
+               SET nome = EXCLUDED.nome, token = EXCLUDED.token, ativo = TRUE
+               RETURNING id""",
+            (cnpj, nome, client_token),
+        )
+    except Exception as exc:
+        logger.error("Erro ao criar empresa: %s", exc)
+        raise HTTPException(status_code=500, detail="Erro ao registrar empresa.")
+
+    # Se ON CONFLICT atualizou, precisamos buscar o id
+    async with db.execute("SELECT id FROM empresas WHERE cnpj = ?", (cnpj,)) as c:
+        emp_row = await c.fetchone()
+    empresa_id = emp_row["id"]
+
+    # ── Cria usuário admin para a empresa ─────────────────────────────────────
+    try:
+        await db.execute(
+            """INSERT INTO usuarios (empresa_id, username, password_hash)
+               VALUES (?, ?, ?)
+               ON CONFLICT (empresa_id, username) DO UPDATE
+               SET password_hash = EXCLUDED.password_hash""",
+            (empresa_id, admin_username, hash_password(body.admin_password)),
+        )
+        await db.commit()
+    except Exception as exc:
+        logger.error("Erro ao criar usuário admin: %s", exc)
+        raise HTTPException(status_code=500, detail="Empresa registrada mas falha ao criar usuário.")
+
+    # ── Config padrão para a empresa ──────────────────────────────────────────
+    defaults = [
+        (empresa_id, 'mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),
+        (empresa_id, 'wa_delay_min',    '5'),
+        (empresa_id, 'wa_delay_max',    '15'),
+        (empresa_id, 'wa_daily_limit',  '100'),
+        (empresa_id, 'wa_hora_inicio',  '08:00'),
+        (empresa_id, 'wa_hora_fim',     '18:00'),
+        (empresa_id, 'wa_spintax',      '1'),
+    ]
+    for row in defaults:
+        await db.execute(
+            "INSERT INTO config (empresa_id, key, value) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+            row,
+        )
+        await db.commit()
+
+    logger.info("Empresa registrada: %s (%s) — admin: %s", nome, cnpj, admin_username)
+
+    return {
+        "ok": True,
+        "empresa": nome,
+        "cnpj": cnpj,
+        "username": admin_username,
+        "message": "Empresa ativada com sucesso! Faça login com seu CNPJ e as credenciais informadas.",
+    }
+
+
+# ── Criar usuário adicional na empresa ────────────────────────────────────────
+
+class NovoUsuarioRequest(BaseModel):
+    username: str
+    password: str
+
+
+@router.post("/usuarios", status_code=status.HTTP_201_CREATED)
+async def criar_usuario(
+    body: NovoUsuarioRequest,
+    db=Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    empresa_id = user["empresa_id"]
+    username = body.username.strip().lower()
+    if not username or len(body.password) < 6:
+        raise HTTPException(status_code=400, detail="Username inválido ou senha muito curta.")
+
+    try:
+        cur = await db.execute(
+            "INSERT INTO usuarios (empresa_id, username, password_hash) VALUES (?, ?, ?)",
+            (empresa_id, username, hash_password(body.password)),
+        )
+        await db.commit()
+        return {"id": cur.lastrowid, "username": username}
+    except asyncpg.UniqueViolationError:
+        raise HTTPException(status_code=409, detail="Username já existe nesta empresa.")
+
+
+@router.get("/usuarios")
+async def listar_usuarios(db=Depends(get_db), user: dict = Depends(get_current_user)):
+    empresa_id = user["empresa_id"]
+    async with db.execute(
+        "SELECT id, username, created_at FROM usuarios WHERE empresa_id = ? ORDER BY username",
+        (empresa_id,),
+    ) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+@router.delete("/usuarios/{uid}", status_code=status.HTTP_204_NO_CONTENT)
+async def remover_usuario(uid: int, db=Depends(get_db), user: dict = Depends(get_current_user)):
+    empresa_id = user["empresa_id"]
+    if uid == user["uid"]:
+        raise HTTPException(status_code=400, detail="Você não pode remover seu próprio usuário.")
+    await db.execute(
+        "DELETE FROM usuarios WHERE id = ? AND empresa_id = ?", (uid, empresa_id)
+    )
+    await db.commit()
