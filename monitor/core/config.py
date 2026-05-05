@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "dev-monitor-secret-key-change-in-prod"
     session_max_age: int = 86400
-    database_url: str = "data/monitor.db"
+    database_url: str = "postgresql://postgres@localhost/zapdin_monitor"
     port: int = 5000
 
     current_app_version: str = "1.0.0"

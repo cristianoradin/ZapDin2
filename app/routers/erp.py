@@ -7,7 +7,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
-import aiosqlite
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -34,7 +33,7 @@ def _record_call(request: Request, endpoint: str, ok: bool) -> None:
     _last_call["total_calls"] += 1
 
 
-async def _verify_token(x_token: Optional[str], db: aiosqlite.Connection) -> None:
+async def _verify_token(x_token: Optional[str], db) -> None:
     async with db.execute("SELECT value FROM config WHERE key = 'erp_token'") as cur:
         row = await cur.fetchone()
     stored = row["value"] if row else ""
@@ -112,7 +111,7 @@ async def receber_venda(
     body: VendaPayload,
     request: Request,
     x_token: Optional[str] = Header(default=None),
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     await _verify_token(x_token, db)
 
@@ -139,7 +138,7 @@ async def receber_arquivo(
     body: ArquivoPayload,
     request: Request,
     x_token: Optional[str] = Header(default=None),
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     await _verify_token(x_token, db)
 
@@ -171,7 +170,7 @@ async def erp_status(_: dict = Depends(get_current_user)):
 
 @router.get("/config")
 async def get_erp_config(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute("SELECT value FROM config WHERE key = 'erp_token'") as cur:
@@ -182,21 +181,21 @@ async def get_erp_config(
 @router.post("/config")
 async def set_erp_config(
     body: dict,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     token = body.get("token", "")
-    await db.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('erp_token', ?)", (token,))
+    await db.execute("INSERT INTO config (key, value) VALUES ('erp_token', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (token,))
     await db.commit()
     return {"ok": True}
 
 
 @router.post("/gerar-token")
 async def gerar_token(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     novo_token = secrets.token_urlsafe(32)
-    await db.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('erp_token', ?)", (novo_token,))
+    await db.execute("INSERT INTO config (key, value) VALUES ('erp_token', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", (novo_token,))
     await db.commit()
     return {"ok": True, "token": novo_token}

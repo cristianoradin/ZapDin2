@@ -64,9 +64,8 @@ _DASHBOARD_KEY = os.environ.get("DASHBOARD_KEY", "zapdin-monitor-dash-2026")
 @fastapi_app.get("/api/status")
 async def public_status(key: str = "", db=None):
     """Endpoint público para o painel de monitoramento externo."""
-    from .core.database import get_db as _get_db
-    import aiosqlite
-    from datetime import timedelta
+    from .core.database import _pool
+    from datetime import timedelta, timezone
 
     if key != _DASHBOARD_KEY:
         return JSONResponse({"error": "Chave inválida"}, status_code=401)
@@ -76,21 +75,18 @@ async def public_status(key: str = "", db=None):
     minutes, seconds = divmod(rem, 60)
     uptime_str = f"{hours}h {minutes}m {seconds}s"
 
-    threshold = (datetime.utcnow() - timedelta(minutes=3)).strftime("%Y-%m-%d %H:%M:%S")
+    threshold = datetime.now(tz=timezone.utc) - timedelta(minutes=3)
 
-    db_path = os.path.join(os.path.dirname(__file__), "..", settings.database_url)
     try:
-        async with aiosqlite.connect(db_path) as db:
-            db.row_factory = aiosqlite.Row
-            async with db.execute(
+        async with _pool.acquire() as conn:
+            rows = await conn.fetch(
                 """SELECT c.nome, c.cnpj, c.cidade, c.uf, c.versao_instalada,
                           (SELECT created_at FROM heartbeats WHERE cliente_id = c.id
                            ORDER BY created_at DESC LIMIT 1) as ultimo_ping,
                           (SELECT ip FROM heartbeats WHERE cliente_id = c.id
                            ORDER BY created_at DESC LIMIT 1) as ultimo_ip
                    FROM clientes c WHERE c.ativo = 1 ORDER BY c.nome"""
-            ) as cur:
-                rows = await cur.fetchall()
+            )
 
         clientes_list = []
         online = 0
@@ -104,7 +100,7 @@ async def public_status(key: str = "", db=None):
                 "cidade": r["cidade"],
                 "uf": r["uf"],
                 "versao": r["versao_instalada"],
-                "ultimo_ping": r["ultimo_ping"],
+                "ultimo_ping": r["ultimo_ping"].isoformat() if r["ultimo_ping"] else None,
                 "ip": r["ultimo_ip"],
                 "online": ativo,
             })

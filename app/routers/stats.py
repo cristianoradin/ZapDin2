@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-import aiosqlite
+
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/stats", tags=["stats"])
 
 @router.get("")
 async def get_stats(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute("SELECT COUNT(*) as total FROM mensagens") as cur:

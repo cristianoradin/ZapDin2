@@ -4,7 +4,7 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-import aiosqlite
+
 
 from ..core.config import settings
 from ..core.database import get_db
@@ -29,7 +29,7 @@ class ClienteUpdate(ClienteCreate):
 
 @router.get("")
 async def list_clientes(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute(
@@ -50,7 +50,7 @@ async def list_clientes(
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_cliente(
     body: ClienteCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     token = secrets.token_urlsafe(24)
@@ -68,7 +68,7 @@ async def create_cliente(
 async def update_cliente(
     cliente_id: int,
     body: ClienteUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     await db.execute(
@@ -85,7 +85,7 @@ async def update_cliente(
 @router.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_cliente(
     cliente_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     await db.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
@@ -95,7 +95,7 @@ async def delete_cliente(
 @router.get("/{cliente_id}/usuarios")
 async def get_usuarios_do_posto(
     cliente_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     """Busca usuários do app instalado no posto via API interna do app."""

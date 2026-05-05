@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
-import aiosqlite
+
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -25,7 +25,7 @@ async def receive_heartbeat(
     body: HeartbeatPayload,
     request: Request,
     x_client_token: Optional[str] = Header(default=None),
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     if not x_client_token:
         raise HTTPException(status_code=401, detail="Token obrigatório")
@@ -57,15 +57,10 @@ async def receive_heartbeat(
 
 @router.get("/api/monitor")
 async def get_monitor(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    # SQLite armazena datetime('now') como "YYYY-MM-DD HH:MM:SS" (espaço, sem micros).
-    # isoformat() usa "T" como separador, que tem ASCII 84 > espaço (32), quebrando a
-    # comparação de string — todo cliente apareceria offline. Usamos strftime para
-    # gerar o mesmo formato que o SQLite usa.
-    threshold = (datetime.utcnow() - timedelta(minutes=ACTIVE_THRESHOLD_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
-
+    # PostgreSQL: created_at é TIMESTAMPTZ, comparação feita diretamente no SQL
     async with db.execute(
         """SELECT c.id, c.nome, c.cnpj, c.versao_instalada, c.cidade, c.uf,
                   (SELECT created_at FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ping,
@@ -76,9 +71,14 @@ async def get_monitor(
     ) as cur:
         rows = await cur.fetchall()
 
+    threshold = datetime.now(tz=timezone.utc) - timedelta(minutes=ACTIVE_THRESHOLD_MINUTES)
+
     result = []
     for r in rows:
         row_dict = dict(r)
+        # ultimo_ping é datetime com tz (TIMESTAMPTZ); converte para string ISO para o frontend
+        if row_dict.get("ultimo_ping"):
+            row_dict["ultimo_ping"] = row_dict["ultimo_ping"].isoformat()
         row_dict["ativo"] = bool(r["ultimo_ping"] and r["ultimo_ping"] >= threshold)
         result.append(row_dict)
 

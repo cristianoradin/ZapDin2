@@ -5,7 +5,7 @@ from typing import List, Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-import aiosqlite
+import asyncpg
 
 from ..core.config import settings
 from ..core.database import get_db
@@ -94,7 +94,7 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/login")
-async def login(body: LoginRequest, response: Response, db: aiosqlite.Connection = Depends(get_db)):
+async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
     # Verifica primeiro na tabela admins, depois em usuarios
     row = None
     role = "admin"
@@ -151,7 +151,7 @@ async def me(user: dict = Depends(get_current_user)):
 # ── Listagem de usuários com clientes vinculados ──────────────────────────────
 @router.get("/usuarios")
 async def list_usuarios(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute(
@@ -178,7 +178,7 @@ async def list_usuarios(
 @router.post("/usuarios", status_code=status.HTTP_201_CREATED)
 async def create_usuario(
     body: UsuarioCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     username = body.username.strip().lower()
@@ -196,7 +196,7 @@ async def create_usuario(
         for cid in body.cliente_ids:
             try:
                 await db.execute(
-                    "INSERT OR IGNORE INTO usuario_clientes (usuario_id, cliente_id) VALUES (?, ?)",
+                    "INSERT INTO usuario_clientes (usuario_id, cliente_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
                     (usuario_id, cid),
                 )
             except Exception:
@@ -207,7 +207,7 @@ async def create_usuario(
         if not body.monitor_only:
             await _app_sync_create(username, body.password)
         return {"id": usuario_id, "username": username}
-    except aiosqlite.IntegrityError:
+    except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username já existe.")
 
 
@@ -216,7 +216,7 @@ async def create_usuario(
 async def set_usuario_clientes(
     usuario_id: int,
     body: ClienteAccess,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     # Remove todos os vínculos anteriores
@@ -227,7 +227,7 @@ async def set_usuario_clientes(
     for cid in body.cliente_ids:
         try:
             await db.execute(
-                "INSERT OR IGNORE INTO usuario_clientes (usuario_id, cliente_id) VALUES (?, ?)",
+                "INSERT INTO usuario_clientes (usuario_id, cliente_id) VALUES (?, ?) ON CONFLICT DO NOTHING",
                 (usuario_id, cid),
             )
         except Exception:
@@ -240,7 +240,7 @@ async def set_usuario_clientes(
 @router.delete("/usuarios/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_usuario(
     usuario_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     current: dict = Depends(get_current_user),
 ):
     if current["uid"] == usuario_id:
@@ -259,7 +259,7 @@ async def delete_usuario(
 async def change_senha(
     usuario_id: int,
     body: UsuarioCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     if len(body.password) < 6:
@@ -281,7 +281,7 @@ async def change_senha(
 async def set_usuario_menus(
     usuario_id: int,
     body: MenusUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     menus_json = json.dumps(body.menus) if body.menus is not None else None
@@ -303,7 +303,7 @@ class VerificarRequest(BaseModel):
 @router.post("/verificar")
 async def verificar_credenciais(
     body: VerificarRequest,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Valida username/password de um usuário do monitor.
@@ -334,7 +334,7 @@ async def verificar_credenciais(
 async def get_usuario_menus_publico(
     username: str,
     client_token: str = Query(..., description="Token do cliente (posto)"),
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Retorna os menus permitidos para um usuário. Autenticado pelo token do posto."""
     # Valida que o client_token pertence a um posto ativo
@@ -374,7 +374,7 @@ class UsernameUpdate(BaseModel):
 async def change_username(
     usuario_id: int,
     body: UsernameUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     username = body.username.strip().lower()
@@ -391,12 +391,12 @@ async def change_username(
         if row and row["username"] != username:
             await _app_sync_username(row["username"], username)
         return {"ok": True}
-    except aiosqlite.IntegrityError:
+    except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username já está em uso.")
 
 
 @router.get("/cliente/{token}")
-async def setup_cliente(token: str, db: aiosqlite.Connection = Depends(get_db)):
+async def setup_cliente(token: str, db=Depends(get_db)):
     """Retorna dados de configuração para o cliente (posto) que faz setup inicial."""
     async with db.execute(
         "SELECT id, nome, cnpj, token FROM clientes WHERE token = ? AND ativo = 1", (token,)
@@ -423,7 +423,7 @@ class SenhaUpdate(BaseModel):
 
 @router.get("/admins")
 async def list_admins(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute(
@@ -435,7 +435,7 @@ async def list_admins(
 @router.post("/admins", status_code=status.HTTP_201_CREATED)
 async def create_admin(
     body: AdminCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     username = body.username.strip().lower()
@@ -448,7 +448,7 @@ async def create_admin(
         )
         await db.commit()
         return {"id": cur.lastrowid, "username": username}
-    except aiosqlite.IntegrityError:
+    except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Usuário já existe.")
 
 
@@ -456,7 +456,7 @@ async def create_admin(
 async def update_admin_senha(
     admin_id: int,
     body: SenhaUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     if len(body.password) < 6:
@@ -472,7 +472,7 @@ async def update_admin_senha(
 @router.delete("/admins/{admin_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_admin(
     admin_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
     # Não pode deletar a si mesmo

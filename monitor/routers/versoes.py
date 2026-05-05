@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import Optional
-import aiosqlite
+
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -16,7 +16,7 @@ class VersaoUpdate(BaseModel):
 
 
 @router.get("/whatsapp")
-async def get_versao_whatsapp(db: aiosqlite.Connection = Depends(get_db)):
+async def get_versao_whatsapp(db=Depends(get_db)):
     """Público — consultado pelos postos para checar atualização."""
     async with db.execute("SELECT versao, url_download, notas FROM versoes WHERE app = 'whatsapp'") as cur:
         row = await cur.fetchone()
@@ -28,14 +28,14 @@ async def get_versao_whatsapp(db: aiosqlite.Connection = Depends(get_db)):
 @router.post("/whatsapp")
 async def set_versao_whatsapp(
     body: VersaoUpdate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     await db.execute(
         """INSERT INTO versoes (app, versao, url_download, notas, updated_at)
-           VALUES ('whatsapp', ?, ?, ?, datetime('now'))
-           ON CONFLICT(app) DO UPDATE SET versao=excluded.versao,
-               url_download=excluded.url_download, notas=excluded.notas, updated_at=excluded.updated_at""",
+           VALUES ('whatsapp', ?, ?, ?, NOW())
+           ON CONFLICT(app) DO UPDATE SET versao=EXCLUDED.versao,
+               url_download=EXCLUDED.url_download, notas=EXCLUDED.notas, updated_at=NOW()""",
         (body.versao, body.url_download, body.notas),
     )
     await db.commit()

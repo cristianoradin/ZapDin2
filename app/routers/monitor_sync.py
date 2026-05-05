@@ -13,7 +13,7 @@ Rotas:
 """
 import logging
 
-import aiosqlite
+
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 
@@ -68,7 +68,7 @@ class UsernamePayload(BaseModel):
 
 @router.get("/usuarios")
 async def list_usuarios(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: None = Depends(_check_token),
 ):
     """Lista usuários do app — chamado pelo Monitor para exibir usuários do posto."""
@@ -82,7 +82,7 @@ async def list_usuarios(
 @router.post("/usuarios/sync")
 async def sync_usuario(
     body: UserSyncPayload,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: None = Depends(_check_token),
 ):
     """Cria ou atualiza (upsert) um usuário no banco do app."""
@@ -101,7 +101,7 @@ async def sync_usuario(
 @router.delete("/usuarios/{username}")
 async def delete_usuario(
     username: str,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: None = Depends(_check_token),
 ):
     """Remove um usuário do banco do app."""
@@ -115,7 +115,7 @@ async def delete_usuario(
 async def change_senha(
     username: str,
     body: SenhaPayload,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: None = Depends(_check_token),
 ):
     """Troca a senha de um usuário no banco do app."""
@@ -131,7 +131,7 @@ async def change_senha(
 async def rename_usuario(
     username: str,
     body: UsernamePayload,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: None = Depends(_check_token),
 ):
     """Renomeia um usuário no banco do app."""

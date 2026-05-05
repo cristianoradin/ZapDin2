@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
-import aiosqlite
+
 import os
 import tempfile
 
@@ -17,7 +17,7 @@ class SessaoCreate(BaseModel):
 
 @router.get("")
 async def list_sessoes(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute("SELECT id, nome, status, phone, last_seen FROM sessoes_wa ORDER BY created_at") as cur:
@@ -28,7 +28,7 @@ async def list_sessoes(
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_sessao(
     body: SessaoCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     import uuid
@@ -45,7 +45,7 @@ async def create_sessao(
 @router.delete("/{sessao_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_sessao(
     sessao_id: str,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     await wa_manager.remove_session(sessao_id)

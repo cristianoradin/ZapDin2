@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-import aiosqlite
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -16,7 +15,7 @@ class TelegramConfig(BaseModel):
 
 @router.get("/config")
 async def get_config(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute("SELECT key, value FROM config WHERE key IN ('tg_bot_token','tg_chat_id')") as cur:
@@ -32,15 +31,12 @@ async def get_config(
 @router.post("/config")
 async def save_config(
     body: TelegramConfig,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
-    await db.execute(
-        "INSERT OR REPLACE INTO config (key, value) VALUES ('tg_bot_token', ?)", (body.bot_token,)
-    )
-    await db.execute(
-        "INSERT OR REPLACE INTO config (key, value) VALUES ('tg_chat_id', ?)", (body.chat_id,)
-    )
+    _upsert = "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value"
+    await db.execute(_upsert, ('tg_bot_token', body.bot_token))
+    await db.execute(_upsert, ('tg_chat_id', body.chat_id))
     await db.commit()
     telegram_service.configure(body.bot_token, body.chat_id)
     return {"ok": True}

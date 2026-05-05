@@ -2,7 +2,6 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 
-import aiosqlite
 import socketio
 import uvicorn
 from fastapi import FastAPI, Request
@@ -11,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .core.config import settings
-from .core.database import init_db, get_db
+from .core.database import init_db, get_db, get_db_direct
 from .routers import auth, whatsapp, erp, config_router, arquivos, stats, telegram_router
 from .routers.activation import router as activation_router
 from .routers.internal import router as internal_router
@@ -71,8 +70,7 @@ async def lifespan(app: FastAPI):
 
     if not settings.is_locked:
         # Carrega sessões WA e config Telegram apenas quando o sistema está ativo
-        async with aiosqlite.connect(settings.database_url) as db:
-            db.row_factory = aiosqlite.Row
+        async with get_db_direct() as db:
             await wa_manager.load_from_db(db)
             async with db.execute(
                 "SELECT key, value FROM config WHERE key IN ('tg_bot_token','tg_chat_id')"

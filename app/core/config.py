@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     secret_key: str = "dev-secret-key-change-in-production"
     session_max_age: int = 86400
-    database_url: str = "data/app.db"
+    database_url: str = "postgresql://postgres@localhost/zapdin_app"
     port: int = 4000
 
     # Estado de ativação: "locked" bloqueia todas as rotas exceto /activate

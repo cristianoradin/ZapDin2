@@ -20,7 +20,7 @@ import logging
 import secrets
 from typing import Optional
 
-import aiosqlite
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -74,7 +74,7 @@ class ValidatePayload(BaseModel):
 @router.post("/api/activate/validate")
 async def validate_activation_token(
     body: ValidatePayload,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Chamado pelo App ao ativar.
@@ -132,7 +132,7 @@ async def validate_activation_token(
 @router.post("/api/clientes/{cliente_id}/activation-token")
 async def generate_activation_token(
     cliente_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     """
@@ -164,7 +164,7 @@ async def generate_activation_token(
 @router.get("/api/clientes/{cliente_id}/activation-token")
 async def get_activation_token(
     cliente_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     """Retorna o token de ativação atual de um cliente (para exibir no painel)."""

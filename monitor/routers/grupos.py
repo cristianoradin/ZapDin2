@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-import aiosqlite
+import asyncpg
 
 from ..core.database import get_db
 from ..core.security import get_current_user
@@ -17,7 +17,7 @@ class GrupoCreate(BaseModel):
 
 @router.get("")
 async def list_grupos(
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     async with db.execute(
@@ -35,7 +35,7 @@ async def list_grupos(
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def create_grupo(
     body: GrupoCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     nome = body.nome.strip()
@@ -48,7 +48,7 @@ async def create_grupo(
         )
         await db.commit()
         return {"id": cur.lastrowid, "nome": nome}
-    except aiosqlite.IntegrityError:
+    except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Já existe um grupo com este nome.")
 
 
@@ -56,7 +56,7 @@ async def create_grupo(
 async def update_grupo(
     grupo_id: int,
     body: GrupoCreate,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     nome = body.nome.strip()
@@ -69,14 +69,14 @@ async def update_grupo(
         )
         await db.commit()
         return {"ok": True}
-    except aiosqlite.IntegrityError:
+    except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Já existe um grupo com este nome.")
 
 
 @router.delete("/{grupo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_grupo(
     grupo_id: int,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
     _: dict = Depends(get_current_user),
 ):
     # Remove vínculo dos clientes antes de deletar o grupo

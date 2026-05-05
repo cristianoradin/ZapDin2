@@ -22,7 +22,7 @@ import os
 from datetime import datetime
 from typing import Optional
 
-import aiosqlite
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
@@ -57,7 +57,7 @@ class UsernamePayload(BaseModel):
 async def sync_usuario(
     body: UserSyncPayload,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Cria ou atualiza (upsert) um usuário no banco do app."""
     _require_localhost(request)
@@ -76,7 +76,7 @@ async def sync_usuario(
 async def delete_usuario(
     username: str,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Remove um usuário do banco do app."""
     _require_localhost(request)
@@ -90,7 +90,7 @@ async def change_senha_usuario(
     username: str,
     body: SenhaPayload,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Troca a senha de um usuário no banco do app."""
     _require_localhost(request)
@@ -107,7 +107,7 @@ async def rename_usuario(
     username: str,
     body: UsernamePayload,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Renomeia um usuário no banco do app."""
     _require_localhost(request)
@@ -156,7 +156,7 @@ class DispatchResult(BaseModel):
 @router.get("/queue/peek")
 async def peek_queue(
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """
     Retorna o próximo item da fila sem removê-lo.
@@ -197,7 +197,7 @@ async def peek_queue(
 async def dispatch_item(
     body: DispatchPayload,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ) -> DispatchResult:
     """
     Executa o envio de um item (o worker já aplicou delay e spintax).
@@ -284,7 +284,7 @@ async def sessions_status(request: Request):
 async def daily_count(
     sessao_id: str,
     request: Request,
-    db: aiosqlite.Connection = Depends(get_db),
+    db=Depends(get_db),
 ):
     """Total de envios hoje para uma sessão (usado pelo worker para limite diário)."""
     _require_localhost(request)

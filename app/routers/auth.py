@@ -3,7 +3,6 @@ import logging
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
-import aiosqlite
 
 from ..core.config import settings
 from ..core.database import get_db
@@ -40,7 +39,7 @@ async def _verificar_no_monitor(username: str, password: str) -> bool:
 
 
 @router.post("/login")
-async def login(body: LoginRequest, response: Response, db: aiosqlite.Connection = Depends(get_db)):
+async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
     username = body.username.strip().lower()
 
     async with db.execute(
