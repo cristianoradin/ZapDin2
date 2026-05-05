@@ -215,14 +215,20 @@ async def init_db() -> None:
             )
         """)
 
-        # ── Migration: adiciona empresa_id em tabelas que já existiam ─────────
-        # Necessário ao atualizar banco single-tenant → multi-tenant.
-        # ADD COLUMN IF NOT EXISTS é idempotente — seguro rodar sempre.
+        # ── Migration: single-tenant → multi-tenant ──────────────────────────
+        # Passo 1: adiciona coluna empresa_id (nullable) nas tabelas existentes
         for _tbl in ('usuarios', 'config', 'sessoes_wa', 'mensagens', 'arquivos'):
             try:
                 await conn.execute(
                     f"ALTER TABLE {_tbl} ADD COLUMN IF NOT EXISTS empresa_id BIGINT"
                 )
+            except Exception:
+                pass
+
+        # Passo 2: remove dados antigos sem empresa_id (single-tenant, incompatíveis)
+        for _tbl in ('config', 'sessoes_wa', 'mensagens', 'arquivos', 'usuarios'):
+            try:
+                await conn.execute(f"DELETE FROM {_tbl} WHERE empresa_id IS NULL")
             except Exception:
                 pass
 
