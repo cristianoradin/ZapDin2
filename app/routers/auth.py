@@ -36,7 +36,7 @@ class CNPJCheck(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    cnpj: str
+    cnpj: str | None = None  # opcional: se omitido, busca usuário em qualquer empresa ativa
     username: str
     password: str
 
@@ -45,6 +45,20 @@ class RegistrarEmpresaRequest(BaseModel):
     token: str          # token do cliente (do Monitor)
     admin_username: str
     admin_password: str
+
+
+# ── Info pública da empresa instalada (para pré-preencher CNPJ no login) ─────
+
+@router.get("/empresa-info")
+async def empresa_info(db=Depends(get_db)):
+    """Retorna CNPJ e nome da empresa ativa nesta instalação (sem autenticação)."""
+    async with db.execute(
+        "SELECT cnpj, nome FROM empresas WHERE ativo = TRUE ORDER BY id LIMIT 1"
+    ) as cur:
+        row = await cur.fetchone()
+    if not row:
+        return {"cnpj": None, "nome": None}
+    return {"cnpj": row["cnpj"], "nome": row["nome"]}
 
 
 # ── Passo 1: Verifica CNPJ ────────────────────────────────────────────────────
@@ -77,25 +91,37 @@ async def check_cnpj(body: CNPJCheck, db=Depends(get_db)):
 
 @router.post("/login")
 async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
-    cnpj = normalize_cnpj(body.cnpj)
     username = body.username.strip().lower()
 
-    # Verifica empresa
-    async with db.execute(
-        "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
-    ) as cur:
-        empresa = await cur.fetchone()
-    if not empresa:
-        raise HTTPException(status_code=401, detail="CNPJ não autorizado.")
+    if body.cnpj:
+        # Login com CNPJ explícito (multi-tenant)
+        cnpj = normalize_cnpj(body.cnpj)
+        async with db.execute(
+            "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
+        ) as cur:
+            empresa = await cur.fetchone()
+        if not empresa:
+            raise HTTPException(status_code=401, detail="CNPJ não autorizado.")
 
-    empresa_id = empresa["id"]
-
-    # Verifica usuário vinculado a essa empresa
-    async with db.execute(
-        "SELECT id, username, password_hash FROM usuarios WHERE username = ? AND empresa_id = ?",
-        (username, empresa_id),
-    ) as cur:
-        row = await cur.fetchone()
+        empresa_id = empresa["id"]
+        async with db.execute(
+            "SELECT id, username, password_hash FROM usuarios WHERE username = ? AND empresa_id = ?",
+            (username, empresa_id),
+        ) as cur:
+            row = await cur.fetchone()
+    else:
+        # Login sem CNPJ — busca usuário em qualquer empresa ativa (single-empresa por instalação)
+        async with db.execute(
+            """SELECT u.id, u.username, u.password_hash, u.empresa_id, e.nome
+               FROM usuarios u
+               JOIN empresas e ON e.id = u.empresa_id
+               WHERE u.username = ? AND e.ativo = TRUE
+               LIMIT 1""",
+            (username,),
+        ) as cur:
+            row = await cur.fetchone()
+        empresa = {"id": row["empresa_id"], "nome": row["nome"]} if row else None
+        empresa_id = empresa["id"] if empresa else None
 
     if not row or not verify_password(body.password, row["password_hash"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")

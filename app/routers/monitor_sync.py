@@ -1,18 +1,14 @@
 """
-ZapDin — Sincronização de usuários: Monitor → App  [DEPRECIADO]
+ZapDin — Sincronização de usuários: Monitor → App
 ==================================================
-No modelo multi-tenant, cada empresa gerencia seus próprios usuários
-diretamente via /api/auth/usuarios (autenticados com a sessão da empresa).
-
-Este router é mantido apenas para compatibilidade de chamadas do Monitor,
-mas retorna 410 Gone para sinalizar que não é mais utilizado.
+O monitor envia o token do cliente no header x-monitor-token.
+O app localiza a empresa pelo token e escopa todas as operações a ela.
 """
 import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 
-from ..core.config import settings
 from ..core.database import get_db
 from ..core.security import hash_password
 
@@ -20,16 +16,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/monitor-sync", tags=["monitor-sync"])
 
 
-def _check_token(x_monitor_token: str = Header(..., alias="x-monitor-token")) -> None:
-    expected = settings.monitor_client_token
-    if not expected:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="App não possui monitor_client_token configurado.",
-        )
-    if x_monitor_token != expected:
-        logger.warning("[monitor-sync] Token inválido recebido.")
+async def _get_empresa_id(
+    x_monitor_token: str = Header(..., alias="x-monitor-token"),
+    db=Depends(get_db),
+) -> int:
+    """Localiza a empresa pelo token do cliente enviado pelo monitor."""
+    if not x_monitor_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token não informado.")
+
+    async with db.execute(
+        "SELECT id FROM empresas WHERE token = ? AND ativo = TRUE", (x_monitor_token,)
+    ) as cur:
+        row = await cur.fetchone()
+
+    if not row:
+        logger.warning("[monitor-sync] Token inválido: %s...", x_monitor_token[:8])
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido.")
+
+    return row["id"]
 
 
 class UserSyncPayload(BaseModel):
@@ -45,35 +49,80 @@ class UsernamePayload(BaseModel):
     username: str
 
 
-_DEPRECATED = HTTPException(
-    status_code=status.HTTP_410_GONE,
-    detail=(
-        "Este endpoint foi depreciado na versão multi-tenant. "
-        "Usuários agora são gerenciados por empresa via /api/auth/usuarios."
-    ),
-)
-
-
 @router.get("/usuarios")
-async def list_usuarios(_: None = Depends(_check_token)):
-    raise _DEPRECATED
+async def list_usuarios(
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    async with db.execute(
+        "SELECT id, username, created_at FROM usuarios WHERE empresa_id = ? ORDER BY username",
+        (empresa_id,),
+    ) as cur:
+        rows = await cur.fetchall()
+    return {"usuarios": [dict(r) for r in rows]}
 
 
 @router.post("/usuarios/sync")
-async def sync_usuario(body: UserSyncPayload, _: None = Depends(_check_token)):
-    raise _DEPRECATED
+async def sync_usuario(
+    body: UserSyncPayload,
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    username = body.username.strip().lower()
+    await db.execute(
+        """INSERT INTO usuarios (empresa_id, username, password_hash)
+           VALUES (?, ?, ?)
+           ON CONFLICT (empresa_id, username) DO UPDATE SET password_hash = EXCLUDED.password_hash""",
+        (empresa_id, username, hash_password(body.password)),
+    )
+    await db.commit()
+    logger.info("[monitor-sync] Usuário '%s' sincronizado na empresa %s.", username, empresa_id)
+    return {"ok": True}
 
 
 @router.delete("/usuarios/{username}")
-async def delete_usuario(username: str, _: None = Depends(_check_token)):
-    raise _DEPRECATED
+async def delete_usuario(
+    username: str,
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    await db.execute(
+        "DELETE FROM usuarios WHERE username = ? AND empresa_id = ?",
+        (username.lower(), empresa_id),
+    )
+    await db.commit()
+    logger.info("[monitor-sync] Usuário '%s' removido da empresa %s.", username, empresa_id)
+    return {"ok": True}
 
 
 @router.put("/usuarios/{username}/senha")
-async def change_senha(username: str, body: SenhaPayload, _: None = Depends(_check_token)):
-    raise _DEPRECATED
+async def change_senha(
+    username: str,
+    body: SenhaPayload,
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    await db.execute(
+        "UPDATE usuarios SET password_hash = ? WHERE username = ? AND empresa_id = ?",
+        (hash_password(body.password), username.lower(), empresa_id),
+    )
+    await db.commit()
+    return {"ok": True}
 
 
 @router.put("/usuarios/{username}/username")
-async def rename_usuario(username: str, body: UsernamePayload, _: None = Depends(_check_token)):
-    raise _DEPRECATED
+async def rename_usuario(
+    username: str,
+    body: UsernamePayload,
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    try:
+        await db.execute(
+            "UPDATE usuarios SET username = ? WHERE username = ? AND empresa_id = ?",
+            (body.username.strip().lower(), username.lower(), empresa_id),
+        )
+        await db.commit()
+    except Exception:
+        pass
+    return {"ok": True}

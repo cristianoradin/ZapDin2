@@ -419,6 +419,13 @@
     document.getElementById('btn-text').textContent   = v ? 'Entrando…' : 'Entrar na ZapDin';
   }
 
+  // Carrega CNPJ da empresa instalada para incluir na validação
+  let _empresaCnpj = null;
+  fetch('/api/auth/empresa-info')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.cnpj) _empresaCnpj = d.cnpj; })
+    .catch(() => {});
+
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = document.getElementById('err');
@@ -432,12 +439,16 @@
       return;
     }
 
+    const body = _empresaCnpj
+      ? { cnpj: _empresaCnpj, username, password }
+      : { username, password };
+
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         document.getElementById('btn-text').textContent = '✓ Redirecionando…';
