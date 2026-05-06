@@ -314,49 +314,56 @@
         <span id="badge-text">Sistema online</span>
       </div>
 
-      <h2 class="form-title">Bem-vindo de volta</h2>
+      <h2 class="form-title" id="form-title">Bem-vindo de volta</h2>
+      <p class="form-sub" id="form-sub" style="color:var(--text-muted);font-size:.85rem;margin:-8px 0 8px;display:none"></p>
 
       <div class="form-fields">
         <div class="err" id="err"></div>
 
-        <form id="loginForm" novalidate style="display:contents">
+        <!-- Etapa 1: CNPJ -->
+        <form id="cnpjForm" novalidate style="display:contents">
+          <div class="field" id="step-cnpj">
+            <label for="cnpj">CNPJ do Cliente</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/>
+              </svg>
+              <input type="text" id="cnpj" name="cnpj" placeholder="00.000.000/0000-00"
+                autocomplete="off" autofocus required maxlength="18" />
+            </div>
+          </div>
+          <button type="submit" class="btn-login" id="btn-cnpj">
+            <div class="spinner" id="spinner-cnpj"></div>
+            <span id="btn-cnpj-text">Verificar CNPJ</span>
+            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </form>
 
+        <!-- Etapa 2: Usuário + Senha (oculto até CNPJ validado) -->
+        <form id="loginForm" novalidate style="display:none;contents">
           <div class="field">
             <label for="username">Usuário</label>
             <div class="input-wrap">
-              <!-- ícone usuário -->
               <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
               </svg>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                placeholder="Digite seu usuário"
-                autocomplete="username"
-                autofocus
-                required
-              />
+              <input type="text" id="username" name="username" placeholder="Digite seu usuário"
+                autocomplete="username" required />
             </div>
           </div>
 
           <div class="field">
             <label for="password">Senha</label>
             <div class="input-wrap">
-              <!-- ícone cadeado -->
               <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                placeholder="••••••••"
-                autocomplete="current-password"
-                required
-              />
+              <input type="password" id="password" name="password" placeholder="••••••••"
+                autocomplete="current-password" required />
               <button type="button" class="eye-btn" onclick="togglePwd()" tabindex="-1" title="Mostrar/ocultar senha">
                 <svg id="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
@@ -375,12 +382,15 @@
             <div class="spinner" id="spinner"></div>
             <span id="btn-text">Entrar na ZapDin</span>
             <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-              <polyline points="12 5 19 12 12 19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
             </svg>
           </button>
-
+          <button type="button" id="btn-voltar" onclick="voltarCnpj()"
+            style="background:none;border:none;color:var(--text-muted);font-size:.82rem;cursor:pointer;margin-top:4px;text-decoration:underline">
+            ← Trocar CNPJ
+          </button>
         </form>
+
       </div>
     </div>
 
@@ -398,34 +408,92 @@
 </main>
 
 <script>
+  let _cnpjValidado = null;
+
+  // Máscara CNPJ
+  document.getElementById('cnpj').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 14);
+    if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d+)$/, '$1.$2.$3/$4');
+    else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d+)$/, '$1.$2.$3');
+    else if (v.length > 2) v = v.replace(/^(\d{2})(\d+)$/, '$1.$2');
+    this.value = v;
+  });
+
   function togglePwd() {
     const inp = document.getElementById('password');
     const off = document.getElementById('eye-off');
     const on  = document.getElementById('eye-on');
-    if (inp.type === 'password') {
-      inp.type = 'text';
-      off.style.display = 'none';
-      on.style.display  = 'block';
-    } else {
-      inp.type = 'password';
-      off.style.display = 'block';
-      on.style.display  = 'none';
-    }
+    if (inp.type === 'password') { inp.type = 'text'; off.style.display = 'none'; on.style.display = 'block'; }
+    else { inp.type = 'password'; off.style.display = 'block'; on.style.display = 'none'; }
   }
 
   function setLoading(v) {
-    document.getElementById('btn').disabled           = v;
-    document.getElementById('spinner').style.display  = v ? 'block' : 'none';
-    document.getElementById('btn-text').textContent   = v ? 'Entrando…' : 'Entrar na ZapDin';
+    document.getElementById('btn').disabled          = v;
+    document.getElementById('spinner').style.display = v ? 'block' : 'none';
+    document.getElementById('btn-text').textContent  = v ? 'Entrando…' : 'Entrar na ZapDin';
   }
 
-  // Carrega CNPJ da empresa instalada para incluir na validação
-  let _empresaCnpj = null;
-  fetch('/api/auth/empresa-info')
-    .then(r => r.ok ? r.json() : null)
-    .then(d => { if (d && d.cnpj) _empresaCnpj = d.cnpj; })
-    .catch(() => {});
+  function voltarCnpj() {
+    _cnpjValidado = null;
+    document.getElementById('cnpjForm').style.display = 'contents';
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('form-title').textContent = 'Bem-vindo de volta';
+    document.getElementById('form-sub').style.display = 'none';
+    document.getElementById('err').style.display = 'none';
+    document.getElementById('cnpj').focus();
+  }
 
+  // Etapa 1: validar CNPJ
+  document.getElementById('cnpjForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('err');
+    err.style.display = 'none';
+
+    const cnpj = document.getElementById('cnpj').value.replace(/\D/g, '');
+    if (cnpj.length !== 14) {
+      err.textContent = 'Informe um CNPJ válido com 14 dígitos.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btnCnpj = document.getElementById('btn-cnpj');
+    const spinnerCnpj = document.getElementById('spinner-cnpj');
+    btnCnpj.disabled = true;
+    spinnerCnpj.style.display = 'block';
+    document.getElementById('btn-cnpj-text').textContent = 'Verificando…';
+
+    try {
+      const res = await fetch('/api/auth/check-cnpj', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cnpj }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        _cnpjValidado = cnpj;
+        document.getElementById('form-title').textContent = data.nome || 'Acesso autorizado';
+        const sub = document.getElementById('form-sub');
+        sub.textContent = 'CNPJ: ' + document.getElementById('cnpj').value;
+        sub.style.display = 'block';
+        document.getElementById('cnpjForm').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'contents';
+        document.getElementById('username').focus();
+      } else {
+        err.textContent = data.detail || 'CNPJ não encontrado ou inativo.';
+        err.style.display = 'block';
+      }
+    } catch {
+      err.textContent = 'Não foi possível conectar ao servidor.';
+      err.style.display = 'block';
+    } finally {
+      btnCnpj.disabled = false;
+      spinnerCnpj.style.display = 'none';
+      document.getElementById('btn-cnpj-text').textContent = 'Verificar CNPJ';
+    }
+  });
+
+  // Etapa 2: login com usuário/senha
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = document.getElementById('err');
@@ -434,33 +502,29 @@
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     if (!username || !password) {
-      err.textContent   = 'Preencha usuário e senha.';
+      err.textContent = 'Preencha usuário e senha.';
       err.style.display = 'block';
       return;
     }
-
-    const body = _empresaCnpj
-      ? { cnpj: _empresaCnpj, username, password }
-      : { username, password };
 
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ cnpj: _cnpjValidado, username, password }),
       });
       if (res.ok) {
         document.getElementById('btn-text').textContent = '✓ Redirecionando…';
         window.location.href = '/';
       } else {
         const data = await res.json().catch(() => ({}));
-        err.textContent   = data.detail || 'Usuário ou senha incorretos.';
+        err.textContent = data.detail || 'Usuário ou senha incorretos.';
         err.style.display = 'block';
         setLoading(false);
       }
     } catch {
-      err.textContent   = 'Não foi possível conectar ao servidor.';
+      err.textContent = 'Não foi possível conectar ao servidor.';
       err.style.display = 'block';
       setLoading(false);
     }
