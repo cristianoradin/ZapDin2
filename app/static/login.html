@@ -433,6 +433,15 @@
 </main>
 
 <script>
+  function _fmtErr(data) {
+    if (!data) return null;
+    const d = data.detail;
+    if (!d) return null;
+    if (typeof d === 'string') return d;
+    if (Array.isArray(d)) return d.map(e => e.msg || JSON.stringify(e)).join('; ');
+    return JSON.stringify(d);
+  }
+
   let _cnpjValidado = null;
 
   // Máscara CNPJ
@@ -518,7 +527,7 @@
         document.getElementById('form-sub').style.display = 'block';
         document.getElementById('form-sub').textContent = `✓ ${data.empresa} ativada com sucesso!`;
       } else {
-        err.textContent = data.detail || 'Token inválido ou monitor inacessível.';
+        err.textContent = _fmtErr(data) || 'Token inválido ou monitor inacessível.';
         err.style.display = 'block';
       }
     } catch {
@@ -567,7 +576,7 @@
         document.getElementById('loginForm').style.display = 'contents';
         document.getElementById('username').focus();
       } else {
-        err.textContent = data.detail || 'CNPJ não encontrado ou inativo.';
+        err.textContent = _fmtErr(data) || 'CNPJ não encontrado ou inativo.';
         err.style.display = 'block';
       }
     } catch {
@@ -606,7 +615,7 @@
         window.location.href = '/';
       } else {
         const data = await res.json().catch(() => ({}));
-        err.textContent = data.detail || 'Usuário ou senha incorretos.';
+        err.textContent = _fmtErr(data) || 'Usuário ou senha incorretos.';
         err.style.display = 'block';
         setLoading(false);
       }
