@@ -320,6 +320,31 @@
       <div class="form-fields">
         <div class="err" id="err"></div>
 
+        <!-- Etapa 0: Token de ativação (primeira vez) -->
+        <form id="tokenForm" novalidate style="display:none;contents">
+          <div class="field">
+            <label for="token-ativacao">Token de Ativação</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+              </svg>
+              <input type="text" id="token-ativacao" placeholder="Cole o token do monitor aqui"
+                autocomplete="off" autofocus style="font-family:monospace;letter-spacing:.05em" />
+            </div>
+          </div>
+          <button type="submit" class="btn-login" id="btn-token">
+            <div class="spinner" id="spinner-token"></div>
+            <span id="btn-token-text">Ativar Sistema</span>
+            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+          <button type="button" onclick="voltarLogin()"
+            style="background:none;border:none;color:var(--text-muted);font-size:.82rem;cursor:pointer;margin-top:4px;text-decoration:underline">
+            ← Já tenho acesso, fazer login
+          </button>
+        </form>
+
         <!-- Etapa 1: CNPJ -->
         <form id="cnpjForm" novalidate style="display:contents">
           <div class="field" id="step-cnpj">
@@ -434,15 +459,77 @@
     document.getElementById('btn-text').textContent  = v ? 'Entrando…' : 'Entrar na ZapDin';
   }
 
-  function voltarCnpj() {
-    _cnpjValidado = null;
-    document.getElementById('cnpjForm').style.display = 'contents';
+  function showForm(step) {
+    document.getElementById('tokenForm').style.display = 'none';
+    document.getElementById('cnpjForm').style.display  = 'none';
     document.getElementById('loginForm').style.display = 'none';
-    document.getElementById('form-title').textContent = 'Bem-vindo de volta';
-    document.getElementById('form-sub').style.display = 'none';
     document.getElementById('err').style.display = 'none';
-    document.getElementById('cnpj').focus();
+    if (step === 'token') {
+      document.getElementById('tokenForm').style.display = 'contents';
+      document.getElementById('form-title').textContent = 'Ativar Sistema';
+      document.getElementById('form-sub').style.display = 'none';
+      document.getElementById('token-ativacao').focus();
+    } else if (step === 'cnpj') {
+      document.getElementById('cnpjForm').style.display = 'contents';
+      document.getElementById('form-title').textContent = 'Bem-vindo de volta';
+      document.getElementById('form-sub').style.display = 'none';
+      _cnpjValidado = null;
+      document.getElementById('cnpj').focus();
+    } else if (step === 'login') {
+      document.getElementById('loginForm').style.display = 'contents';
+      document.getElementById('username').focus();
+    }
   }
+
+  function voltarCnpj() { showForm('cnpj'); }
+  function voltarLogin() { showForm('cnpj'); }
+
+  // Verifica se empresa já está registrada → define tela inicial
+  fetch('/api/auth/empresa-info')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (!d || !d.cnpj) showForm('token'); })
+    .catch(() => {});
+
+  // Etapa 0: Ativar com token
+  document.getElementById('tokenForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = document.getElementById('err');
+    err.style.display = 'none';
+    const token = document.getElementById('token-ativacao').value.trim();
+    if (!token) { err.textContent = 'Informe o token de ativação.'; err.style.display = 'block'; return; }
+
+    const btn = document.getElementById('btn-token');
+    btn.disabled = true;
+    document.getElementById('spinner-token').style.display = 'block';
+    document.getElementById('btn-token-text').textContent = 'Ativando…';
+
+    try {
+      const res = await fetch('/api/auth/registrar-empresa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const sub = document.getElementById('form-sub');
+        sub.textContent = `✓ ${data.empresa} — ${data.usuarios_importados} usuário(s) importado(s)`;
+        sub.style.display = 'block';
+        showForm('cnpj');
+        document.getElementById('form-sub').style.display = 'block';
+        document.getElementById('form-sub').textContent = `✓ ${data.empresa} ativada com sucesso!`;
+      } else {
+        err.textContent = data.detail || 'Token inválido ou monitor inacessível.';
+        err.style.display = 'block';
+      }
+    } catch {
+      err.textContent = 'Não foi possível conectar ao servidor.';
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      document.getElementById('spinner-token').style.display = 'none';
+      document.getElementById('btn-token-text').textContent = 'Ativar Sistema';
+    }
+  });
 
   // Etapa 1: validar CNPJ
   document.getElementById('cnpjForm').addEventListener('submit', async (e) => {

@@ -43,8 +43,6 @@ class LoginRequest(BaseModel):
 
 class RegistrarEmpresaRequest(BaseModel):
     token: str          # token do cliente (do Monitor)
-    admin_username: str
-    admin_password: str
 
 
 # ── Info pública da empresa instalada (para pré-preencher CNPJ no login) ─────
@@ -172,21 +170,17 @@ async def me(user: dict = Depends(get_current_user), db=Depends(get_db)):
 @router.post("/registrar-empresa", status_code=status.HTTP_201_CREATED)
 async def registrar_empresa(body: RegistrarEmpresaRequest, db=Depends(get_db)):
     """
-    Registra um novo tenant (empresa) validando o token com o Monitor.
+    Ativa o app com o token do cliente gerado no Monitor.
 
     Fluxo:
-      1. Valida token com Monitor → obtém nome, CNPJ, token permanente
-      2. Cria registro em `empresas` (ou atualiza se já existe)
-      3. Cria usuário admin para a empresa
-      4. Retorna credenciais de acesso
+      1. Valida token com Monitor → obtém nome, CNPJ, token e usuários vinculados
+      2. Cria/atualiza empresa no banco do app
+      3. Importa todos os usuários vinculados ao cliente no monitor
+      4. Retorna CNPJ para prosseguir ao login
     """
-    token = body.token.strip().replace("-", "").upper()
-    admin_username = body.admin_username.strip().lower()
-
+    token = body.token.strip()
     if not token:
         raise HTTPException(status_code=400, detail="Token não pode ser vazio.")
-    if not admin_username or len(body.admin_password) < 6:
-        raise HTTPException(status_code=400, detail="Usuário inválido ou senha muito curta (mín. 6 chars).")
 
     # ── Valida token no Monitor ───────────────────────────────────────────────
     monitor_url = settings.monitor_url.rstrip("/")
@@ -206,68 +200,50 @@ async def registrar_empresa(body: RegistrarEmpresaRequest, db=Depends(get_db)):
     cnpj = normalize_cnpj(data.get("cnpj", ""))
     nome = data.get("nome", "Empresa")
     client_token = data.get("token", token)
+    usuarios_monitor = data.get("usuarios", [])
 
     if not cnpj:
         raise HTTPException(status_code=422, detail="Monitor não retornou CNPJ válido.")
 
     # ── Cria ou atualiza empresa ──────────────────────────────────────────────
-    try:
-        cur = await db.execute(
-            """INSERT INTO empresas (cnpj, nome, token, ativo)
-               VALUES (?, ?, ?, TRUE)
-               ON CONFLICT (cnpj) DO UPDATE
-               SET nome = EXCLUDED.nome, token = EXCLUDED.token, ativo = TRUE
-               RETURNING id""",
-            (cnpj, nome, client_token),
-        )
-    except Exception as exc:
-        logger.error("Erro ao criar empresa: %s", exc)
-        raise HTTPException(status_code=500, detail="Erro ao registrar empresa.")
+    await db.execute(
+        """INSERT INTO empresas (cnpj, nome, token, ativo)
+           VALUES (?, ?, ?, TRUE)
+           ON CONFLICT (cnpj) DO UPDATE
+           SET nome = EXCLUDED.nome, token = EXCLUDED.token, ativo = TRUE""",
+        (cnpj, nome, client_token),
+    )
+    await db.commit()
 
-    # Se ON CONFLICT atualizou, precisamos buscar o id
     async with db.execute("SELECT id FROM empresas WHERE cnpj = ?", (cnpj,)) as c:
         emp_row = await c.fetchone()
     empresa_id = emp_row["id"]
 
-    # ── Cria usuário admin para a empresa ─────────────────────────────────────
-    try:
+    # ── Importa usuários vinculados ao cliente no Monitor ────────────────────
+    usuarios_importados = 0
+    for u in usuarios_monitor:
+        username = u.get("username", "").strip().lower()
+        password_hash = u.get("password_hash", "")
+        if not username or not password_hash:
+            continue
         await db.execute(
             """INSERT INTO usuarios (empresa_id, username, password_hash)
                VALUES (?, ?, ?)
                ON CONFLICT (empresa_id, username) DO UPDATE
                SET password_hash = EXCLUDED.password_hash""",
-            (empresa_id, admin_username, hash_password(body.admin_password)),
+            (empresa_id, username, password_hash),
         )
-        await db.commit()
-    except Exception as exc:
-        logger.error("Erro ao criar usuário admin: %s", exc)
-        raise HTTPException(status_code=500, detail="Empresa registrada mas falha ao criar usuário.")
+        usuarios_importados += 1
+    await db.commit()
 
-    # ── Config padrão para a empresa ──────────────────────────────────────────
-    defaults = [
-        (empresa_id, 'mensagem_padrao', 'Olá {nome}, obrigado pela sua compra de {valor} em {data}!'),
-        (empresa_id, 'wa_delay_min',    '5'),
-        (empresa_id, 'wa_delay_max',    '15'),
-        (empresa_id, 'wa_daily_limit',  '100'),
-        (empresa_id, 'wa_hora_inicio',  '08:00'),
-        (empresa_id, 'wa_hora_fim',     '18:00'),
-        (empresa_id, 'wa_spintax',      '1'),
-    ]
-    for row in defaults:
-        await db.execute(
-            "INSERT INTO config (empresa_id, key, value) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
-            row,
-        )
-        await db.commit()
-
-    logger.info("Empresa registrada: %s (%s) — admin: %s", nome, cnpj, admin_username)
+    logger.info("Empresa ativada: %s (%s) — %d usuário(s) importado(s)", nome, cnpj, usuarios_importados)
 
     return {
         "ok": True,
         "empresa": nome,
         "cnpj": cnpj,
-        "username": admin_username,
-        "message": "Empresa ativada com sucesso! Faça login com seu CNPJ e as credenciais informadas.",
+        "usuarios_importados": usuarios_importados,
+        "message": f"Empresa ativada! {usuarios_importados} usuário(s) importado(s). Faça login com seu CNPJ.",
     }
 
 

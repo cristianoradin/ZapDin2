@@ -397,14 +397,33 @@ async def change_username(
 
 @router.get("/cliente/{token}")
 async def setup_cliente(token: str, db=Depends(get_db)):
-    """Retorna dados de configuração para o cliente (posto) que faz setup inicial."""
+    """Retorna dados de configuração + usuários vinculados para ativação do app."""
     async with db.execute(
         "SELECT id, nome, cnpj, token FROM clientes WHERE token = ? AND ativo = 1", (token,)
     ) as cur:
         row = await cur.fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="Token não encontrado")
-    return {"id": row["id"], "nome": row["nome"], "cnpj": row["cnpj"], "token": row["token"]}
+
+    cliente_id = row["id"]
+
+    # Busca usuários vinculados a este cliente
+    async with db.execute(
+        """SELECT u.username, u.password_hash
+           FROM usuarios u
+           JOIN usuario_clientes uc ON uc.usuario_id = u.id
+           WHERE uc.cliente_id = ?""",
+        (cliente_id,),
+    ) as cur:
+        usuarios = [dict(r) for r in await cur.fetchall()]
+
+    return {
+        "id": cliente_id,
+        "nome": row["nome"],
+        "cnpj": row["cnpj"],
+        "token": row["token"],
+        "usuarios": usuarios,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
