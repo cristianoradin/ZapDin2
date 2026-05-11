@@ -294,6 +294,46 @@ async def set_usuario_menus(
 
 
 # ── Verificação de credenciais (usada pelo app de envio no login) ─────────────
+class CheckCnpjRequest(BaseModel):
+    cnpj: str
+    client_token: str
+
+
+@router.post("/check-cnpj")
+async def check_cnpj(body: CheckCnpjRequest, db=Depends(get_db)):
+    """
+    Verifica se um CNPJ tem acesso ativo no Monitor.
+    O client_token autentica a requisição (qualquer posto válido pode consultar).
+    Chamado pelo app de envio na etapa 1 do login.
+    """
+    cnpj = "".join(c for c in body.cnpj if c.isdigit())
+    if len(cnpj) != 14:
+        raise HTTPException(status_code=400, detail="CNPJ inválido. Informe os 14 dígitos.")
+
+    # Autentica a instalação pelo token (garante que é um app legítimo)
+    async with db.execute(
+        "SELECT id FROM clientes WHERE token = ? AND ativo = 1",
+        (body.client_token,),
+    ) as cur:
+        if not await cur.fetchone():
+            raise HTTPException(status_code=403, detail="Token de cliente inválido ou inativo. Contate o suporte.")
+
+    # Busca o cliente pelo CNPJ digitado pelo usuário
+    async with db.execute(
+        "SELECT id, nome FROM clientes WHERE cnpj = ? AND ativo = 1",
+        (cnpj,),
+    ) as cur:
+        cliente = await cur.fetchone()
+
+    if not cliente:
+        raise HTTPException(
+            status_code=404,
+            detail="CNPJ não cadastrado ou sem token ativo. Entre em contato com o suporte para ativar seu acesso.",
+        )
+
+    return {"ok": True, "nome": cliente["nome"], "cnpj": cnpj}
+
+
 class VerificarRequest(BaseModel):
     username: str
     password: str

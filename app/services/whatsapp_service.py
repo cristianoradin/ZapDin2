@@ -60,7 +60,12 @@ _COMPOSE_SEL = (
     'div[aria-label="Message"],'
     'div[aria-label="Mensagem"],'
     'footer [contenteditable="true"],'
-    'div[contenteditable="true"][data-tab="10"]'
+    'div[contenteditable="true"][data-tab="10"],'
+    'div[contenteditable="true"][spellcheck="true"],'
+    'div[contenteditable="true"][tabindex="10"],'
+    'div[role="textbox"][aria-label="Message"],'
+    'div[role="textbox"][aria-label="Mensagem"],'
+    'div[role="textbox"][contenteditable="true"]'
 )
 # Botão "OK" do diálogo de erro "número não está no WhatsApp"
 # (ancestral com role="dialog" — não confunde com "Cancelar" do "Iniciando conversa")
@@ -101,6 +106,10 @@ class WhatsAppSession:
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-blink-features=AutomationControlled",
+                    "--disable-gpu",
+                    "--no-first-run",
+                    "--mute-audio",
+                    "--js-flags=--max-old-space-size=512",
                 ],
                 ignore_default_args=["--enable-automation"],
             )
@@ -305,16 +314,23 @@ class WhatsAppSession:
     async def send_text(self, phone: str, message: str) -> Tuple[bool, Optional[str]]:
         if self.status != "connected":
             return False, "Sessão não conectada"
-        async with self._lock:
+        try:
+            await asyncio.wait_for(self._lock.acquire(), timeout=10)
+        except asyncio.TimeoutError:
+            return False, "Sessão ocupada, tente novamente em instantes"
+        try:
             try:
                 from . import telegram_service
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}&text="
-                await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                await asyncio.wait_for(
+                    self._page.goto(url, wait_until="domcontentloaded"),
+                    timeout=35,
+                )
 
                 compose = None
                 loop = asyncio.get_event_loop()
-                deadline = loop.time() + 40
+                deadline = loop.time() + 60
 
                 while loop.time() < deadline:
                     await asyncio.sleep(1)
@@ -330,8 +346,8 @@ class WhatsAppSession:
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
                         await btn.click()
-                        # Aguarda até 8s para saber se compose aparece
-                        inner_deadline = loop.time() + 8
+                        # Aguarda até 12s para saber se compose aparece
+                        inner_deadline = loop.time() + 12
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
                             compose = await self._page.query_selector(_COMPOSE_SEL)
@@ -340,6 +356,18 @@ class WhatsAppSession:
                         break  # sai do loop externo com compose=None ou compose=encontrado
 
                 if compose is None:
+                    try:
+                        await self._page.screenshot(path=f"/tmp/wa_debug_{self.session_id}.png")
+                        logger.warning("send_text debug screenshot salvo em /tmp/wa_debug_%s.png", self.session_id)
+                        # Log do HTML atual para diagnóstico
+                        try:
+                            title = await self._page.title()
+                            url_now = self._page.url
+                            logger.warning("send_text página: title=%s url=%s", title, url_now)
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
                     asyncio.create_task(self._return_home())
                     # Verifica se o diálogo ainda está presente (erro real)
                     still_dialog = await self._page.query_selector(_DIALOG_BTN_SEL)
@@ -362,20 +390,29 @@ class WhatsAppSession:
                     telegram_service.notify_send_failure(self.nome, phone, str(exc))
                 )
                 return False, str(exc)
+        finally:
+            self._lock.release()
 
     # ── Envio de arquivo ──────────────────────────────────────────────────────
     async def send_file(self, phone: str, file_path: str, caption: str = "") -> Tuple[bool, Optional[str]]:
         if self.status != "connected":
             return False, "Sessão não conectada"
-        async with self._lock:
+        try:
+            await asyncio.wait_for(self._lock.acquire(), timeout=10)
+        except asyncio.TimeoutError:
+            return False, "Sessão ocupada, tente novamente em instantes"
+        try:
             try:
                 number = "".join(c for c in phone if c.isdigit())
                 url = f"https://web.whatsapp.com/send?phone={number}"
-                await self._page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                await asyncio.wait_for(
+                    self._page.goto(url, wait_until="domcontentloaded"),
+                    timeout=35,
+                )
 
                 compose = None
                 loop = asyncio.get_event_loop()
-                deadline = loop.time() + 40
+                deadline = loop.time() + 60
 
                 while loop.time() < deadline:
                     await asyncio.sleep(1)
@@ -385,7 +422,7 @@ class WhatsAppSession:
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
                         await btn.click()
-                        inner_deadline = loop.time() + 8
+                        inner_deadline = loop.time() + 12
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
                             compose = await self._page.query_selector(_COMPOSE_SEL)
@@ -394,6 +431,17 @@ class WhatsAppSession:
                         break
 
                 if compose is None:
+                    try:
+                        await self._page.screenshot(path=f"/tmp/wa_debug_{self.session_id}_file.png")
+                        logger.warning("send_file debug screenshot salvo em /tmp/wa_debug_%s_file.png", self.session_id)
+                        try:
+                            title = await self._page.title()
+                            url_now = self._page.url
+                            logger.warning("send_file página: title=%s url=%s", title, url_now)
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
                     asyncio.create_task(self._return_home())
                     still_dialog = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if still_dialog:
@@ -549,6 +597,8 @@ class WhatsAppSession:
                     telegram_service.notify_send_failure(self.nome, phone, str(exc))
                 )
                 return False, str(exc)
+        finally:
+            self._lock.release()
 
     async def check_file_status(self, phone: str) -> Optional[str]:
         """Abre a conversa e lê o status da última mensagem enviada."""

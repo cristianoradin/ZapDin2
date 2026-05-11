@@ -11,7 +11,6 @@ Ativação de empresa (onboarding):
 from __future__ import annotations
 
 import logging
-import secrets
 
 import httpx
 import asyncpg
@@ -64,25 +63,35 @@ async def empresa_info(db=Depends(get_db)):
 @router.post("/check-cnpj")
 async def check_cnpj(body: CNPJCheck, db=Depends(get_db)):
     """
-    Verifica se o CNPJ está cadastrado e ativo.
-    Retorna o nome da empresa para exibição antes de pedir credenciais.
+    Verifica CNPJ diretamente no Monitor.
+    O Monitor confirma se o token desta instalação corresponde ao CNPJ digitado.
     """
     cnpj = normalize_cnpj(body.cnpj)
     if len(cnpj) != 14:
         raise HTTPException(status_code=400, detail="CNPJ inválido. Informe os 14 dígitos.")
 
-    async with db.execute(
-        "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
-    ) as cur:
-        row = await cur.fetchone()
+    if not settings.monitor_client_token:
+        raise HTTPException(status_code=503, detail="Sistema não ativado. Informe o token de ativação.")
 
-    if not row:
-        raise HTTPException(
-            status_code=404,
-            detail="CNPJ não cadastrado ou sem token ativo. "
-                   "Entre em contato com o suporte para ativar seu acesso.",
-        )
-    return {"ok": True, "nome": row["nome"], "cnpj": cnpj}
+    monitor_url = settings.monitor_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(
+                f"{monitor_url}/api/auth/check-cnpj",
+                json={"cnpj": cnpj, "client_token": settings.monitor_client_token},
+            )
+    except Exception as exc:
+        logger.error("Erro ao contatar Monitor (check-cnpj): %s", exc)
+        raise HTTPException(status_code=503, detail="Não foi possível conectar ao servidor de autenticação.")
+
+    if r.status_code in (404, 403):
+        detail = r.json().get("detail", "CNPJ não autorizado.")
+        raise HTTPException(status_code=r.status_code, detail=detail)
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Erro no servidor de autenticação ({r.status_code}).")
+
+    data = r.json()
+    return {"ok": True, "nome": data["nome"], "cnpj": cnpj}
 
 
 # ── Passo 2: Login com usuário/senha ──────────────────────────────────────────
@@ -91,40 +100,66 @@ async def check_cnpj(body: CNPJCheck, db=Depends(get_db)):
 async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
     username = body.username.strip().lower()
 
+    if not settings.monitor_client_token:
+        raise HTTPException(status_code=503, detail="Sistema não ativado. Informe o token de ativação.")
+
+    # Valida credenciais no Monitor
+    monitor_url = settings.monitor_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(
+                f"{monitor_url}/api/auth/verificar",
+                json={
+                    "username": username,
+                    "password": body.password,
+                    "client_token": settings.monitor_client_token,
+                },
+            )
+    except Exception as exc:
+        logger.error("Erro ao contatar Monitor (login): %s", exc)
+        raise HTTPException(status_code=503, detail="Não foi possível conectar ao servidor de autenticação.")
+
+    if r.status_code == 401:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")
+    if r.status_code == 403:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Acesso não autorizado para este posto.")
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Erro no servidor de autenticação ({r.status_code}).")
+
+    # Monitor validou — determina empresa pelo CNPJ ou pela única empresa ativa
+    empresa_id = None
+    empresa_nome = None
     if body.cnpj:
-        # Login com CNPJ explícito (multi-tenant)
         cnpj = normalize_cnpj(body.cnpj)
         async with db.execute(
             "SELECT id, nome FROM empresas WHERE cnpj = ? AND ativo = TRUE", (cnpj,)
         ) as cur:
-            empresa = await cur.fetchone()
-        if not empresa:
-            raise HTTPException(status_code=401, detail="CNPJ não autorizado.")
+            emp = await cur.fetchone()
+        if emp:
+            empresa_id = emp["id"]
+            empresa_nome = emp["nome"]
 
-        empresa_id = empresa["id"]
+    if not empresa_id:
         async with db.execute(
-            "SELECT id, username, password_hash FROM usuarios WHERE username = ? AND empresa_id = ?",
-            (username, empresa_id),
+            "SELECT id, nome FROM empresas WHERE ativo = TRUE ORDER BY id LIMIT 1"
         ) as cur:
-            row = await cur.fetchone()
-    else:
-        # Login sem CNPJ — busca usuário em qualquer empresa ativa (single-empresa por instalação)
-        async with db.execute(
-            """SELECT u.id, u.username, u.password_hash, u.empresa_id, e.nome
-               FROM usuarios u
-               JOIN empresas e ON e.id = u.empresa_id
-               WHERE u.username = ? AND e.ativo = TRUE
-               LIMIT 1""",
-            (username,),
-        ) as cur:
-            row = await cur.fetchone()
-        empresa = {"id": row["empresa_id"], "nome": row["nome"]} if row else None
-        empresa_id = empresa["id"] if empresa else None
+            emp = await cur.fetchone()
+        if emp:
+            empresa_id = emp["id"]
+            empresa_nome = emp["nome"]
 
-    if not row or not verify_password(body.password, row["password_hash"]):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas.")
+    if not empresa_id:
+        raise HTTPException(status_code=503, detail="Nenhuma empresa ativa. Ative o sistema primeiro.")
 
-    token = create_session_token(row["id"], row["username"], empresa_id)
+    # Busca uid local do usuário (sincronizado via monitor_sync)
+    async with db.execute(
+        "SELECT id FROM usuarios WHERE username = ? AND empresa_id = ?",
+        (username, empresa_id),
+    ) as cur:
+        row = await cur.fetchone()
+    local_uid = row["id"] if row else 0
+
+    token = create_session_token(local_uid, username, empresa_id)
     response.set_cookie(
         key=SESSION_COOKIE,
         value=token,
@@ -132,7 +167,7 @@ async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
         samesite="lax",
         max_age=86400,
     )
-    return {"ok": True, "username": row["username"], "empresa": empresa["nome"]}
+    return {"ok": True, "username": username, "empresa": empresa_nome}
 
 
 @router.post("/logout")
