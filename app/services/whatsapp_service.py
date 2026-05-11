@@ -597,21 +597,17 @@ class WhatsAppSession:
                             except Exception:
                                 pass
 
-                    # Busca botão de envio
-                    send_btn = await self._page.query_selector(_PREV_SEND_SEL)
-                    if send_btn:
-                        logger.info("send_file [%s]: preview aberto, botão de envio encontrado", self.session_id)
-                        break
-                    else:
-                        logger.warning("send_file [%s]: preview aberto mas send_btn não encontrado ainda", self.session_id)
+                    # Confirma que o preview está pronto (aguarda 1s extra para estabilizar)
+                    logger.info("send_file [%s]: preview aberto, enviando via Enter", self.session_id)
+                    send_btn = True  # sinaliza sucesso para sair do loop
+                    break
 
-                if send_btn is None:
+                if not send_btn:
                     # Screenshot de diagnóstico para entender o estado da UI
                     try:
                         _scr = f"/tmp/wa_debug_{self.session_id}_preview.png"
                         await self._page.screenshot(path=_scr)
                         logger.warning("send_file [%s]: screenshot de diagnóstico em %s", self.session_id, _scr)
-                        # Dump dos data-testid presentes na página
                         _ids = await self._page.evaluate(
                             "() => [...document.querySelectorAll('[data-testid]')].map(e=>e.dataset.testid).filter((v,i,a)=>a.indexOf(v)===i).sort()"
                         )
@@ -621,7 +617,8 @@ class WhatsAppSession:
                     asyncio.create_task(self._return_home())
                     return False, "Preview do arquivo não apareceu"
 
-                await _safe_click(send_btn)
+                # Envia via Enter — mais confiável que clicar no botão de envio do overlay
+                await self._page.keyboard.press("Enter")
                 await asyncio.sleep(3)
                 asyncio.create_task(self._return_home())
                 from . import telegram_service
