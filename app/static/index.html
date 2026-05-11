@@ -2417,7 +2417,7 @@
 
         <div class="info-banner info-banner-blue" style="margin-top:1.25rem;margin-bottom:0">
           <span class="ib-icon">ℹ️</span>
-          <div>O CSV deve ter uma linha por contato no formato <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">telefone,nome</code> — exemplo: <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">5511999990000,João Silva</code></div>
+          <div>CSV: uma linha por contato no formato <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">DDD+numero,nome</code> — o prefixo 55 é adicionado automaticamente. Ex: <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">11999990000,João Silva</code></div>
         </div>
       </div>
 
@@ -2433,8 +2433,12 @@
           </div>
           <div style="padding:1.25rem 1.5rem">
             <div class="form-group">
-              <label>Telefone (com DDD, sem espaços)</label>
-              <input type="text" id="inpContatoPhone" placeholder="5511999990000" />
+              <label>Telefone (DDD + número)</label>
+              <div style="display:flex;gap:.5rem;align-items:center">
+                <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.625rem .875rem;color:var(--text-mid);font-size:.875rem;white-space:nowrap;flex-shrink:0">🇧🇷 +55</span>
+                <input type="text" id="inpContatoPhone" placeholder="11999990000" style="flex:1" />
+              </div>
+              <div style="font-size:.76rem;color:var(--text-mid);margin-top:.3rem">Digite apenas DDD + número, sem o 55. Ex: <strong>11999990000</strong></div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label>Nome (opcional)</label>
@@ -2560,6 +2564,43 @@
 
         <div id="listaCampanhas">
           <div style="text-align:center;padding:3rem;color:var(--text-mid)">Carregando…</div>
+        </div>
+      </div>
+
+      <!-- Modal seleção de contatos para iniciar campanha -->
+      <div class="confirm-overlay" id="modalSelecionarContatos">
+        <div class="confirm-box" style="max-width:560px;width:100%">
+          <div class="confirm-header">
+            <div class="confirm-icon-wrap info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="confirm-text">
+              <div class="confirm-title">Selecionar Contatos</div>
+              <div class="confirm-body" id="modalSelContatosCampNome">Escolha os destinatários desta campanha.</div>
+            </div>
+          </div>
+          <div style="padding:.75rem 1.5rem">
+            <!-- Busca + ações -->
+            <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+              <input type="text" id="searchSelContatos" placeholder="Buscar contato…" style="flex:1;padding:.45rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none" />
+              <button class="btn btn-ghost btn-sm" id="btnSelecionarTodos">Todos</button>
+              <button class="btn btn-ghost btn-sm" id="btnDesmarcarTodos">Nenhum</button>
+            </div>
+            <!-- Contador -->
+            <div style="font-size:.8rem;color:var(--text-mid);margin-bottom:.5rem">
+              <span id="selContatosCount">0</span> contatos selecionados de <span id="selContatosTotal">0</span>
+            </div>
+            <!-- Lista de contatos com checkbox -->
+            <div id="listaSelContatos" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.3rem;border:1px solid var(--border);border-radius:8px;padding:.5rem;background:var(--surface2)">
+              <div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>
+            </div>
+          </div>
+          <div class="confirm-footer">
+            <button class="confirm-btn confirm-btn-cancel" id="btnCancelarSelContatos">Cancelar</button>
+            <button class="confirm-btn confirm-btn-ok info" id="btnConfirmarIniciar">
+              ▶ Iniciar Disparo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -3757,15 +3798,30 @@
     }
     tbody.innerHTML = lista.map(c => `
       <tr>
-        <td>${c.phone}</td>
+        <td>${_fmtPhone(c.phone)}</td>
         <td>${c.nome || '—'}</td>
         <td>
-          <button class="btn btn-ghost btn-sm" onclick="deletarContato(${c.id})" title="Excluir" style="color:var(--danger,#ef4444)">
+          <button class="btn btn-ghost btn-sm" onclick="deletarContato(${c.id})" title="Excluir" style="color:var(--red)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           </button>
         </td>
       </tr>
     `).join('');
+  }
+
+  // ── Helpers de telefone ───────────────────────────────────────────────────────
+  // Garante que o número começa com 55 (adiciona se necessário)
+  function _normPhone(raw) {
+    const d = raw.replace(/\D/g, '');
+    if (d.startsWith('55') && d.length >= 12) return d;
+    return '55' + d;
+  }
+  // Formata para exibição: +55 (11) 9 9999-0000
+  function _fmtPhone(num) {
+    const d = String(num).replace(/\D/g, '').replace(/^55/, '');
+    if (d.length === 11) return `+55 (${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`;
+    if (d.length === 10) return `+55 (${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return `+55 ${d}`;
   }
 
   document.getElementById('searchContatos').addEventListener('input', () => loadContatos());
@@ -3775,14 +3831,19 @@
     document.getElementById('inpContatoPhone').value = '';
     document.getElementById('inpContatoNome').value = '';
     document.getElementById('modalContato').classList.add('open');
+    setTimeout(() => document.getElementById('inpContatoPhone').focus(), 100);
   });
   document.getElementById('btnCancelarContato').addEventListener('click', () => {
     document.getElementById('modalContato').classList.remove('open');
   });
   document.getElementById('btnSalvarContato').addEventListener('click', async () => {
-    const phone = document.getElementById('inpContatoPhone').value.trim();
-    const nome  = document.getElementById('inpContatoNome').value.trim();
-    if (!phone) { showAlert('alertContatos', 'Informe o telefone.', 'error'); return; }
+    const raw  = document.getElementById('inpContatoPhone').value.trim();
+    const nome = document.getElementById('inpContatoNome').value.trim();
+    if (!raw) { showAlert('alertContatos', 'Informe o telefone.', 'error'); return; }
+    const phone = _normPhone(raw);
+    if (phone.replace(/\D/g,'').length < 12) {
+      showAlert('alertContatos', 'Número inválido — informe DDD + número (mínimo 10 dígitos).', 'error'); return;
+    }
     const res = await api('POST', '/api/campanha/contatos', { phone, nome });
     document.getElementById('modalContato').classList.remove('open');
     if (res.ok) { showAlert('alertContatos', 'Contato salvo!'); loadContatos(); }
@@ -3796,15 +3857,23 @@
     loadContatos();
   }
 
-  // Importar CSV
+  // Importar CSV — adiciona 55 automaticamente se não tiver
   document.getElementById('btnImportarCsv').addEventListener('click', () => {
     document.getElementById('csvInput').click();
   });
   document.getElementById('csvInput').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    // Normaliza o CSV antes de enviar: garante prefixo 55
+    const text = await file.text();
+    const normalized = text.split('\n').map(line => {
+      const parts = line.trim().split(',');
+      if (!parts[0]) return line;
+      parts[0] = _normPhone(parts[0].trim());
+      return parts.join(',');
+    }).join('\n');
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', new Blob([normalized], { type: 'text/csv' }), file.name);
     const res = await fetch('/api/campanha/contatos/importar', { method: 'POST', body: fd });
     const data = await res.json();
     e.target.value = '';
@@ -3929,7 +3998,7 @@
       const dt = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '—';
       const msg = c.mensagem ? `<div style="margin-top:.5rem;font-size:.8rem;color:var(--text-mid);font-style:italic">"${escHtml(c.mensagem.substring(0,80))}${c.mensagem.length>80?'…':''}"</div>` : '';
       return `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:.75rem;box-shadow:var(--shadow-sm)">
+      <div data-camp-id="${c.id}" data-camp-nome="${escHtml(c.nome)}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:.75rem;box-shadow:var(--shadow-sm)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;margin-bottom:.3rem">
@@ -3956,11 +4025,103 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Modal seleção de contatos ─────────────────────────────────────────────────
+
+  let _selCampanhaId = null;
+  let _selContatosAll = [];   // todos os contatos carregados
+
   async function iniciarCampanha(id) {
-    const res = await api('POST', `/api/campanha/${id}/iniciar`);
-    if (res.ok) loadCampanhas();
-    else showAlert('alertHistorico', (await res.json?.())?.detail || 'Erro ao iniciar.', 'error');
+    _selCampanhaId = id;
+    // Busca nome da campanha para o subtítulo
+    const campEl = document.querySelector(`[data-camp-id="${id}"]`);
+    // Atualiza subtítulo do modal
+    const campNome = campEl ? campEl.dataset.campNome : '';
+    document.getElementById('modalSelContatosCampNome').textContent =
+      campNome ? `Campanha: "${campNome}"` : 'Escolha os destinatários desta campanha.';
+
+    // Limpa busca
+    document.getElementById('searchSelContatos').value = '';
+
+    // Abre o modal e carrega contatos
+    document.getElementById('modalSelecionarContatos').classList.add('open');
+    await _carregarSelContatos();
   }
+
+  async function _carregarSelContatos() {
+    const div = document.getElementById('listaSelContatos');
+    div.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>';
+    const res = await api('GET', '/api/campanha/contatos');
+    _selContatosAll = Array.isArray(res) ? res.filter(c => c.ativo !== false) : [];
+    _renderSelContatos(_selContatosAll);
+  }
+
+  function _renderSelContatos(lista) {
+    const div = document.getElementById('listaSelContatos');
+    const countEl = document.getElementById('selContatosCount');
+    const totalEl = document.getElementById('selContatosTotal');
+    totalEl.textContent = lista.length;
+
+    if (!lista.length) {
+      div.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-mid)">Nenhum contato encontrado.</div>';
+      countEl.textContent = '0';
+      return;
+    }
+
+    div.innerHTML = lista.map(c => `
+      <label style="display:flex;align-items:center;gap:.625rem;padding:.4rem .5rem;border-radius:6px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+        <input type="checkbox" class="sel-contato-cb" data-id="${c.id}" checked
+          style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0"
+          onchange="document.getElementById('selContatosCount').textContent=document.querySelectorAll('.sel-contato-cb:checked').length" />
+        <span style="font-weight:500;font-size:.875rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${escHtml(c.nome || '—')}
+        </span>
+        <span style="font-size:.78rem;color:var(--text-mid);flex-shrink:0">${_fmtPhone(c.phone)}</span>
+      </label>
+    `).join('');
+
+    // Atualiza contador (todos marcados por padrão)
+    countEl.textContent = lista.length;
+  }
+
+  // Filtrar conforme busca
+  document.getElementById('searchSelContatos').addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    const filtrado = _selContatosAll.filter(c =>
+      (c.nome || '').toLowerCase().includes(q) || String(c.phone).includes(q)
+    );
+    _renderSelContatos(filtrado);
+  });
+
+  document.getElementById('btnSelecionarTodos').addEventListener('click', () => {
+    document.querySelectorAll('.sel-contato-cb').forEach(cb => { cb.checked = true; });
+    document.getElementById('selContatosCount').textContent =
+      document.querySelectorAll('.sel-contato-cb').length;
+  });
+
+  document.getElementById('btnDesmarcarTodos').addEventListener('click', () => {
+    document.querySelectorAll('.sel-contato-cb').forEach(cb => { cb.checked = false; });
+    document.getElementById('selContatosCount').textContent = '0';
+  });
+
+  document.getElementById('btnCancelarSelContatos').addEventListener('click', () => {
+    document.getElementById('modalSelecionarContatos').classList.remove('open');
+  });
+
+  document.getElementById('btnConfirmarIniciar').addEventListener('click', async () => {
+    const ids = [...document.querySelectorAll('.sel-contato-cb:checked')].map(cb => Number(cb.dataset.id));
+    if (!ids.length) {
+      showAlert('alertHistorico', 'Selecione pelo menos um contato.', 'error');
+      return;
+    }
+    document.getElementById('modalSelecionarContatos').classList.remove('open');
+    const res = await api('POST', `/api/campanha/${_selCampanhaId}/iniciar`, { contato_ids: ids });
+    if (res.ok) {
+      showAlert('alertHistorico', `Disparo iniciado para ${ids.length} contato(s)!`);
+      loadCampanhas();
+    } else {
+      showAlert('alertHistorico', res.detail || 'Erro ao iniciar campanha.', 'error');
+    }
+  });
 
   async function pausarCampanha(id) {
     await api('POST', `/api/campanha/${id}/pausar`);
