@@ -20,56 +20,55 @@ ALL_APP_MENUS = ["dashboard", "mensagem", "whatsapp", "teste", "token", "arquivo
 
 # ── Helpers de sincronização Monitor → App ────────────────────────────────────
 
-def _sync_headers() -> dict:
-    """Header de autenticação para os endpoints /api/monitor-sync/ do app."""
-    return {"x-monitor-token": settings.app_sync_token}
+async def _get_user_client_tokens(db, usuario_id: int) -> list:
+    """Retorna os tokens dos clientes ativos vinculados ao usuário."""
+    async with db.execute(
+        """SELECT c.token FROM clientes c
+           JOIN usuario_clientes uc ON uc.cliente_id = c.id
+           WHERE uc.usuario_id = ? AND c.ativo = 1""",
+        (usuario_id,),
+    ) as cur:
+        rows = await cur.fetchall()
+    return [r["token"] for r in rows]
 
 
-async def _app_sync_create(username: str, password: str) -> None:
-    """Cria/atualiza usuário no app de envio via /api/monitor-sync/."""
-    if not settings.app_sync_token:
-        logger.warning("Sync usuário → app ignorado: APP_SYNC_TOKEN não configurado no monitor.")
+async def _sync_to_app(method: str, path: str, payload: dict, client_tokens: list) -> None:
+    """Sincroniza com o app usando o token específico de cada cliente vinculado."""
+    if not settings.app_url:
         return
-    try:
-        url = f"{settings.app_url.rstrip('/')}/api/monitor-sync/usuarios/sync"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(url, json={"username": username, "password": password},
-                              headers=_sync_headers())
-    except Exception as e:
-        logger.warning("Sync usuário → app falhou: %s", e)
+    app_url = settings.app_url.rstrip("/")
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        for token in client_tokens:
+            headers = {"x-monitor-token": token}
+            try:
+                if method == "POST":
+                    await client.post(f"{app_url}{path}", json=payload, headers=headers)
+                elif method == "PUT":
+                    await client.put(f"{app_url}{path}", json=payload, headers=headers)
+                elif method == "DELETE":
+                    await client.delete(f"{app_url}{path}", headers=headers)
+            except Exception as e:
+                logger.warning("Sync → app falhou (token %s...): %s", token[:8], e)
 
 
-async def _app_sync_delete(username: str) -> None:
-    if not settings.app_sync_token:
-        return
-    try:
-        url = f"{settings.app_url.rstrip('/')}/api/monitor-sync/usuarios/{username}"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.delete(url, headers=_sync_headers())
-    except Exception as e:
-        logger.warning("Delete usuário → app falhou: %s", e)
+async def _app_sync_create(username: str, password: str, client_tokens: list) -> None:
+    """Cria/atualiza usuário no app para cada empresa vinculada."""
+    await _sync_to_app("POST", "/api/monitor-sync/usuarios/sync",
+                       {"username": username, "password": password}, client_tokens)
 
 
-async def _app_sync_senha(username: str, password: str) -> None:
-    if not settings.app_sync_token:
-        return
-    try:
-        url = f"{settings.app_url.rstrip('/')}/api/monitor-sync/usuarios/{username}/senha"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.put(url, json={"password": password}, headers=_sync_headers())
-    except Exception as e:
-        logger.warning("Troca senha → app falhou: %s", e)
+async def _app_sync_delete(username: str, client_tokens: list) -> None:
+    await _sync_to_app("DELETE", f"/api/monitor-sync/usuarios/{username}", {}, client_tokens)
 
 
-async def _app_sync_username(old: str, new: str) -> None:
-    if not settings.app_sync_token:
-        return
-    try:
-        url = f"{settings.app_url.rstrip('/')}/api/monitor-sync/usuarios/{old}/username"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.put(url, json={"username": new}, headers=_sync_headers())
-    except Exception as e:
-        logger.warning("Rename usuário → app falhou: %s", e)
+async def _app_sync_senha(username: str, password: str, client_tokens: list) -> None:
+    await _sync_to_app("PUT", f"/api/monitor-sync/usuarios/{username}/senha",
+                       {"password": password}, client_tokens)
+
+
+async def _app_sync_username(old: str, new: str, client_tokens: list) -> None:
+    await _sync_to_app("PUT", f"/api/monitor-sync/usuarios/{old}/username",
+                       {"username": new}, client_tokens)
 
 
 class UsuarioCreate(BaseModel):
@@ -204,8 +203,9 @@ async def create_usuario(
 
         await db.commit()
         # Sincroniza com o app de envio apenas se NÃO for usuário exclusivo do monitor
-        if not body.monitor_only:
-            await _app_sync_create(username, body.password)
+        if not body.monitor_only and body.cliente_ids:
+            tokens = await _get_user_client_tokens(db, usuario_id)
+            await _app_sync_create(username, body.password, tokens)
         return {"id": usuario_id, "username": username}
     except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username já existe.")
@@ -245,13 +245,14 @@ async def delete_usuario(
 ):
     if current["uid"] == usuario_id:
         raise HTTPException(status_code=400, detail="Você não pode remover seu próprio usuário.")
-    # Busca username antes de deletar para sincronizar com o app
+    # Busca username e tokens dos clientes antes de deletar para sincronizar com o app
     async with db.execute("SELECT username FROM usuarios WHERE id=?", (usuario_id,)) as cur:
         row = await cur.fetchone()
+    tokens = await _get_user_client_tokens(db, usuario_id)
     await db.execute("DELETE FROM usuarios WHERE id = ?", (usuario_id,))
     await db.commit()
-    if row:
-        await _app_sync_delete(row["username"])
+    if row and tokens:
+        await _app_sync_delete(row["username"], tokens)
 
 
 # ── Trocar senha ──────────────────────────────────────────────────────────────
@@ -266,13 +267,14 @@ async def change_senha(
         raise HTTPException(status_code=400, detail="Senha muito curta (mín. 6 chars).")
     async with db.execute("SELECT username FROM usuarios WHERE id=?", (usuario_id,)) as cur:
         row = await cur.fetchone()
+    tokens = await _get_user_client_tokens(db, usuario_id)
     await db.execute(
         "UPDATE usuarios SET password_hash=? WHERE id=?",
         (hash_password(body.password), usuario_id),
     )
     await db.commit()
-    if row:
-        await _app_sync_senha(row["username"], body.password)
+    if row and tokens:
+        await _app_sync_senha(row["username"], body.password, tokens)
     return {"ok": True}
 
 
@@ -422,14 +424,15 @@ async def change_username(
         raise HTTPException(status_code=400, detail="Username inválido.")
     async with db.execute("SELECT username FROM usuarios WHERE id=?", (usuario_id,)) as cur:
         row = await cur.fetchone()
+    tokens = await _get_user_client_tokens(db, usuario_id)
     try:
         await db.execute(
             "UPDATE usuarios SET username=? WHERE id=?",
             (username, usuario_id),
         )
         await db.commit()
-        if row and row["username"] != username:
-            await _app_sync_username(row["username"], username)
+        if row and row["username"] != username and tokens:
+            await _app_sync_username(row["username"], username, tokens)
         return {"ok": True}
     except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username já está em uso.")
