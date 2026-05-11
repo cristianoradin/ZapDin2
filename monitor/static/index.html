@@ -611,7 +611,17 @@
       <div class="card">
         <div class="card-header">
           <span class="card-title">Status em Tempo Real</span>
-          <span style="font-size:.78rem;color:var(--text-mid)" id="lastUpdate"></span>
+          <div style="display:flex;align-items:center;gap:.75rem;flex:1;justify-content:flex-end">
+            <div style="position:relative;max-width:280px;width:100%">
+              <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.45;pointer-events:none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="monitorSearch" type="text" placeholder="Pesquisar cliente…"
+                style="width:100%;padding:.38rem .75rem .38rem 2rem;border:1px solid var(--border);border-radius:8px;font-size:.8rem;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s"
+                oninput="filterPostos(this.value)"
+                onfocus="this.style.borderColor='var(--accent)'"
+                onblur="this.style.borderColor='var(--border)'">
+            </div>
+            <span style="font-size:.78rem;color:var(--text-mid);white-space:nowrap" id="lastUpdate"></span>
+          </div>
         </div>
         <div class="posto-grid" id="postoGrid">
           <div class="empty-state"><p>Carregando…</p></div>
@@ -1279,6 +1289,32 @@ async function loadMonitor() {
       </div>`;
     }).join('');
   } catch(e) { console.error(e); }
+}
+
+function filterPostos(q) {
+  const term = q.trim().toLowerCase();
+  const cards = document.querySelectorAll('#postoGrid .posto-card');
+  let visible = 0;
+  cards.forEach(card => {
+    const text = card.textContent.toLowerCase();
+    const show = !term || text.includes(term);
+    card.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  // Mostra mensagem se nenhum resultado
+  let empty = document.getElementById('postoSearchEmpty');
+  if (!term || visible > 0) {
+    if (empty) empty.remove();
+  } else {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'postoSearchEmpty';
+      empty.className = 'empty-state';
+      empty.style.gridColumn = '1/-1';
+      empty.innerHTML = '<p>Nenhum cliente encontrado para "<strong>' + q.trim() + '</strong>".</p>';
+      document.getElementById('postoGrid').appendChild(empty);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
