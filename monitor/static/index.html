@@ -1087,8 +1087,7 @@
 function fmtDate(iso) {
   if (!iso) return '—';
   try {
-    const s = typeof iso === 'string' ? (iso.endsWith('Z') ? iso : iso + 'Z') : new Date(iso).toISOString();
-    const d = new Date(s);
+    const d = new Date(iso);   // browsers modernos entendem +00:00 direto
     if (isNaN(d.getTime())) return '—';
     return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   } catch { return '—'; }
