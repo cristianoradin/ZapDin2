@@ -3879,9 +3879,8 @@
     if (tipo === 'text' && !mensagem) { showAlert('alertCampanha', 'Informe a mensagem.', 'error'); return; }
     const res = await api('POST', '/api/campanha', { nome, tipo, mensagem });
     if (!res.ok) { showAlert('alertCampanha', 'Erro ao criar campanha.', 'error'); return; }
-    const data = await res.json();
-    _campanhaCriadaId = data.id;
-    showAlert('alertCampanha', `Campanha "${nome}" criada! ${tipo === 'file' ? 'Agora adicione os arquivos.' : 'Vá em Campanhas para iniciar o disparo.'}`);
+    _campanhaCriadaId = res.id;
+    showAlert('alertCampanha', `Campanha "${nome}" criada! ${tipo === 'file' ? 'Agora adicione os arquivos acima.' : 'Vá em Campanhas para iniciar o disparo.'}`);
     if (tipo !== 'file') {
       setTimeout(() => showPage('dm-historico'), 1500);
     }
