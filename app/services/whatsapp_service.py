@@ -433,6 +433,7 @@ class WhatsAppSession:
                     self._page.goto(url, wait_until="domcontentloaded"),
                     timeout=35,
                 )
+                logger.info("send_file [%s]: goto OK — url=%s", self.session_id, self._page.url)
 
                 compose = None
                 loop = asyncio.get_event_loop()
@@ -440,12 +441,23 @@ class WhatsAppSession:
 
                 while loop.time() < deadline:
                     await asyncio.sleep(1)
+                    cur_url = self._page.url
                     compose = await self._page.query_selector(_COMPOSE_SEL)
                     if compose:
+                        logger.info("send_file [%s]: compose encontrado em url=%s", self.session_id, cur_url)
                         break
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
+                        btn_text = await btn.inner_text() if btn else ""
+                        logger.warning("send_file [%s]: dialog encontrado (text=%r), clicando…", self.session_id, btn_text[:40])
                         await _safe_click(btn)
+                        await asyncio.sleep(2)
+                        # Após dismissar dialog: se foi para home, número não existe no WA
+                        after_url = self._page.url
+                        logger.warning("send_file [%s]: após dialog url=%s", self.session_id, after_url)
+                        if "send" not in after_url and "phone" not in after_url:
+                            asyncio.create_task(self._return_home())
+                            return False, "Número não registrado no WhatsApp"
                         inner_deadline = loop.time() + 12
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
@@ -453,6 +465,8 @@ class WhatsAppSession:
                             if compose:
                                 break
                         break
+                    logger.info("send_file [%s]: aguardando conversa… url=%s t=%.0fs",
+                                self.session_id, cur_url, deadline - loop.time())
 
                 if compose is None:
                     try:
