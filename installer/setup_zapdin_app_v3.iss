@@ -281,16 +281,14 @@ var
   i, idx: Integer;
   chars: string;
   key: string;
-  seed: Cardinal;
 begin
   chars := 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   key   := '';
-  seed  := GetTickCount;
+  Randomize;
   for i := 1 to 48 do
   begin
-    seed := seed * 1664525 + 1013904223;
-    idx  := (seed mod 62) + 1;
-    key  := key + chars[idx];
+    idx := Random(62) + 1;
+    key := key + chars[idx];
   end;
   Result := key;
 end;

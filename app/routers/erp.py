@@ -134,8 +134,8 @@ async def receber_venda(
 
     # Enfileira para disparo assíncrono — API retorna imediatamente
     await db.execute(
-        "INSERT INTO mensagens (empresa_id, destinatario, mensagem, tipo, status) VALUES (?, ?, ?, 'text', 'queued')",
-        (empresa_id, telefone, mensagem),
+        "INSERT INTO mensagens (empresa_id, destinatario, nome_destinatario, mensagem, tipo, status) VALUES (?, ?, ?, ?, 'text', 'queued')",
+        (empresa_id, telefone, body.nome or "", mensagem),
     )
     await db.commit()
     _record_call(empresa_id, request, "/api/erp/venda", True)
@@ -164,9 +164,9 @@ async def receber_arquivo(
     # Enfileira para disparo assíncrono — API retorna imediatamente
     await db.execute(
         """INSERT INTO arquivos
-               (empresa_id, nome_original, nome_arquivo, tamanho, destinatario, status, caption)
-           VALUES (?, ?, ?, ?, ?, 'queued', ?)""",
-        (empresa_id, body.nome_arquivo, nome_salvo, len(conteudo), telefone, body.mensagem),
+               (empresa_id, nome_original, nome_arquivo, tamanho, destinatario, nome_destinatario, status, caption)
+           VALUES (?, ?, ?, ?, ?, ?, 'queued', ?)""",
+        (empresa_id, body.nome_arquivo, nome_salvo, len(conteudo), telefone, "", body.mensagem),
     )
     await db.commit()
     _record_call(empresa_id, request, "/api/erp/arquivo", True)

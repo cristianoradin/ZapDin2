@@ -321,3 +321,12 @@ async def init_db() -> None:
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens(empresa_id, status)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_empresa ON arquivos(empresa_id)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_arquivos_status ON arquivos(empresa_id, status)")
+
+        # Migração: adiciona nome_destinatario em mensagens e arquivos
+        for _tbl2 in ('mensagens', 'arquivos'):
+            try:
+                await conn.execute(
+                    f"ALTER TABLE {_tbl2} ADD COLUMN IF NOT EXISTS nome_destinatario TEXT DEFAULT ''"
+                )
+            except Exception:
+                pass

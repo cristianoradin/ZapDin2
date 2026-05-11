@@ -14,6 +14,7 @@ from .core.database import init_db
 from .routers import auth, clientes, monitor_router, versoes
 from .routers.activation import router as activation_router
 from .routers.grupos import router as grupos_router
+from .routers.numeros import router as numeros_router
 
 _START_TIME = datetime.utcnow()
 
@@ -55,6 +56,7 @@ fastapi_app.include_router(clientes.router)
 fastapi_app.include_router(grupos_router)
 fastapi_app.include_router(monitor_router.router)
 fastapi_app.include_router(versoes.router)
+fastapi_app.include_router(numeros_router)
 
 
 # ── Endpoint público de status (sem autenticação) ─────────────────────────────

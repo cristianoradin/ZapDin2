@@ -233,3 +233,17 @@ async def init_db() -> None:
             VALUES ('whatsapp', '1.0.0')
             ON CONFLICT DO NOTHING
         """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS numeros_wa (
+                id              BIGSERIAL PRIMARY KEY,
+                cliente_id      BIGINT NOT NULL REFERENCES clientes(id) ON DELETE CASCADE,
+                phone           TEXT NOT NULL,
+                nome            TEXT DEFAULT '',
+                total_enviados  INTEGER DEFAULT 1,
+                ultima_mensagem TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (cliente_id, phone)
+            )
+        """)
+        await conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_numeros_wa_cliente ON numeros_wa(cliente_id)
+        """)

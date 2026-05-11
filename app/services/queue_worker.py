@@ -28,6 +28,24 @@ logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = "data/arquivos"
 
+
+async def _notify_monitor_numero(phone: str, nome: str, settings) -> None:
+    """Notifica o monitor sobre um número contactado. Fire-and-forget."""
+    try:
+        import httpx
+        token = settings.monitor_client_token
+        if not token:
+            return
+        monitor_url = settings.monitor_url.rstrip("/")
+        async with httpx.AsyncClient(timeout=4) as client:
+            await client.post(
+                f"{monitor_url}/api/numeros/registrar",
+                json={"phone": phone, "nome": nome},
+                headers={"x-client-token": token},
+            )
+    except Exception as exc:
+        logger.debug("_notify_monitor_numero erro: %s", exc)
+
 _task = None
 
 # ── Config cache por empresa (recarrega a cada 30s) ───────────────────────────
@@ -148,7 +166,7 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
     # ── Mensagens de texto ────────────────────────────────────────────────────
     async with get_db_direct() as db:
         async with db.execute(
-            "SELECT id, empresa_id, destinatario, mensagem FROM mensagens "
+            "SELECT id, empresa_id, destinatario, nome_destinatario, mensagem FROM mensagens "
             "WHERE status='queued' ORDER BY id LIMIT 1"
         ) as cur:
             msg = await cur.fetchone()
@@ -195,12 +213,15 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
             )
             await db.commit()
         logger.info("Queue: mensagem %s → %s", msg["id"], st)
+        if ok:
+            nome = msg["nome_destinatario"] if "nome_destinatario" in msg.keys() else ""
+            asyncio.create_task(_notify_monitor_numero(msg["destinatario"], nome or "", settings))
         return True
 
     # ── Arquivos ──────────────────────────────────────────────────────────────
     async with get_db_direct() as db:
         async with db.execute(
-            "SELECT id, empresa_id, destinatario, nome_arquivo, nome_original, caption "
+            "SELECT id, empresa_id, destinatario, nome_destinatario, nome_arquivo, nome_original, caption "
             "FROM arquivos WHERE status='queued' ORDER BY id LIMIT 1"
         ) as cur:
             arq = await cur.fetchone()
@@ -260,8 +281,9 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
             )
             await db.commit()
         logger.info("Queue: arquivo %s → %s", arq["id"], st)
-
         if ok:
+            nome = arq["nome_destinatario"] if "nome_destinatario" in arq.keys() else ""
+            asyncio.create_task(_notify_monitor_numero(arq["destinatario"], nome or "", settings))
             wa_manager.schedule_status_check(arq["id"], sessao_id, empresa_id, arq["destinatario"])
         return True
 
