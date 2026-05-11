@@ -304,6 +304,18 @@ async def init_db() -> None:
             END $$;
         """)
 
+        # Adiciona coluna menus em usuarios (migração segura)
+        await conn.execute("""
+            DO $$ BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'usuarios' AND column_name = 'menus'
+                ) THEN
+                    ALTER TABLE usuarios ADD COLUMN menus TEXT;
+                END IF;
+            END $$;
+        """)
+
         # Índices (seguros mesmo se coluna empresa_id foi adicionada agora)
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_empresa ON mensagens(empresa_id)")
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_mensagens_status ON mensagens(empresa_id, status)")

@@ -4,6 +4,7 @@ ZapDin — Sincronização de usuários: Monitor → App
 O monitor envia o token do cliente no header x-monitor-token.
 O app localiza a empresa pelo token e escopa todas as operações a ela.
 """
+import json
 import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
@@ -39,6 +40,7 @@ async def _get_empresa_id(
 class UserSyncPayload(BaseModel):
     username: str
     password: str
+    menus: list | None = None  # None = todos os menus; lista = só esses menus
 
 
 class SenhaPayload(BaseModel):
@@ -69,14 +71,17 @@ async def sync_usuario(
     db=Depends(get_db),
 ):
     username = body.username.strip().lower()
+    menus_json = json.dumps(body.menus) if body.menus is not None else None
     await db.execute(
-        """INSERT INTO usuarios (empresa_id, username, password_hash)
-           VALUES (?, ?, ?)
-           ON CONFLICT (empresa_id, username) DO UPDATE SET password_hash = EXCLUDED.password_hash""",
-        (empresa_id, username, hash_password(body.password)),
+        """INSERT INTO usuarios (empresa_id, username, password_hash, menus)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT (empresa_id, username) DO UPDATE
+           SET password_hash = EXCLUDED.password_hash,
+               menus = EXCLUDED.menus""",
+        (empresa_id, username, hash_password(body.password), menus_json),
     )
     await db.commit()
-    logger.info("[monitor-sync] Usuário '%s' sincronizado na empresa %s.", username, empresa_id)
+    logger.info("[monitor-sync] Usuário '%s' sincronizado na empresa %s (menus=%s).", username, empresa_id, body.menus)
     return {"ok": True}
 
 
@@ -107,6 +112,27 @@ async def change_senha(
         (hash_password(body.password), username.lower(), empresa_id),
     )
     await db.commit()
+    return {"ok": True}
+
+
+class MenusPayload(BaseModel):
+    menus: list | None = None  # None = todos os menus; lista = só esses menus
+
+
+@router.put("/usuarios/{username}/menus")
+async def update_menus(
+    username: str,
+    body: MenusPayload,
+    empresa_id: int = Depends(_get_empresa_id),
+    db=Depends(get_db),
+):
+    menus_json = json.dumps(body.menus) if body.menus is not None else None
+    await db.execute(
+        "UPDATE usuarios SET menus = ? WHERE username = ? AND empresa_id = ?",
+        (menus_json, username.lower(), empresa_id),
+    )
+    await db.commit()
+    logger.info("[monitor-sync] Menus de '%s' atualizados na empresa %s: %s", username, empresa_id, body.menus)
     return {"ok": True}
 
 

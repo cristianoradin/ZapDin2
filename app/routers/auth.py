@@ -181,6 +181,7 @@ async def me(user: dict = Depends(get_current_user), db=Depends(get_db)):
     empresa_id = user.get("empresa_id")
     empresa_nome = None
     empresa_cnpj = None
+    menus = None
 
     if empresa_id:
         async with db.execute(
@@ -191,12 +192,26 @@ async def me(user: dict = Depends(get_current_user), db=Depends(get_db)):
             empresa_nome = emp["nome"]
             empresa_cnpj = emp["cnpj"]
 
+        # Busca menus permitidos do usuário
+        async with db.execute(
+            "SELECT menus FROM usuarios WHERE id = ? AND empresa_id = ?",
+            (user["uid"], empresa_id),
+        ) as cur:
+            u = await cur.fetchone()
+        if u and u["menus"]:
+            import json as _json
+            try:
+                menus = _json.loads(u["menus"])
+            except Exception:
+                menus = None
+
     return {
         "username": user["usr"],
         "uid": user["uid"],
         "empresa_id": empresa_id,
         "empresa": empresa_nome,
         "cnpj": empresa_cnpj,
+        "menus": menus,  # null = todos permitidos; array = só esses menus
     }
 
 

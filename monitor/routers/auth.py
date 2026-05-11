@@ -51,10 +51,10 @@ async def _sync_to_app(method: str, path: str, payload: dict, client_tokens: lis
                 logger.warning("Sync → app falhou (token %s...): %s", token[:8], e)
 
 
-async def _app_sync_create(username: str, password: str, client_tokens: list) -> None:
+async def _app_sync_create(username: str, password: str, client_tokens: list, menus=None) -> None:
     """Cria/atualiza usuário no app para cada empresa vinculada."""
     await _sync_to_app("POST", "/api/monitor-sync/usuarios/sync",
-                       {"username": username, "password": password}, client_tokens)
+                       {"username": username, "password": password, "menus": menus}, client_tokens)
 
 
 async def _app_sync_delete(username: str, client_tokens: list) -> None:
@@ -69,6 +69,11 @@ async def _app_sync_senha(username: str, password: str, client_tokens: list) -> 
 async def _app_sync_username(old: str, new: str, client_tokens: list) -> None:
     await _sync_to_app("PUT", f"/api/monitor-sync/usuarios/{old}/username",
                        {"username": new}, client_tokens)
+
+
+async def _app_sync_menus(username: str, menus, client_tokens: list) -> None:
+    await _sync_to_app("PUT", f"/api/monitor-sync/usuarios/{username}/menus",
+                       {"menus": menus}, client_tokens)
 
 
 class UsuarioCreate(BaseModel):
@@ -205,7 +210,7 @@ async def create_usuario(
         # Sincroniza com o app de envio apenas se NÃO for usuário exclusivo do monitor
         if not body.monitor_only and body.cliente_ids:
             tokens = await _get_user_client_tokens(db, usuario_id)
-            await _app_sync_create(username, body.password, tokens)
+            await _app_sync_create(username, body.password, tokens, menus=body.menus)
         return {"id": usuario_id, "username": username}
     except asyncpg.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username já existe.")
@@ -287,11 +292,16 @@ async def set_usuario_menus(
     _: dict = Depends(get_current_user),
 ):
     menus_json = json.dumps(body.menus) if body.menus is not None else None
+    async with db.execute("SELECT username FROM usuarios WHERE id=?", (usuario_id,)) as cur:
+        row = await cur.fetchone()
+    tokens = await _get_user_client_tokens(db, usuario_id)
     await db.execute(
         "UPDATE usuarios SET menus=? WHERE id=?",
         (menus_json, usuario_id),
     )
     await db.commit()
+    if row and tokens:
+        await _app_sync_menus(row["username"], body.menus, tokens)
     return {"ok": True}
 
 
