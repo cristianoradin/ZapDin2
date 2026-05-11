@@ -300,6 +300,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .topbar-client-cnpj {
+      font-size: .65rem;
+      font-weight: 500;
+      color: var(--text-light);
+      letter-spacing: .02em;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
 
     /* ─── Sidebar client badge ────────────────────────────────────────────── */
     .sidebar-client-badge {
@@ -1447,8 +1455,8 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
         <div class="topbar-client-info">
-          <span class="topbar-client-label">Empresa</span>
           <span class="topbar-client-name" id="topbarClientName">—</span>
+          <span class="topbar-client-cnpj" id="topbarClientCnpj"></span>
         </div>
       </div>
       <div class="topbar-status-pill" id="topbarStatusPill">
@@ -2577,12 +2585,21 @@
       const av = document.getElementById('userAvatar');
       if (av) av.textContent = name.charAt(0).toUpperCase();
 
-      // Nome do cliente (empresa licenciada)
-      const clientName = data.client_name || '';
+      // Nome e CNPJ da empresa logada
+      const clientName = data.empresa || data.client_name || '';
+      const clientCnpj = data.cnpj || '';
       if (clientName) {
         const chip = document.getElementById('topbarClient');
         const chipName = document.getElementById('topbarClientName');
-        if (chip && chipName) { chipName.textContent = clientName; chip.style.display = 'flex'; }
+        const chipCnpj = document.getElementById('topbarClientCnpj');
+        if (chip && chipName) {
+          chipName.textContent = clientName;
+          if (chipCnpj && clientCnpj) {
+            const d = clientCnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+            chipCnpj.textContent = d;
+          }
+          chip.style.display = 'flex';
+        }
         const sbBadge = document.getElementById('sidebarClientBadge');
         const sbName  = document.getElementById('sidebarClientName');
         if (sbBadge && sbName) { sbName.textContent = clientName; sbBadge.style.display = 'flex'; }
