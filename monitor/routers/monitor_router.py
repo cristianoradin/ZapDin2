@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 
 from ..core.database import get_db
 from ..core.security import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["monitor"])
 
@@ -49,10 +52,27 @@ async def receive_heartbeat(
         )
 
     wa_st = body.wa_status if body.wa_status in ("connected", "qr_code", "disconnected") else "disconnected"
-    await db.execute(
-        "INSERT INTO heartbeats (cliente_id, versao, ip, wa_status) VALUES (?, ?, ?, ?)",
-        (cliente_id, body.versao, client_ip, wa_st),
-    )
+
+    # Tenta INSERT com wa_status; se coluna não existir (migration pendente), cai no fallback
+    try:
+        await db.execute(
+            "INSERT INTO heartbeats (cliente_id, versao, ip, wa_status) VALUES (?, ?, ?, ?)",
+            (cliente_id, body.versao, client_ip, wa_st),
+        )
+    except Exception:
+        # Coluna wa_status ainda não existe — usa INSERT antigo e roda migration agora
+        try:
+            await db.execute(
+                "ALTER TABLE heartbeats ADD COLUMN IF NOT EXISTS wa_status TEXT DEFAULT 'disconnected'"
+            )
+        except Exception:
+            pass
+        await db.execute(
+            "INSERT INTO heartbeats (cliente_id, versao, ip) VALUES (?, ?, ?)",
+            (cliente_id, body.versao, client_ip),
+        )
+        logger.warning("Heartbeat sem wa_status — migration aplicada agora")
+
     await db.commit()
     return {"ok": True}
 
@@ -67,7 +87,7 @@ async def get_monitor(
         """SELECT c.id, c.nome, c.cnpj, c.versao_instalada, c.cidade, c.uf,
                   (SELECT created_at FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ping,
                   (SELECT ip        FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ip,
-                  (SELECT wa_status FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as wa_status
+                  COALESCE((SELECT wa_status FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1), 'disconnected') as wa_status
            FROM clientes c
            WHERE c.ativo = 1
            ORDER BY c.nome"""

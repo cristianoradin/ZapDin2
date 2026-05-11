@@ -25,20 +25,20 @@ async def _read_version() -> str:
         return "1.0.0"
 
 
-def _wa_status_for_empresa(empresa_id: int) -> str:
-    """Retorna o status WA agregado da empresa: connected > qr_code > disconnected."""
+def _wa_status_global() -> str:
+    """Retorna o melhor status WA dentre todas as sessões ativas."""
     try:
         from .whatsapp_service import wa_manager
-        sessions = wa_manager.get_status(empresa_id)
-        statuses = {s["status"] for s in sessions}
+        statuses = {s.status for s in wa_manager._sessions.values()}
+        logger.debug("WA sessions statuses: %s", statuses)
         if "connected" in statuses:
             return "connected"
         if "qr_code" in statuses:
             return "qr_code"
-        if sessions:
+        if statuses:
             return "disconnected"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("_wa_status_global erro: %s", exc)
     return "disconnected"
 
 
@@ -62,7 +62,7 @@ async def _send_heartbeat() -> None:
             token = emp.get("token") or settings.monitor_client_token
             if not token:
                 continue
-            wa_status = _wa_status_for_empresa(emp.get("id", 0))
+            wa_status = _wa_status_global()
             payload = {
                 "nome": emp.get("nome", settings.client_name),
                 "cnpj": emp.get("cnpj", settings.client_cnpj),
