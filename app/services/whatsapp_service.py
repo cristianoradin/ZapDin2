@@ -722,19 +722,78 @@ class WhatsAppSession:
                     except Exception as _de:
                         logger.warning("send_file [%s]: diagnóstico HTML falhou: %s", self.session_id, _de)
 
-                    # Estratégia de envio: foca o caption input e pressiona Enter
+                    # ── Estratégia de envio: JS click no botão send do preview ────
+                    # O botão de envio do preview tem testid/aria diferentes do compose.
+                    # Usamos JS para clicar o ÚLTIMO botão visível com testid/aria de envio
+                    # (o do compose fica no footer abaixo; o do preview fica acima).
+                    _sent_method = "none"
                     try:
-                        cap_el = await self._page.query_selector(_CAP_SEL)
-                        if cap_el:
-                            await _safe_click(cap_el)
-                            await asyncio.sleep(0.3)
-                        await self._page.keyboard.press("Enter")
-                        logger.warning("send_file [%s]: Enter pressionado para enviar", self.session_id)
-                        _clicked = "enter"
-                    except Exception as _ke:
-                        logger.warning("send_file [%s]: falha ao pressionar Enter: %s", self.session_id, _ke)
-                        _clicked = "error"
-                    send_btn = True  # sinaliza sucesso para sair do loop
+                        _sent_js = await self._page.evaluate("""
+                            () => {
+                                // Coleta todos os botões visíveis com testid ou aria de envio
+                                const all = [...document.querySelectorAll('button,[role="button"]')];
+                                const sends = all.filter(b => {
+                                    if (b.offsetParent === null) return false;
+                                    const tid = (b.dataset.testid || '').toLowerCase();
+                                    const lbl = (b.getAttribute('aria-label') || '').toLowerCase();
+                                    return tid.includes('send') || lbl.includes('send') || lbl.includes('enviar');
+                                });
+                                if (!sends.length) return 'nenhum';
+                                // O botão de envio do preview é o ÚLTIMO na lista DOM
+                                // (o compose send fica antes, no footer)
+                                sends[sends.length - 1].click();
+                                return sends[sends.length - 1].dataset.testid || sends[sends.length - 1].getAttribute('aria-label') || 'clicked';
+                            }
+                        """)
+                        logger.warning("send_file [%s]: JS send result='%s'", self.session_id, _sent_js)
+                        if _sent_js != "nenhum":
+                            _sent_method = f"js:{_sent_js}"
+                    except Exception as _je:
+                        logger.warning("send_file [%s]: JS send falhou: %s", self.session_id, _je)
+
+                    if _sent_method == "none":
+                        # Fallback: foca o caption e pressiona Enter
+                        try:
+                            cap_el = await self._page.query_selector(_CAP_SEL)
+                            if cap_el:
+                                await _safe_click(cap_el)
+                                await asyncio.sleep(0.3)
+                            await self._page.keyboard.press("Enter")
+                            _sent_method = "enter"
+                            logger.warning("send_file [%s]: Enter pressionado (fallback)", self.session_id)
+                        except Exception as _ke:
+                            logger.warning("send_file [%s]: Enter falhou: %s", self.session_id, _ke)
+                            _sent_method = "error"
+
+                    # Aguarda preview fechar (confirma que o envio aconteceu)
+                    _close_dl = loop2.time() + 8
+                    _preview_closed = False
+                    while loop2.time() < _close_dl:
+                        await asyncio.sleep(0.5)
+                        _still_prev = await self._page.query_selector(_PREV_CONTAINER_SEL)
+                        if not _still_prev:
+                            _preview_closed = True
+                            break
+                    logger.warning("send_file [%s]: preview_closed=%s método=%s",
+                                   self.session_id, _preview_closed, _sent_method)
+
+                    if not _preview_closed:
+                        # Preview ainda aberto → envio não aconteceu → tenta Enter como último recurso
+                        logger.warning("send_file [%s]: preview não fechou, tentando Enter", self.session_id)
+                        try:
+                            cap_el = await self._page.query_selector(_CAP_SEL)
+                            if cap_el:
+                                await _safe_click(cap_el)
+                                await asyncio.sleep(0.2)
+                            await self._page.keyboard.press("Enter")
+                            await asyncio.sleep(3)
+                            _still_prev2 = await self._page.query_selector(_PREV_CONTAINER_SEL)
+                            logger.warning("send_file [%s]: após Enter final preview_exists=%s",
+                                           self.session_id, _still_prev2 is not None)
+                        except Exception:
+                            pass
+
+                    send_btn = True  # sinaliza que chegou até aqui
                     break
 
                 if not send_btn:
