@@ -183,8 +183,13 @@ async def init_db() -> None:
                 cliente_id BIGINT NOT NULL REFERENCES clientes(id),
                 versao     TEXT,
                 ip         TEXT,
+                wa_status  TEXT DEFAULT 'disconnected',
                 created_at TIMESTAMPTZ DEFAULT NOW()
             )
+        """)
+        # Migração: adiciona coluna wa_status se não existir (bancos antigos)
+        await conn.execute("""
+            ALTER TABLE heartbeats ADD COLUMN IF NOT EXISTS wa_status TEXT DEFAULT 'disconnected'
         """)
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS usuario_clientes (

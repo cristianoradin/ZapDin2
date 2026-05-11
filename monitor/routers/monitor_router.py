@@ -18,6 +18,7 @@ class HeartbeatPayload(BaseModel):
     cnpj: Optional[str] = None
     versao: Optional[str] = None
     porta: Optional[int] = None
+    wa_status: Optional[str] = None  # connected | qr_code | disconnected
 
 
 @router.post("/api/report")
@@ -47,9 +48,10 @@ async def receive_heartbeat(
             "UPDATE clientes SET versao_instalada = ? WHERE id = ?", (body.versao, cliente_id)
         )
 
+    wa_st = body.wa_status if body.wa_status in ("connected", "qr_code", "disconnected") else "disconnected"
     await db.execute(
-        "INSERT INTO heartbeats (cliente_id, versao, ip) VALUES (?, ?, ?)",
-        (cliente_id, body.versao, client_ip),
+        "INSERT INTO heartbeats (cliente_id, versao, ip, wa_status) VALUES (?, ?, ?, ?)",
+        (cliente_id, body.versao, client_ip, wa_st),
     )
     await db.commit()
     return {"ok": True}
@@ -64,7 +66,8 @@ async def get_monitor(
     async with db.execute(
         """SELECT c.id, c.nome, c.cnpj, c.versao_instalada, c.cidade, c.uf,
                   (SELECT created_at FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ping,
-                  (SELECT ip FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ip
+                  (SELECT ip        FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ip,
+                  (SELECT wa_status FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as wa_status
            FROM clientes c
            WHERE c.ativo = 1
            ORDER BY c.nome"""

@@ -25,6 +25,23 @@ async def _read_version() -> str:
         return "1.0.0"
 
 
+def _wa_status_for_empresa(empresa_id: int) -> str:
+    """Retorna o status WA agregado da empresa: connected > qr_code > disconnected."""
+    try:
+        from .whatsapp_service import wa_manager
+        sessions = wa_manager.get_status(empresa_id)
+        statuses = {s["status"] for s in sessions}
+        if "connected" in statuses:
+            return "connected"
+        if "qr_code" in statuses:
+            return "qr_code"
+        if sessions:
+            return "disconnected"
+    except Exception:
+        pass
+    return "disconnected"
+
+
 async def _send_heartbeat() -> None:
     version = await _read_version()
     monitor_url = settings.monitor_url.rstrip("/")
@@ -37,18 +54,21 @@ async def _send_heartbeat() -> None:
         # Fallback: usa token do .env
         empresas = [{"token": settings.monitor_client_token,
                      "nome": settings.client_name,
-                     "cnpj": settings.client_cnpj}]
+                     "cnpj": settings.client_cnpj,
+                     "id": 0}]
 
     async with httpx.AsyncClient(timeout=10) as client:
         for emp in empresas:
             token = emp.get("token") or settings.monitor_client_token
             if not token:
                 continue
+            wa_status = _wa_status_for_empresa(emp.get("id", 0))
             payload = {
                 "nome": emp.get("nome", settings.client_name),
                 "cnpj": emp.get("cnpj", settings.client_cnpj),
                 "versao": version,
                 "porta": settings.port,
+                "wa_status": wa_status,
             }
             try:
                 resp = await client.post(
@@ -69,7 +89,7 @@ async def _get_empresas_ativas() -> list:
         return []
     async with _pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT nome, cnpj, token FROM empresas WHERE ativo = TRUE AND token IS NOT NULL"
+            "SELECT id, nome, cnpj, token FROM empresas WHERE ativo = TRUE AND token IS NOT NULL"
         )
     return [dict(r) for r in rows]
 

@@ -277,6 +277,15 @@
     .posto-status-pill.online  { background: var(--accent-soft); color: var(--accent); }
     .posto-status-pill.offline { background: var(--red-soft); color: var(--red); }
     .posto-ping { font-size: .72rem; color: var(--text-light); }
+    .wa-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: .7rem; font-weight: 700; padding: .2rem .55rem;
+      border-radius: 20px; margin-top: .45rem;
+    }
+    .wa-badge.connected  { background: #dcfce7; color: #16a34a; }
+    .wa-badge.qr_code    { background: #fef9c3; color: #a16207; }
+    .wa-badge.disconnected { background: var(--surface2,#f4f6f9); color: var(--text-light,#9ca3af); }
+    .wa-badge svg { flex-shrink: 0; }
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
     .dot-green { background: var(--accent); animation: pulse 2s infinite; }
     .dot-red { background: var(--red); }
@@ -1237,7 +1246,12 @@ async function loadMonitor() {
       grid.innerHTML = '<div class="empty-state"><p>Nenhum cliente cadastrado.</p></div>';
       return;
     }
-    grid.innerHTML = postos.map(p => `
+    grid.innerHTML = postos.map(p => {
+      const waStatus  = p.ativo ? (p.wa_status || 'disconnected') : 'disconnected';
+      const waLabel   = { connected: 'WhatsApp Conectado', qr_code: 'Aguardando QR Code', disconnected: 'WhatsApp Desconectado' }[waStatus] || 'Desconectado';
+      // Ícone WhatsApp SVG (simples)
+      const waIcon = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.553 4.116 1.522 5.847L.054 23.454a.5.5 0 0 0 .492.596l5.815-1.525A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.688-.524-5.208-1.435l-.374-.222-3.452.905.921-3.36-.243-.386A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`;
+      return `
       <div class="posto-card ${p.ativo ? 'online' : 'offline'}">
         <div class="posto-card-header">
           <div>
@@ -1255,8 +1269,12 @@ async function loadMonitor() {
             ${p.ativo ? 'Online' : 'Offline'}
           </span>
         </div>
-        ${p.ultimo_ping ? `<div class="posto-ping" style="margin-top:.5rem">Último ping: ${fmtDate(p.ultimo_ping)}${p.ultimo_ip ? ' · IP: ' + p.ultimo_ip : ''}</div>` : ''}
-      </div>`).join('');
+        <span class="wa-badge ${waStatus}" title="${waLabel}">
+          ${waIcon} ${waLabel}
+        </span>
+        ${p.ultimo_ping ? `<div class="posto-ping" style="margin-top:.3rem">Último ping: ${fmtDate(p.ultimo_ping)}${p.ultimo_ip ? ' · IP: ' + p.ultimo_ip : ''}</div>` : ''}
+      </div>`;
+    }).join('');
   } catch(e) { console.error(e); }
 }
 
