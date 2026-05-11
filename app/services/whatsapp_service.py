@@ -367,8 +367,14 @@ class WhatsAppSession:
                     # Diálogo presente — pode ser:
                     # (a) "Iniciando conversa" → clicar Continuar e aguardar compose
                     # (b) Erro "número não está no WhatsApp" → clicar OK, sem compose
-                    btn = await self._page.query_selector(_DIALOG_BTN_SEL)
-                    if btn:
+                    all_btns = await self._page.query_selector_all(_DIALOG_BTN_SEL)
+                    if all_btns:
+                        btn = all_btns[-1]  # último = confirmação
+                        for b in all_btns:
+                            txt = (await b.inner_text()).strip().lower()
+                            if txt not in ("cancelar", "cancel", "fechar", "close"):
+                                btn = b
+                                break
                         await _safe_click(btn)
                         # Aguarda até 12s para saber se compose aparece
                         inner_deadline = loop.time() + 12
@@ -446,15 +452,22 @@ class WhatsAppSession:
                     if compose:
                         logger.warning("send_file [%s]: compose encontrado em url=%s", self.session_id, cur_url)
                         break
-                    btn = await self._page.query_selector(_DIALOG_BTN_SEL)
-                    if btn:
-                        btn_text = await btn.inner_text() if btn else ""
-                        logger.warning("send_file [%s]: dialog encontrado (text=%r), clicando…", self.session_id, btn_text[:40])
-                        await _safe_click(btn)
+                    all_btns = await self._page.query_selector_all(_DIALOG_BTN_SEL)
+                    if all_btns:
+                        # Evita clicar em "Cancelar" — pega o botão de confirmação (último ou não-cancel)
+                        btn_to_click = all_btns[-1]  # último botão = Continuar/OK
+                        for b in all_btns:
+                            txt = (await b.inner_text()).strip().lower()
+                            if txt not in ("cancelar", "cancel", "fechar", "close"):
+                                btn_to_click = b
+                                break
+                        btn_text = (await btn_to_click.inner_text()).strip()
+                        logger.warning("send_file [%s]: dialog — clicando '%s' (de %d botões)", self.session_id, btn_text[:30], len(all_btns))
+                        await _safe_click(btn_to_click)
                         await asyncio.sleep(2)
-                        # Após dismissar dialog: se foi para home, número não existe no WA
                         after_url = self._page.url
                         logger.warning("send_file [%s]: após dialog url=%s", self.session_id, after_url)
+                        # Se voltou pra home após confirmar → número não tem WhatsApp
                         if "send" not in after_url and "phone" not in after_url:
                             asyncio.create_task(self._return_home())
                             return False, "Número não registrado no WhatsApp"
