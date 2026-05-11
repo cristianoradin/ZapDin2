@@ -2364,54 +2364,86 @@
 
     <!-- ── Disparo em Massa: Contatos ── -->
     <div class="page" id="page-dm-contatos">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Contatos</h1>
-          <p class="page-sub">Gerencie os números para disparo em massa.</p>
+
+      <div class="page-hero hero-green">
+        <div class="page-hero-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <button class="btn btn-ghost" id="btnImportarCsv" style="display:inline-flex;align-items:center;gap:.4rem">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Importar CSV
-          </button>
-          <input type="file" id="csvInput" accept=".csv,.txt" style="display:none">
-          <button class="btn btn-primary" id="btnNovoContato" style="display:inline-flex;align-items:center;gap:.4rem">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Novo Contato
-          </button>
+        <div class="page-hero-text">
+          <h1>Lista de Contatos</h1>
+          <p>Cadastre os números de WhatsApp que receberão os disparos em massa. Importe via CSV ou adicione um a um.</p>
         </div>
       </div>
 
-      <div class="alert" id="alertContatos" style="margin-bottom:1rem"></div>
+      <div class="alert" id="alertContatos"></div>
 
-      <div class="card" style="padding:1rem;margin-bottom:1rem">
-        <input type="text" id="searchContatos" placeholder="🔍 Buscar por nome ou telefone…" style="width:100%;padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
-      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+          <div class="section-header" style="margin-bottom:0">
+            <div class="section-header-icon shi-green">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <h2>Contatos Cadastrados</h2>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="btnImportarCsv" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Importar CSV
+            </button>
+            <input type="file" id="csvInput" accept=".csv,.txt" style="display:none">
+            <button class="btn btn-primary btn-sm" id="btnNovoContato" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Novo Contato
+            </button>
+          </div>
+        </div>
 
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="table" id="tblContatos">
-          <thead><tr><th>Telefone</th><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
-          <tbody id="tbodyContatos"><tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">Carregando…</td></tr></tbody>
+        <div class="form-group" style="margin-bottom:1.25rem">
+          <input type="text" id="searchContatos" placeholder="Buscar por nome ou telefone…" />
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Telefone</th>
+              <th>Nome</th>
+              <th style="width:80px;text-align:center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyContatos">
+            <tr><td colspan="3" style="text-align:center;padding:2.5rem;color:var(--text-mid)">Carregando…</td></tr>
+          </tbody>
         </table>
+
+        <div class="info-banner info-banner-blue" style="margin-top:1.25rem;margin-bottom:0">
+          <span class="ib-icon">ℹ️</span>
+          <div>O CSV deve ter uma linha por contato no formato <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">telefone,nome</code> — exemplo: <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">5511999990000,João Silva</code></div>
+        </div>
       </div>
 
       <!-- Modal novo contato -->
-      <div class="confirm-overlay" id="modalContato" style="display:none">
-        <div class="confirm-box" style="max-width:420px">
+      <div class="confirm-overlay" id="modalContato">
+        <div class="confirm-box">
           <div class="confirm-header">
-            <div class="confirm-icon-wrap" style="background:#e8f5e9">👤</div>
-            <div>
+            <div class="confirm-icon-wrap info">👤</div>
+            <div class="confirm-text">
               <div class="confirm-title">Novo Contato</div>
-              <div class="confirm-msg">Informe o telefone e nome do contato.</div>
+              <div class="confirm-body">Informe o telefone e nome do contato.</div>
             </div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:.75rem;margin:1rem 0">
-            <input type="text" id="inpContatoPhone" placeholder="5511999999999" style="padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
-            <input type="text" id="inpContatoNome" placeholder="Nome (opcional)" style="padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
+          <div style="padding:1.25rem 1.5rem">
+            <div class="form-group">
+              <label>Telefone (com DDD, sem espaços)</label>
+              <input type="text" id="inpContatoPhone" placeholder="5511999990000" />
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Nome (opcional)</label>
+              <input type="text" id="inpContatoNome" placeholder="João Silva" />
+            </div>
           </div>
-          <div class="confirm-actions">
-            <button class="btn btn-ghost" id="btnCancelarContato">Cancelar</button>
-            <button class="btn btn-primary" id="btnSalvarContato">Salvar</button>
+          <div class="confirm-footer">
+            <button class="confirm-btn confirm-btn-cancel" id="btnCancelarContato">Cancelar</button>
+            <button class="confirm-btn confirm-btn-ok info" id="btnSalvarContato">Salvar</button>
           </div>
         </div>
       </div>
@@ -2419,93 +2451,138 @@
 
     <!-- ── Disparo em Massa: Nova Campanha ── -->
     <div class="page" id="page-dm-campanha">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Nova Campanha</h1>
-          <p class="page-sub">Configure e crie uma nova campanha de disparo.</p>
+
+      <div class="page-hero hero-purple">
+        <div class="page-hero-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div class="page-hero-text">
+          <h1>Nova Campanha</h1>
+          <p>Configure uma campanha de disparo em massa. Escolha envio de texto ou arquivo para todos os contatos da lista.</p>
         </div>
       </div>
 
-      <div class="alert" id="alertCampanha" style="margin-bottom:1rem"></div>
+      <div class="alert" id="alertCampanha"></div>
 
-      <div class="card" style="padding:1.5rem;max-width:680px">
-        <div style="display:flex;flex-direction:column;gap:1rem">
-          <div>
-            <label class="form-label">Nome da Campanha</label>
-            <input type="text" id="inpCampNome" class="form-input" placeholder="Ex: Promoção Maio 2025">
+      <div class="card" style="max-width:680px">
+        <div class="section-header">
+          <div class="section-header-icon shi-purple">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </div>
-          <div>
-            <label class="form-label">Tipo de Envio</label>
-            <div style="display:flex;gap:.75rem">
-              <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
-                <input type="radio" name="campTipo" value="text" checked> Texto
-              </label>
-              <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
-                <input type="radio" name="campTipo" value="file"> Arquivo(s)
-              </label>
-            </div>
+          <h2>Configurar Campanha</h2>
+        </div>
+
+        <div class="form-group">
+          <label>Nome da Campanha</label>
+          <input type="text" id="inpCampNome" placeholder="Ex: Promoção Maio 2025" />
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Envio</label>
+          <div style="display:flex;gap:1.25rem;margin-top:.375rem">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.875rem;color:var(--text)">
+              <input type="radio" name="campTipo" value="text" checked style="accent-color:var(--accent)"> 💬 Texto
+            </label>
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.875rem;color:var(--text)">
+              <input type="radio" name="campTipo" value="file" style="accent-color:var(--accent)"> 📎 Arquivo(s)
+            </label>
           </div>
-          <div>
-            <label class="form-label">Mensagem <span id="campMsgRequired" style="color:var(--text-muted);font-size:.8rem">(obrigatória para texto; opcional como legenda para arquivo)</span></label>
-            <textarea id="inpCampMensagem" class="form-input" rows="4" placeholder="Digite a mensagem…" style="resize:vertical"></textarea>
-          </div>
-          <div id="secCampArquivos" style="display:none">
-            <label class="form-label">Arquivos da Campanha</label>
-            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
-              <input type="file" id="inpCampArquivo" style="display:none" multiple>
-              <button class="btn btn-ghost" id="btnAddCampArquivo" style="display:inline-flex;align-items:center;gap:.4rem">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Selecionar arquivo
-              </button>
-            </div>
-            <div id="listaCampArquivos" style="margin-top:.75rem;display:flex;flex-direction:column;gap:.4rem"></div>
-            <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Os arquivos são adicionados após salvar a campanha.</p>
-          </div>
-          <div style="display:flex;justify-content:flex-end">
-            <button class="btn btn-primary" id="btnCriarCampanha">
-              Criar Campanha
+        </div>
+
+        <div class="form-group">
+          <label>Mensagem <span style="color:var(--text-mid);font-weight:400">(obrigatória para texto; opcional como legenda para arquivo)</span></label>
+          <textarea id="inpCampMensagem" rows="5" placeholder="Digite a mensagem que será enviada a todos os contatos…"></textarea>
+        </div>
+
+        <div id="secCampArquivos" style="display:none">
+          <div class="form-group">
+            <label>Arquivos da Campanha</label>
+            <input type="file" id="inpCampArquivo" style="display:none" multiple>
+            <div id="listaCampArquivos" style="margin-bottom:.75rem;display:flex;flex-direction:column;gap:.4rem"></div>
+            <button class="btn btn-ghost btn-sm" id="btnAddCampArquivo" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Selecionar arquivo
             </button>
           </div>
+          <div class="info-banner info-banner-yellow" style="margin-bottom:1.25rem">
+            <span class="ib-icon">⚠️</span>
+            <div>Os arquivos são adicionados após criar a campanha. Clique em <strong>Criar Campanha</strong> primeiro, depois adicione os arquivos.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;padding-top:.25rem;border-top:1px solid var(--border)">
+          <button class="btn btn-primary" id="btnCriarCampanha" style="display:inline-flex;align-items:center;gap:.4rem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Criar Campanha
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- ── Disparo em Massa: Histórico / Campanhas ── -->
+    <!-- ── Disparo em Massa: Campanhas ── -->
     <div class="page" id="page-dm-historico">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Campanhas</h1>
-          <p class="page-sub">Acompanhe o progresso e gerencie campanhas.</p>
+
+      <div class="page-hero hero-teal">
+        <div class="page-hero-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         </div>
-        <button class="btn btn-ghost" onclick="loadCampanhas()" style="display:inline-flex;align-items:center;gap:.4rem">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
-          Atualizar
-        </button>
+        <div class="page-hero-text">
+          <h1>Campanhas</h1>
+          <p>Acompanhe o progresso de cada campanha, inicie ou pause disparos e gerencie os arquivos.</p>
+        </div>
       </div>
 
-      <div class="alert" id="alertHistorico" style="margin-bottom:1rem"></div>
-      <div id="listaCampanhas" style="display:flex;flex-direction:column;gap:1rem"></div>
+      <div class="alert" id="alertHistorico"></div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+          <div class="section-header" style="margin-bottom:0">
+            <div class="section-header-icon shi-teal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h2>Todas as Campanhas</h2>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center">
+            <span style="font-size:.75rem;color:var(--text-mid);display:inline-flex;align-items:center;gap:.3rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Auto-atualiza a cada 5s
+            </span>
+            <button class="btn btn-ghost btn-sm" onclick="loadCampanhas()" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Atualizar
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="showPage('dm-campanha')" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Nova Campanha
+            </button>
+          </div>
+        </div>
+
+        <div id="listaCampanhas">
+          <div style="text-align:center;padding:3rem;color:var(--text-mid)">Carregando…</div>
+        </div>
+      </div>
 
       <!-- Modal arquivos campanha -->
-      <div class="confirm-overlay" id="modalCampArq" style="display:none">
+      <div class="confirm-overlay" id="modalCampArq">
         <div class="confirm-box" style="max-width:520px">
           <div class="confirm-header">
-            <div class="confirm-icon-wrap" style="background:#e3f2fd">📎</div>
-            <div>
+            <div class="confirm-icon-wrap info">📎</div>
+            <div class="confirm-text">
               <div class="confirm-title">Arquivos da Campanha</div>
-              <div class="confirm-msg" id="modalCampArqNome"></div>
+              <div class="confirm-body" id="modalCampArqNome"></div>
             </div>
           </div>
-          <div id="modalCampArqLista" style="margin:1rem 0;max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem"></div>
-          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">
+          <div style="padding:1rem 1.5rem">
+            <div id="modalCampArqLista" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem;margin-bottom:1rem"></div>
             <input type="file" id="inpModalCampArquivo" multiple style="display:none">
-            <button class="btn btn-ghost" id="btnModalAddArq" style="display:inline-flex;align-items:center;gap:.4rem">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <button class="btn btn-ghost btn-sm" id="btnModalAddArq" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Adicionar arquivo
             </button>
           </div>
-          <div class="confirm-actions">
-            <button class="btn btn-primary" id="btnFecharModalArq">Fechar</button>
+          <div class="confirm-footer">
+            <button class="confirm-btn confirm-btn-ok info" id="btnFecharModalArq">Fechar</button>
           </div>
         </div>
       </div>
@@ -3675,7 +3752,7 @@
   function renderContatos(lista) {
     const tbody = document.getElementById('tbodyContatos');
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum contato cadastrado.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2.5rem;color:var(--text-mid)">Nenhum contato cadastrado. Clique em <strong>Novo Contato</strong> ou importe um CSV.</td></tr>';
       return;
     }
     tbody.innerHTML = lista.map(c => `
@@ -3697,17 +3774,17 @@
   document.getElementById('btnNovoContato').addEventListener('click', () => {
     document.getElementById('inpContatoPhone').value = '';
     document.getElementById('inpContatoNome').value = '';
-    document.getElementById('modalContato').style.display = 'flex';
+    document.getElementById('modalContato').classList.add('open');
   });
   document.getElementById('btnCancelarContato').addEventListener('click', () => {
-    document.getElementById('modalContato').style.display = 'none';
+    document.getElementById('modalContato').classList.remove('open');
   });
   document.getElementById('btnSalvarContato').addEventListener('click', async () => {
     const phone = document.getElementById('inpContatoPhone').value.trim();
     const nome  = document.getElementById('inpContatoNome').value.trim();
     if (!phone) { showAlert('alertContatos', 'Informe o telefone.', 'error'); return; }
     const res = await api('POST', '/api/campanha/contatos', { phone, nome });
-    document.getElementById('modalContato').style.display = 'none';
+    document.getElementById('modalContato').classList.remove('open');
     if (res.ok) { showAlert('alertContatos', 'Contato salvo!'); loadContatos(); }
     else showAlert('alertContatos', 'Erro ao salvar contato.', 'error');
   });
@@ -3785,10 +3862,11 @@
 
   function renderCampArquivos(lista) {
     const div = document.getElementById('listaCampArquivos');
-    div.innerHTML = lista.map((a, i) => `
-      <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:6px;font-size:.85rem">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-        <span style="flex:1">${a.nome_original}</span>
+    div.innerHTML = lista.map(a => `
+      <div style="display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;background:var(--surface2);border:1px solid var(--border-soft);border-radius:8px;font-size:.85rem">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <span style="flex:1;font-weight:500">${escHtml(a.nome_original)}</span>
+        <span class="chip chip-green" style="font-size:.7rem">✓ Adicionado</span>
       </div>
     `).join('');
   }
@@ -3824,48 +3902,53 @@
 
   function _progBar(env, total) {
     const pct = total > 0 ? Math.round((env / total) * 100) : 0;
+    const barColor = pct === 100 ? '#22c55e' : 'var(--accent)';
     return `
-      <div style="display:flex;align-items:center;gap:.5rem">
-        <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width .4s"></div>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-top:.875rem">
+        <div style="flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width .5s ease"></div>
         </div>
-        <span style="font-size:.78rem;color:var(--text-muted);white-space:nowrap">${env}/${total} (${pct}%)</span>
+        <span style="font-size:.78rem;color:var(--text-mid);white-space:nowrap;font-weight:600;min-width:80px;text-align:right">${env}/${total} (${pct}%)</span>
       </div>`;
   }
 
+  const _chipClass = { draft:'chip-gray', running:'chip-green', paused:'chip-yellow', done:'chip-blue' };
   const _statusLabel = { draft:'Rascunho', running:'Disparando', paused:'Pausada', done:'Concluída' };
-  const _statusColor = { draft:'var(--text-muted)', running:'var(--accent)', paused:'#f59e0b', done:'#6b7280' };
 
   function renderCampanhas(lista) {
     const div = document.getElementById('listaCampanhas');
     if (!lista.length) {
-      div.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">Nenhuma campanha criada ainda.</div>';
+      div.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-mid)">Nenhuma campanha criada. <a href="#" onclick="showPage(\'dm-campanha\');return false" style="color:var(--accent);font-weight:600">Criar primeira campanha →</a></div>';
       return;
     }
     div.innerHTML = lista.map(c => {
-      const lbl = _statusLabel[c.status] || c.status;
-      const clr = _statusColor[c.status] || '#6b7280';
-      const tipoIcon = c.tipo === 'file' ? '📎' : '💬';
+      const chip = _chipClass[c.status] || 'chip-gray';
+      const lbl  = _statusLabel[c.status] || c.status;
+      const tipoChip = c.tipo === 'file'
+        ? '<span class="chip chip-purple" style="font-size:.72rem">📎 Arquivo</span>'
+        : '<span class="chip chip-blue" style="font-size:.72rem">💬 Texto</span>';
       const dt = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '—';
+      const msg = c.mensagem ? `<div style="margin-top:.5rem;font-size:.8rem;color:var(--text-mid);font-style:italic">"${escHtml(c.mensagem.substring(0,80))}${c.mensagem.length>80?'…':''}"</div>` : '';
       return `
-      <div class="card" style="padding:1.25rem">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:.75rem;box-shadow:var(--shadow-sm)">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:600;font-size:1rem">${tipoIcon} ${c.nome}</div>
-            <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Criada em ${dt} · <span style="color:${clr};font-weight:600">${lbl}</span></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;margin-bottom:.3rem">
+              <span style="font-weight:700;font-size:.9375rem;letter-spacing:-.01em">${escHtml(c.nome)}</span>
+              ${tipoChip}
+              <span class="chip ${chip}" style="font-size:.72rem">${lbl}</span>
+            </div>
+            <div style="font-size:.78rem;color:var(--text-mid)">Criada em ${dt} &nbsp;·&nbsp; Total: <strong>${c.total}</strong> &nbsp;·&nbsp; Enviados: <strong style="color:var(--accent)">${c.enviados}</strong> &nbsp;·&nbsp; Erros: <strong style="color:var(--red)">${c.erros}</strong></div>
+            ${msg}
           </div>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
-            ${c.tipo === 'file' ? `<button class="btn btn-ghost btn-sm" onclick="abrirModalArquivos(${c.id},'${escHtml(c.nome)}')">📎 Arquivos</button>` : ''}
-            ${c.status === 'draft' || c.status === 'done' || c.status === 'paused' ? `<button class="btn btn-primary btn-sm" onclick="iniciarCampanha(${c.id})">▶ Iniciar</button>` : ''}
-            ${c.status === 'running' ? `<button class="btn btn-ghost btn-sm" onclick="pausarCampanha(${c.id})" style="border-color:#f59e0b;color:#f59e0b">⏸ Pausar</button>` : ''}
-            <button class="btn btn-ghost btn-sm" onclick="deletarCampanha(${c.id})" style="color:#ef4444">🗑</button>
+          <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;flex-shrink:0">
+            ${c.tipo === 'file' ? `<button class="btn btn-ghost btn-sm" onclick="abrirModalArquivos(${c.id},'${escHtml(c.nome)}')" style="display:inline-flex;align-items:center;gap:.3rem"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Arquivos</button>` : ''}
+            ${c.status === 'draft' || c.status === 'done' || c.status === 'paused' ? `<button class="btn btn-primary btn-sm" onclick="iniciarCampanha(${c.id})" style="display:inline-flex;align-items:center;gap:.3rem"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Iniciar</button>` : ''}
+            ${c.status === 'running' ? `<button class="btn btn-ghost btn-sm" onclick="pausarCampanha(${c.id})" style="border-color:#f59e0b;color:#b45309;display:inline-flex;align-items:center;gap:.3rem"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pausar</button>` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="deletarCampanha(${c.id})" style="color:var(--red);border-color:#fecaca;display:inline-flex;align-items:center;gap:.3rem" title="Excluir campanha"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Excluir</button>
           </div>
         </div>
-        <div style="margin-top:.75rem">${_progBar(c.enviados, c.total)}</div>
-        <div style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem">
-          Total: ${c.total} · Enviados: ${c.enviados} · Erros: ${c.erros}
-          ${c.mensagem ? `<span style="margin-left:.75rem;font-style:italic">"${escHtml(c.mensagem.substring(0,60))}${c.mensagem.length>60?'…':''}"</span>` : ''}
-        </div>
+        ${_progBar(c.enviados, c.total)}
       </div>`;
     }).join('');
   }
@@ -3897,7 +3980,7 @@
   async function abrirModalArquivos(id, nome) {
     _campModalId = id;
     document.getElementById('modalCampArqNome').textContent = nome;
-    document.getElementById('modalCampArq').style.display = 'flex';
+    document.getElementById('modalCampArq').classList.add('open');
     await recarregarModalArquivos();
   }
 
@@ -3906,14 +3989,16 @@
     const lista = await res.json();
     const div = document.getElementById('modalCampArqLista');
     if (!lista.length) {
-      div.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1rem">Nenhum arquivo.</div>';
+      div.innerHTML = '<div style="text-align:center;color:var(--text-mid);padding:1rem;font-size:.875rem">Nenhum arquivo adicionado.</div>';
       return;
     }
     div.innerHTML = lista.map(a => `
-      <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:6px;font-size:.85rem">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-        <span style="flex:1">${escHtml(a.nome_original)}</span>
-        <button class="btn btn-ghost btn-sm" onclick="deletarArqModal(${a.id})" style="color:#ef4444;padding:.2rem .4rem">🗑</button>
+      <div style="display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;background:var(--surface2);border:1px solid var(--border-soft);border-radius:8px;font-size:.85rem">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <span style="flex:1;font-weight:500">${escHtml(a.nome_original)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="deletarArqModal(${a.id})" style="color:var(--red);border-color:#fecaca;padding:.2rem .5rem" title="Remover">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
       </div>
     `).join('');
   }
@@ -3938,7 +4023,7 @@
   }
 
   document.getElementById('btnFecharModalArq').addEventListener('click', () => {
-    document.getElementById('modalCampArq').style.display = 'none';
+    document.getElementById('modalCampArq').classList.remove('open');
     loadCampanhas();
   });
 
