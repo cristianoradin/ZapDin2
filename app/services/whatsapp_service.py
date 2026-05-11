@@ -546,7 +546,7 @@ class WhatsAppSession:
                         set_ok = True
                         break
                     except Exception as _e:
-                        logger.debug("set_input_files[accept=%r] fail: %s", acc, _e)
+                        logger.warning("set_input_files[accept=%r] fail: %s", acc, _e)
 
                 if not set_ok:
                     asyncio.create_task(self._return_home())
@@ -578,13 +578,27 @@ class WhatsAppSession:
                         if send_btn:
                             logger.info("Preview aberto, botão de envio encontrado")
                             break
+                        else:
+                            logger.warning("send_file [%s]: caption presente mas send_btn ausente", self.session_id)
                     else:
-                        logger.debug(
-                            "Aguardando preview… url=%s",
-                            self._page.url[:60],
+                        logger.info(
+                            "send_file [%s]: aguardando preview… url=%s",
+                            self.session_id, self._page.url[:80],
                         )
 
                 if send_btn is None:
+                    # Screenshot de diagnóstico para entender o estado da UI
+                    try:
+                        _scr = f"/tmp/wa_debug_{self.session_id}_preview.png"
+                        await self._page.screenshot(path=_scr)
+                        logger.warning("send_file [%s]: screenshot de diagnóstico em %s", self.session_id, _scr)
+                        # Dump dos data-testid presentes na página
+                        _ids = await self._page.evaluate(
+                            "() => [...document.querySelectorAll('[data-testid]')].map(e=>e.dataset.testid).filter((v,i,a)=>a.indexOf(v)===i).sort()"
+                        )
+                        logger.warning("send_file [%s]: data-testids na página: %s", self.session_id, _ids)
+                    except Exception as _de:
+                        logger.warning("send_file [%s]: diagnóstico falhou: %s", self.session_id, _de)
                     asyncio.create_task(self._return_home())
                     return False, "Preview do arquivo não apareceu"
 
