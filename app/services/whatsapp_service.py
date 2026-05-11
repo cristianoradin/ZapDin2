@@ -72,6 +72,17 @@ _COMPOSE_SEL = (
 _DIALOG_BTN_SEL = '[role="dialog"] button'
 
 
+async def _safe_click(element) -> None:
+    """Clica num elemento. Se for interceptado por overlay, usa JS como fallback."""
+    try:
+        await element.click(timeout=3000)
+    except Exception:
+        try:
+            await element.evaluate("e => e.click()")
+        except Exception:
+            pass
+
+
 class WhatsAppSession:
     def __init__(self, session_id: str, nome: str, empresa_id: int) -> None:
         self.session_id = session_id
@@ -350,7 +361,7 @@ class WhatsAppSession:
                     # (b) Erro "número não está no WhatsApp" → clicar OK, sem compose
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
-                        await btn.click()
+                        await _safe_click(btn)
                         # Aguarda até 12s para saber se compose aparece
                         inner_deadline = loop.time() + 12
                         while loop.time() < inner_deadline:
@@ -426,7 +437,7 @@ class WhatsAppSession:
                         break
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
-                        await btn.click()
+                        await _safe_click(btn)
                         inner_deadline = loop.time() + 12
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
@@ -494,7 +505,7 @@ class WhatsAppSession:
                 attach = await self._page.query_selector(_ATTACH_BTN_SEL)
                 logger.info("attach button found: %s", attach is not None)
                 if attach:
-                    await attach.click()
+                    await _safe_click(attach)
                     await asyncio.sleep(0.8)
 
                     # Clica no item de submenu adequado ao tipo de arquivo
@@ -507,7 +518,7 @@ class WhatsAppSession:
                             if item:
                                 try:
                                     if await item.is_visible():
-                                        await item.click()
+                                        await _safe_click(item)
                                         logger.info("clicked submenu: %s", sel)
                                         await asyncio.sleep(0.5)
                                         clicked = True
@@ -602,7 +613,7 @@ class WhatsAppSession:
                     asyncio.create_task(self._return_home())
                     return False, "Preview do arquivo não apareceu"
 
-                await send_btn.click()
+                await _safe_click(send_btn)
                 await asyncio.sleep(3)
                 asyncio.create_task(self._return_home())
                 from . import telegram_service
