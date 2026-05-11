@@ -473,7 +473,8 @@ class WhatsAppSession:
                 logger.info("send_file [%s]: %s (%s)", self.session_id, _filename, _mime)
 
                 _ATTACH_BTN_SEL = (
-                    '[data-testid="attach-btn"],'
+                    '[data-testid="plus-rounded"],'        # atual (2025+)
+                    '[data-testid="attach-btn"],'          # legado
                     'span[data-icon="attach-menu-plus"],'
                     '[data-testid="attach-menu-plus"]'
                 )
@@ -489,15 +490,22 @@ class WhatsAppSession:
                     'li[data-testid*="photo"]',
                     'li[data-testid*="image"]',
                 ]
+                # Seletor do campo de legenda na tela de preview
                 _CAP_SEL = (
+                    '[data-testid="media-caption-input-container"] [contenteditable],'
+                    '[data-testid="media-caption-input-container"],'
                     '[data-testid="media-caption-input"],'
                     '[data-testid="caption-input"]'
                 )
+                # Seletor do botão de envio na tela de preview
                 _PREV_SEND_SEL = (
+                    '[data-testid="wds-ic-send-filled"],'  # atual (2025+)
                     '[data-testid="send"],'
                     '[data-testid="media-send-button"],'
                     '[data-testid="compose-btn-send"]'
                 )
+                # Seletor alternativo: confirma que preview abriu (container visível)
+                _PREV_CONTAINER_SEL = '[data-testid="media-caption-input-container"]'
 
                 is_image_video = _mime.startswith("image/") or _mime.startswith("video/")
 
@@ -572,6 +580,13 @@ class WhatsAppSession:
                 while loop2.time() < prev_deadline:
                     await asyncio.sleep(1)
 
+                    # Confirma que o preview está aberto (container visível)
+                    preview_open = await self._page.query_selector(_PREV_CONTAINER_SEL)
+                    if not preview_open:
+                        logger.info("send_file [%s]: aguardando preview… url=%s",
+                                    self.session_id, self._page.url[:80])
+                        continue
+
                     # Preenche legenda assim que o campo aparecer
                     if caption and not caption_filled:
                         cap_el = await self._page.query_selector(_CAP_SEL)
@@ -582,20 +597,13 @@ class WhatsAppSession:
                             except Exception:
                                 pass
 
-                    # Confirma que a tela de preview abriu (campo de legenda presente)
-                    cap_el = await self._page.query_selector(_CAP_SEL)
-                    if cap_el:
-                        send_btn = await self._page.query_selector(_PREV_SEND_SEL)
-                        if send_btn:
-                            logger.info("Preview aberto, botão de envio encontrado")
-                            break
-                        else:
-                            logger.warning("send_file [%s]: caption presente mas send_btn ausente", self.session_id)
+                    # Busca botão de envio
+                    send_btn = await self._page.query_selector(_PREV_SEND_SEL)
+                    if send_btn:
+                        logger.info("send_file [%s]: preview aberto, botão de envio encontrado", self.session_id)
+                        break
                     else:
-                        logger.info(
-                            "send_file [%s]: aguardando preview… url=%s",
-                            self.session_id, self._page.url[:80],
-                        )
+                        logger.warning("send_file [%s]: preview aberto mas send_btn não encontrado ainda", self.session_id)
 
                 if send_btn is None:
                     # Screenshot de diagnóstico para entender o estado da UI
