@@ -1,11 +1,12 @@
 """
 Rotas de Disparo em Massa — Contatos e Campanhas.
 """
+import asyncio
 import io
 import os
 import uuid
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -246,8 +247,17 @@ async def delete_campanha_arquivo(
 
 # ── Iniciar / Pausar campanha ────────────────────────────────────────────────
 
+class IniciarPayload(BaseModel):
+    contato_ids: Optional[List[int]] = None  # None ou [] = todos os ativos
+
+
 @router.post("/{campanha_id}/iniciar")
-async def iniciar_campanha(campanha_id: int, db=Depends(get_db), user=Depends(get_current_user)):
+async def iniciar_campanha(
+    campanha_id: int,
+    body: IniciarPayload = IniciarPayload(),
+    db=Depends(get_db),
+    user=Depends(get_current_user),
+):
     empresa_id = _eid(user)
     async with db.execute(
         "SELECT id, tipo, mensagem, status FROM campanhas WHERE id=? AND empresa_id=?",
@@ -259,26 +269,35 @@ async def iniciar_campanha(campanha_id: int, db=Depends(get_db), user=Depends(ge
     if camp["status"] == "running":
         raise HTTPException(400, "Campanha já em execução")
 
-    # Se está retomando (paused), não recria os envios
     if camp["status"] in ("draft", "done"):
-        # Remove envios antigos
+        # Remove envios antigos e recria
         await db.execute("DELETE FROM campanha_envios WHERE campanha_id=?", (campanha_id,))
-        # Cria envios para todos os contatos ativos
-        async with db.execute(
-            "SELECT phone, nome FROM contatos WHERE empresa_id=? AND ativo=TRUE",
-            (empresa_id,),
-        ) as cur:
-            contatos = await cur.fetchall()
+
+        # Filtra por IDs selecionados ou pega todos os ativos
+        if body.contato_ids:
+            placeholders = ",".join("?" * len(body.contato_ids))
+            async with db.execute(
+                f"SELECT phone, nome FROM contatos WHERE empresa_id=? AND ativo=TRUE AND id IN ({placeholders})",
+                (empresa_id, *body.contato_ids),
+            ) as cur:
+                contatos = await cur.fetchall()
+        else:
+            async with db.execute(
+                "SELECT phone, nome FROM contatos WHERE empresa_id=? AND ativo=TRUE ORDER BY nome",
+                (empresa_id,),
+            ) as cur:
+                contatos = await cur.fetchall()
+
         if not contatos:
-            raise HTTPException(400, "Nenhum contato ativo para disparar")
+            raise HTTPException(400, "Nenhum contato selecionado para disparar")
+
         await db.executemany(
             "INSERT INTO campanha_envios (campanha_id, empresa_id, phone, nome, status) VALUES (?,?,?,?,?)",
             [(campanha_id, empresa_id, c["phone"], c["nome"] or "", "queued") for c in contatos],
         )
-        total = len(contatos)
         await db.execute(
             "UPDATE campanhas SET status='running', total=?, enviados=0, erros=0, started_at=NOW() WHERE id=?",
-            (total, campanha_id),
+            (len(contatos), campanha_id),
         )
     else:
         # retoma pausada — apenas muda status
@@ -323,3 +342,52 @@ async def campanha_progresso(campanha_id: int, db=Depends(get_db), user=Depends(
     if not row:
         raise HTTPException(404, "Campanha não encontrada")
     return dict(row)
+
+
+# ── Status da fila / worker ───────────────────────────────────────────────────
+
+@router.get("/queue/status")
+async def queue_status(db=Depends(get_db), user=Depends(get_current_user)):
+    """Retorna estado do worker e contadores de fila para esta empresa."""
+    from ..services import queue_worker
+    empresa_id = _eid(user)
+
+    # Contadores por tabela
+    async with db.execute(
+        "SELECT status, COUNT(*) as cnt FROM mensagens WHERE empresa_id=? GROUP BY status",
+        (empresa_id,),
+    ) as cur:
+        msg_rows = await cur.fetchall()
+
+    async with db.execute(
+        "SELECT status, COUNT(*) as cnt FROM arquivos WHERE empresa_id=? GROUP BY status",
+        (empresa_id,),
+    ) as cur:
+        arq_rows = await cur.fetchall()
+
+    async with db.execute(
+        "SELECT ce.status, COUNT(*) as cnt FROM campanha_envios ce "
+        "WHERE ce.empresa_id=? GROUP BY ce.status",
+        (empresa_id,),
+    ) as cur:
+        env_rows = await cur.fetchall()
+
+    def _to_map(rows):
+        return {r["status"]: r["cnt"] for r in rows}
+
+    return {
+        "worker": queue_worker.worker_status(),
+        "mensagens": _to_map(msg_rows),
+        "arquivos": _to_map(arq_rows),
+        "campanha_envios": _to_map(env_rows),
+    }
+
+
+@router.post("/queue/restart")
+async def queue_restart(user=Depends(get_current_user)):
+    """Para e reinicia o queue worker (sem reiniciar o app)."""
+    from ..services import queue_worker
+    queue_worker.stop()
+    await asyncio.sleep(0.5)
+    queue_worker.start()
+    return {"ok": True, "status": queue_worker.worker_status()}

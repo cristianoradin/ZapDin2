@@ -48,6 +48,26 @@ async def _notify_monitor_numero(phone: str, nome: str, settings) -> None:
 
 _task = None
 
+# ── Métricas do worker ────────────────────────────────────────────────────────
+_last_processed_at: float = 0.0   # timestamp do último item processado
+_processed_count: int = 0          # total de itens processados nesta sessão
+_last_error: str = ""              # último erro registrado
+
+
+def worker_status() -> dict:
+    """Retorna métricas do worker para exibição no painel."""
+    import time
+    running = _task is not None and not _task.done()
+    last = _last_processed_at
+    ago = int(time.time() - last) if last else None
+    return {
+        "running": running,
+        "processed_count": _processed_count,
+        "last_processed_seconds_ago": ago,
+        "last_error": _last_error,
+    }
+
+
 # ── Config cache por empresa (recarrega a cada 30s) ───────────────────────────
 _cfg_cache: Dict[int, dict] = {}
 _cfg_loaded_at: Dict[int, float] = {}
@@ -146,15 +166,22 @@ async def _daily_sent(db, sessao_id: str, empresa_id: int) -> int:
 # ── Loop principal ────────────────────────────────────────────────────────────
 
 async def _loop() -> None:
+    global _last_processed_at, _processed_count, _last_error
     from ..core.config import settings
     from ..core.database import get_db_direct
     from .whatsapp_service import wa_manager
 
+    logger.info("Queue worker loop iniciado")
     while True:
         try:
             dispatched = await _process_next(wa_manager, settings, get_db_direct)
+            if dispatched:
+                _last_processed_at = time.time()
+                _processed_count += 1
+                _last_error = ""
         except Exception as exc:
-            logger.error("Queue worker erro: %s", exc)
+            _last_error = str(exc)
+            logger.error("Queue worker erro: %s", exc, exc_info=True)
             dispatched = False
         await asyncio.sleep(0.2 if dispatched else 1.0)
 

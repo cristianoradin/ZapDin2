@@ -2538,6 +2538,37 @@
 
       <div class="alert" id="alertHistorico"></div>
 
+      <!-- Card de status do worker -->
+      <div class="card" id="workerStatusCard" style="margin-bottom:1rem;padding:.875rem 1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <div id="workerDot" style="width:10px;height:10px;border-radius:50%;background:var(--text-light);flex-shrink:0"></div>
+            <div>
+              <div style="font-size:.82rem;font-weight:600;color:var(--text)" id="workerLabel">Verificando worker…</div>
+              <div style="font-size:.75rem;color:var(--text-mid)" id="workerDetail"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+            <div style="text-align:center">
+              <div style="font-size:.72rem;color:var(--text-mid)">Mensagens</div>
+              <div style="font-size:.82rem;font-weight:600" id="wsqMsg">—</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:.72rem;color:var(--text-mid)">Arquivos</div>
+              <div style="font-size:.82rem;font-weight:600" id="wsqArq">—</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:.72rem;color:var(--text-mid)">Campanha</div>
+              <div style="font-size:.82rem;font-weight:600" id="wsqEnv">—</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" id="btnRestartWorker" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Reiniciar Worker
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
           <div class="section-header" style="margin-bottom:0">
@@ -3457,7 +3488,7 @@
     else if (page === 'telegram') loadTelegram();
     else if (page === 'dm-contatos') loadContatos();
     else if (page === 'dm-campanha') initNovaCampanha();
-    else if (page === 'dm-historico') loadCampanhas();
+    else if (page === 'dm-historico') { loadCampanhas(); loadWorkerStatus(); }
   }
 
   // ── Telegram ──────────────────────────────────────────────────────────────────
@@ -3968,6 +3999,63 @@
     renderCampanhas(lista);
   }
 
+  // ── Worker status widget ──────────────────────────────────────────────────────
+
+  async function loadWorkerStatus() {
+    try {
+      const r = await fetch('/api/campanha/queue/status');
+      if (!r.ok) return;
+      const d = await r.json();
+      const w = d.worker || {};
+      const dot = document.getElementById('workerDot');
+      const lbl = document.getElementById('workerLabel');
+      const det = document.getElementById('workerDetail');
+
+      if (w.running) {
+        dot.style.background = '#22c55e';
+        lbl.textContent = 'Worker ativo — processando fila';
+        const ago = w.last_processed_seconds_ago;
+        det.textContent = ago !== null
+          ? (ago < 5 ? 'Último envio há menos de 5s' : `Último envio há ${ago}s`)
+          : 'Aguardando itens na fila…';
+      } else {
+        dot.style.background = '#ef4444';
+        lbl.textContent = 'Worker parado — clique em Reiniciar';
+        det.textContent = w.last_error || 'Nenhuma atividade registrada';
+      }
+
+      // Fila counters (queued)
+      const mq = d.mensagens || {};
+      const aq = d.arquivos || {};
+      const eq = d.campanha_envios || {};
+      const fmt = obj => {
+        const q = obj.queued || 0;
+        const f = obj.failed || 0;
+        let s = q > 0 ? `<span style="color:var(--accent);font-weight:700">${q} fila</span>` : '0';
+        if (f > 0) s += ` <span style="color:var(--red);font-size:.7rem">${f} erro</span>`;
+        return s;
+      };
+      document.getElementById('wsqMsg').innerHTML = fmt(mq);
+      document.getElementById('wsqArq').innerHTML = fmt(aq);
+      document.getElementById('wsqEnv').innerHTML = fmt(eq);
+    } catch {}
+  }
+
+  document.getElementById('btnRestartWorker').addEventListener('click', async () => {
+    const btn = document.getElementById('btnRestartWorker');
+    btn.disabled = true;
+    btn.textContent = 'Reiniciando…';
+    try {
+      const r = await fetch('/api/campanha/queue/restart', { method: 'POST' });
+      const d = await r.json();
+      showAlert('alertHistorico', d.ok ? 'Worker reiniciado com sucesso!' : 'Erro ao reiniciar.', d.ok ? 'success' : 'error');
+      setTimeout(loadWorkerStatus, 800);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Reiniciar Worker`;
+    }
+  });
+
   function _progBar(env, total) {
     const pct = total > 0 ? Math.round((env / total) * 100) : 0;
     const barColor = pct === 100 ? '#22c55e' : 'var(--accent)';
@@ -4203,6 +4291,7 @@
       }
       const res = await fetch('/api/campanha');
       if (res.ok) renderCampanhas(await res.json());
+      loadWorkerStatus();
     }, 5000);
   }
 
