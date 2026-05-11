@@ -1086,8 +1086,12 @@
 
 function fmtDate(iso) {
   if (!iso) return '—';
-  const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z');
-  return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  try {
+    const s = typeof iso === 'string' ? (iso.endsWith('Z') ? iso : iso + 'Z') : new Date(iso).toISOString();
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  } catch { return '—'; }
 }
 
 function showAlert(id, msg, type = 'success') {
