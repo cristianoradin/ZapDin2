@@ -369,20 +369,55 @@ class WhatsAppSession:
                     # (b) Erro "número não está no WhatsApp" → clicar OK, sem compose
                     all_btns = await self._page.query_selector_all(_DIALOG_BTN_SEL)
                     if all_btns:
-                        btn = all_btns[-1]  # último = confirmação
+                        btn_texts = []
                         for b in all_btns:
-                            txt = (await b.inner_text()).strip().lower()
-                            if txt not in ("cancelar", "cancel", "fechar", "close"):
+                            try:
+                                btn_texts.append((await b.inner_text()).strip())
+                            except Exception:
+                                btn_texts.append("")
+                        # Verifica pelo texto do dialog se é erro real de número
+                        dialog_text = ""
+                        try:
+                            dialog_el = await self._page.query_selector('[role="dialog"]')
+                            if dialog_el:
+                                dialog_text = (await dialog_el.inner_text()).lower()
+                        except Exception:
+                            pass
+                        logger.warning("send_text [%s]: dialog btns=%s texto='%s'",
+                                       self.session_id, btn_texts, dialog_text[:80])
+                        if "registrado" in dialog_text or "registered" in dialog_text:
+                            await _safe_click(all_btns[-1])
+                            asyncio.create_task(self._return_home())
+                            return False, "Número não registrado no WhatsApp"
+                        # Dialog "Iniciar conversa" — clica Continuar (não-cancel)
+                        btn = all_btns[-1]
+                        for b, txt in zip(all_btns, btn_texts):
+                            if txt.lower() not in ("cancelar", "cancel", "fechar", "close"):
                                 btn = b
                                 break
+                        logger.warning("send_text [%s]: clicando '%s' no dialog",
+                                       self.session_id, (await btn.inner_text()).strip()[:30])
                         await _safe_click(btn)
-                        # Aguarda até 12s para saber se compose aparece
-                        inner_deadline = loop.time() + 12
+                        # Aguarda compose (até 15s) — NÃO verifica URL (SPA redireciona pra home)
+                        inner_deadline = loop.time() + 15
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
                             compose = await self._page.query_selector(_COMPOSE_SEL)
                             if compose:
                                 break
+                            # Checa novo dialog de erro
+                            err_el = await self._page.query_selector('[role="dialog"]')
+                            if err_el:
+                                err_txt = (await err_el.inner_text()).lower()
+                                if "registrado" in err_txt or "registered" in err_txt:
+                                    try:
+                                        ok_btn = await self._page.query_selector('[role="dialog"] button')
+                                        if ok_btn:
+                                            await _safe_click(ok_btn)
+                                    except Exception:
+                                        pass
+                                    asyncio.create_task(self._return_home())
+                                    return False, "Número não registrado no WhatsApp"
                         break  # sai do loop externo com compose=None ou compose=encontrado
 
                 if compose is None:
@@ -454,29 +489,62 @@ class WhatsAppSession:
                         break
                     all_btns = await self._page.query_selector_all(_DIALOG_BTN_SEL)
                     if all_btns:
-                        # Evita clicar em "Cancelar" — pega o botão de confirmação (último ou não-cancel)
-                        btn_to_click = all_btns[-1]  # último botão = Continuar/OK
+                        # Lê o texto de todos os botões para logar e decidir o que clicar
+                        btn_texts = []
                         for b in all_btns:
-                            txt = (await b.inner_text()).strip().lower()
-                            if txt not in ("cancelar", "cancel", "fechar", "close"):
+                            try:
+                                btn_texts.append((await b.inner_text()).strip())
+                            except Exception:
+                                btn_texts.append("")
+
+                        # Verifica se é diálogo de erro "não está no WhatsApp"
+                        # Nesses dialogs só há 1 botão ("OK") e o texto do dialog menciona "registrado"
+                        dialog_text = ""
+                        try:
+                            dialog_el = await self._page.query_selector('[role="dialog"]')
+                            if dialog_el:
+                                dialog_text = (await dialog_el.inner_text()).lower()
+                        except Exception:
+                            pass
+                        logger.warning("send_file [%s]: dialog btns=%s texto='%s'",
+                                       self.session_id, btn_texts, dialog_text[:80])
+
+                        if "registrado" in dialog_text or "registered" in dialog_text:
+                            # Diálogo de erro real — clicar OK e retornar erro
+                            await _safe_click(all_btns[-1])
+                            asyncio.create_task(self._return_home())
+                            return False, "Número não registrado no WhatsApp"
+
+                        # Diálogo "Iniciar conversa" — clicar em Continuar (não-cancel)
+                        btn_to_click = all_btns[-1]  # fallback = último
+                        for b, txt in zip(all_btns, btn_texts):
+                            if txt.lower() not in ("cancelar", "cancel", "fechar", "close"):
                                 btn_to_click = b
                                 break
                         btn_text = (await btn_to_click.inner_text()).strip()
-                        logger.warning("send_file [%s]: dialog — clicando '%s' (de %d botões)", self.session_id, btn_text[:30], len(all_btns))
+                        logger.warning("send_file [%s]: clicando '%s' no dialog", self.session_id, btn_text[:30])
                         await _safe_click(btn_to_click)
-                        await asyncio.sleep(2)
-                        after_url = self._page.url
-                        logger.warning("send_file [%s]: após dialog url=%s", self.session_id, after_url)
-                        # Se voltou pra home após confirmar → número não tem WhatsApp
-                        if "send" not in after_url and "phone" not in after_url:
-                            asyncio.create_task(self._return_home())
-                            return False, "Número não registrado no WhatsApp"
-                        inner_deadline = loop.time() + 12
+                        # Aguarda compose (até 15s) — NÃO verifica URL (SPA redireciona pra home)
+                        inner_deadline = loop.time() + 15
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
                             compose = await self._page.query_selector(_COMPOSE_SEL)
                             if compose:
+                                logger.warning("send_file [%s]: compose após dialog OK", self.session_id)
                                 break
+                            # Checa se apareceu novo dialog de erro
+                            err_el = await self._page.query_selector('[role="dialog"]')
+                            if err_el:
+                                err_txt = (await err_el.inner_text()).lower()
+                                if "registrado" in err_txt or "registered" in err_txt:
+                                    try:
+                                        ok_btn = await self._page.query_selector('[role="dialog"] button')
+                                        if ok_btn:
+                                            await _safe_click(ok_btn)
+                                    except Exception:
+                                        pass
+                                    asyncio.create_task(self._return_home())
+                                    return False, "Número não registrado no WhatsApp"
                         break
                     logger.warning("send_file [%s]: aguardando conversa… url=%s t=%.0fs",
                                 self.session_id, cur_url, deadline - loop.time())
