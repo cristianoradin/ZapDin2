@@ -161,16 +161,24 @@ class WhatsAppSession:
         while self._running:
             stuck_since: Optional[datetime] = datetime.now()
             try:
-                # Aguarda lock livre antes de navegar (não interrompe envios em curso)
-                while self._lock.locked() and self._running:
-                    await asyncio.sleep(1)
+                # Adquire o lock antes de navegar — evita race com send_file/send_text
+                try:
+                    await asyncio.wait_for(self._lock.acquire(), timeout=120)
+                except asyncio.TimeoutError:
+                    logger.warning("Sessão %s — lock não liberado após 120s, retry", self.session_id)
+                    await asyncio.sleep(5)
+                    continue
                 if not self._running:
+                    self._lock.release()
                     break
-                await self._page.goto(
-                    "https://web.whatsapp.com",
-                    wait_until="domcontentloaded",
-                    timeout=60_000,
-                )
+                try:
+                    await self._page.goto(
+                        "https://web.whatsapp.com",
+                        wait_until="domcontentloaded",
+                        timeout=30_000,
+                    )
+                finally:
+                    self._lock.release()
                 stuck_since = datetime.now()
 
                 while self._running:
@@ -331,7 +339,7 @@ class WhatsAppSession:
         if self.status != "connected":
             return False, "Sessão não conectada"
         try:
-            await asyncio.wait_for(self._lock.acquire(), timeout=10)
+            await asyncio.wait_for(self._lock.acquire(), timeout=45)
         except asyncio.TimeoutError:
             return False, "Sessão ocupada, tente novamente em instantes"
         try:
@@ -414,7 +422,7 @@ class WhatsAppSession:
         if self.status != "connected":
             return False, "Sessão não conectada"
         try:
-            await asyncio.wait_for(self._lock.acquire(), timeout=10)
+            await asyncio.wait_for(self._lock.acquire(), timeout=45)
         except asyncio.TimeoutError:
             return False, "Sessão ocupada, tente novamente em instantes"
         try:
