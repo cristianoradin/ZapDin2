@@ -418,6 +418,7 @@ class WhatsAppSession:
                 compose = None
                 loop = asyncio.get_event_loop()
                 deadline = loop.time() + 60
+                _home_since: Optional[float] = None  # rastreia tempo preso em home
 
                 while loop.time() < deadline:
                     await asyncio.sleep(1)
@@ -434,15 +435,27 @@ class WhatsAppSession:
                             if compose:
                                 break
                         break
-                    # Se a página voltou para home antes da conversa abrir, re-navega
+                    # Re-navega só se preso em home por ≥3s E ainda há ≥15s até o deadline
                     current_url = self._page.url
-                    if "web.whatsapp.com" in current_url and "send" not in current_url and "phone" not in current_url:
-                        if loop.time() > deadline - 55:  # só re-navega se ainda tiver tempo
-                            logger.warning("send_file [%s]: página voltou pra home, re-navegando…", self.session_id)
+                    is_home = ("web.whatsapp.com" in current_url
+                               and "send" not in current_url
+                               and "phone" not in current_url)
+                    if is_home:
+                        if _home_since is None:
+                            _home_since = loop.time()
+                        elif (loop.time() - _home_since >= 3
+                              and loop.time() < deadline - 15):
+                            logger.warning(
+                                "send_file [%s]: preso em home por %.0fs, re-navegando…",
+                                self.session_id, loop.time() - _home_since,
+                            )
+                            _home_since = None
                             await asyncio.wait_for(
                                 self._page.goto(url, wait_until="domcontentloaded"),
                                 timeout=20,
                             )
+                    else:
+                        _home_since = None  # saiu da home, reseta contador
 
                 if compose is None:
                     try:
