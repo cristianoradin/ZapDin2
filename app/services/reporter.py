@@ -29,8 +29,10 @@ def _wa_status_global() -> str:
     """Retorna o melhor status WA dentre todas as sessões ativas."""
     try:
         from .whatsapp_service import wa_manager
-        statuses = {s.status for s in wa_manager._sessions.values()}
-        logger.debug("WA sessions statuses: %s", statuses)
+        sessions_info = {k: s.status for k, s in wa_manager._sessions.items()}
+        statuses = set(sessions_info.values())
+        logger.warning("[reporter] WA sessions: %s → status=%s",
+                       sessions_info, statuses or "nenhuma")
         if "connected" in statuses:
             return "connected"
         if "qr_code" in statuses:
@@ -38,7 +40,7 @@ def _wa_status_global() -> str:
         if statuses:
             return "disconnected"
     except Exception as exc:
-        logger.warning("_wa_status_global erro: %s", exc)
+        logger.warning("[reporter] _wa_status_global erro: %s", exc)
     return "disconnected"
 
 
