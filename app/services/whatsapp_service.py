@@ -433,7 +433,7 @@ class WhatsAppSession:
                     self._page.goto(url, wait_until="domcontentloaded"),
                     timeout=35,
                 )
-                logger.info("send_file [%s]: goto OK — url=%s", self.session_id, self._page.url)
+                logger.warning("send_file [%s]: goto OK — url=%s", self.session_id, self._page.url)
 
                 compose = None
                 loop = asyncio.get_event_loop()
@@ -444,7 +444,7 @@ class WhatsAppSession:
                     cur_url = self._page.url
                     compose = await self._page.query_selector(_COMPOSE_SEL)
                     if compose:
-                        logger.info("send_file [%s]: compose encontrado em url=%s", self.session_id, cur_url)
+                        logger.warning("send_file [%s]: compose encontrado em url=%s", self.session_id, cur_url)
                         break
                     btn = await self._page.query_selector(_DIALOG_BTN_SEL)
                     if btn:
@@ -465,7 +465,7 @@ class WhatsAppSession:
                             if compose:
                                 break
                         break
-                    logger.info("send_file [%s]: aguardando conversa… url=%s t=%.0fs",
+                    logger.warning("send_file [%s]: aguardando conversa… url=%s t=%.0fs",
                                 self.session_id, cur_url, deadline - loop.time())
 
                 if compose is None:
@@ -492,7 +492,7 @@ class WhatsAppSession:
                 import mimetypes as _mt
                 _filename = os.path.basename(file_path)
                 _mime = _mt.guess_type(file_path)[0] or "application/octet-stream"
-                logger.info("send_file [%s]: %s (%s)", self.session_id, _filename, _mime)
+                logger.warning("send_file [%s]: %s (%s)", self.session_id, _filename, _mime)
 
                 _ATTACH_BTN_SEL = (
                     '[data-testid="plus-rounded"],'        # atual (2025+)
@@ -605,7 +605,7 @@ class WhatsAppSession:
                     # Confirma que o preview está aberto (container visível)
                     preview_open = await self._page.query_selector(_PREV_CONTAINER_SEL)
                     if not preview_open:
-                        logger.info("send_file [%s]: aguardando preview… url=%s",
+                        logger.warning("send_file [%s]: aguardando preview… url=%s",
                                     self.session_id, self._page.url[:80])
                         continue
 
@@ -619,41 +619,39 @@ class WhatsAppSession:
                             except Exception:
                                 pass
 
-                    # Preview aberto — tenta encontrar o botão de envio correto via JS
-                    # (dentro do contexto do preview, não o botão do compose box)
+                    # Preview aberto — salva screenshot e dump HTML para diagnóstico
                     try:
-                        _scr2 = f"/tmp/wa_debug_{self.session_id}_preview_open.png"
-                        await self._page.screenshot(path=_scr2)
-                        logger.info("send_file [%s]: screenshot preview aberto: %s", self.session_id, _scr2)
-                        # Tenta clicar no send button que é irmão/pai do caption container
-                        _clicked = await self._page.evaluate("""
+                        await self._page.screenshot(path=f"/tmp/wa_debug_{self.session_id}_preview_open.png")
+                        # Dump da estrutura HTML ao redor do caption container
+                        _html = await self._page.evaluate("""
                             () => {
                                 const cap = document.querySelector('[data-testid="media-caption-input-container"]');
-                                if (!cap) return 'no-cap';
-                                // Sobe até encontrar o footer/container do preview
-                                let el = cap;
-                                for (let i = 0; i < 6; i++) {
-                                    if (!el.parentElement) break;
-                                    el = el.parentElement;
-                                    // Procura botão de envio no mesmo container
-                                    const btn = el.querySelector('button[aria-label]') ||
-                                                el.querySelector('span[data-icon="send"]')?.closest('button') ||
-                                                el.querySelector('[data-testid="send"]') ||
-                                                [...el.querySelectorAll('button')].find(b => {
-                                                    const style = window.getComputedStyle(b);
-                                                    return style.backgroundColor.includes('rgb') && b.offsetParent !== null;
-                                                });
-                                    if (btn && btn !== cap) {
-                                        btn.click();
-                                        return 'clicked:' + (btn.getAttribute('aria-label') || btn.dataset.testid || 'unknown');
-                                    }
-                                }
-                                return 'not-found';
+                                if (!cap) return 'NO_CAP';
+                                // Coleta botões na página toda com seus testids e aria-labels
+                                const btns = [...document.querySelectorAll('button')].map(b => ({
+                                    testid: b.dataset.testid || '',
+                                    aria: b.getAttribute('aria-label') || '',
+                                    visible: b.offsetParent !== null,
+                                    text: b.innerText?.slice(0,20) || ''
+                                }));
+                                return JSON.stringify(btns);
                             }
                         """)
-                        logger.info("send_file [%s]: JS send btn result: %s", self.session_id, _clicked)
-                    except Exception as _se:
-                        logger.warning("send_file [%s]: JS send btn falhou: %s", self.session_id, _se)
+                        logger.warning("send_file [%s]: botões na página: %s", self.session_id, _html[:500])
+                    except Exception as _de:
+                        logger.warning("send_file [%s]: diagnóstico HTML falhou: %s", self.session_id, _de)
+
+                    # Estratégia de envio: foca o caption input e pressiona Enter
+                    try:
+                        cap_el = await self._page.query_selector(_CAP_SEL)
+                        if cap_el:
+                            await _safe_click(cap_el)
+                            await asyncio.sleep(0.3)
+                        await self._page.keyboard.press("Enter")
+                        logger.warning("send_file [%s]: Enter pressionado para enviar", self.session_id)
+                        _clicked = "enter"
+                    except Exception as _ke:
+                        logger.warning("send_file [%s]: falha ao pressionar Enter: %s", self.session_id, _ke)
                         _clicked = "error"
                     send_btn = True  # sinaliza sucesso para sair do loop
                     break
@@ -673,10 +671,6 @@ class WhatsAppSession:
                     asyncio.create_task(self._return_home())
                     return False, "Preview do arquivo não apareceu"
 
-                # Se JS não conseguiu clicar, tenta Enter como último recurso
-                if _clicked in ("not-found", "error", "no-cap"):
-                    logger.warning("send_file [%s]: JS falhou (%s), tentando Enter", self.session_id, _clicked)
-                    await self._page.keyboard.press("Enter")
                 await asyncio.sleep(3)
                 asyncio.create_task(self._return_home())
                 from . import telegram_service
