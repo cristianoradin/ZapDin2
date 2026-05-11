@@ -4050,8 +4050,13 @@
   async function _carregarSelContatos() {
     const div = document.getElementById('listaSelContatos');
     div.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>';
-    const res = await api('GET', '/api/campanha/contatos');
-    _selContatosAll = Array.isArray(res) ? res.filter(c => c.ativo !== false) : [];
+    try {
+      const r = await fetch('/api/campanha/contatos');
+      const lista = await r.json();
+      _selContatosAll = Array.isArray(lista) ? lista.filter(c => c.ativo !== false) : [];
+    } catch {
+      _selContatosAll = [];
+    }
     _renderSelContatos(_selContatosAll);
   }
 
