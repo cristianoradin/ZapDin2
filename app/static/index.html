@@ -1426,6 +1426,11 @@
   <div class="nav-item" data-page="arquivo"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span> Envio de Arquivo</div>
   <div class="nav-item" data-page="docs"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span> Documentações</div>
 
+  <div class="sidebar-section">Disparo em Massa</div>
+  <div class="nav-item" data-page="dm-contatos"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Contatos</div>
+  <div class="nav-item" data-page="dm-campanha"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span> Nova Campanha</div>
+  <div class="nav-item" data-page="dm-historico"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span> Campanhas</div>
+
   <div class="sidebar-section">Outros</div>
   <div class="nav-item" data-page="telegram"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span> Telegram</div>
 
@@ -2357,6 +2362,155 @@
       </div>
     </div>
 
+    <!-- ── Disparo em Massa: Contatos ── -->
+    <div class="page" id="page-dm-contatos">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Contatos</h1>
+          <p class="page-sub">Gerencie os números para disparo em massa.</p>
+        </div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn btn-ghost" id="btnImportarCsv" style="display:inline-flex;align-items:center;gap:.4rem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Importar CSV
+          </button>
+          <input type="file" id="csvInput" accept=".csv,.txt" style="display:none">
+          <button class="btn btn-primary" id="btnNovoContato" style="display:inline-flex;align-items:center;gap:.4rem">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo Contato
+          </button>
+        </div>
+      </div>
+
+      <div class="alert" id="alertContatos" style="margin-bottom:1rem"></div>
+
+      <div class="card" style="padding:1rem;margin-bottom:1rem">
+        <input type="text" id="searchContatos" placeholder="🔍 Buscar por nome ou telefone…" style="width:100%;padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
+      </div>
+
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="table" id="tblContatos">
+          <thead><tr><th>Telefone</th><th>Nome</th><th style="width:80px">Ações</th></tr></thead>
+          <tbody id="tbodyContatos"><tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">Carregando…</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- Modal novo contato -->
+      <div class="confirm-overlay" id="modalContato" style="display:none">
+        <div class="confirm-box" style="max-width:420px">
+          <div class="confirm-header">
+            <div class="confirm-icon-wrap" style="background:#e8f5e9">👤</div>
+            <div>
+              <div class="confirm-title">Novo Contato</div>
+              <div class="confirm-msg">Informe o telefone e nome do contato.</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:.75rem;margin:1rem 0">
+            <input type="text" id="inpContatoPhone" placeholder="5511999999999" style="padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
+            <input type="text" id="inpContatoNome" placeholder="Nome (opcional)" style="padding:.5rem .75rem;border:1px solid var(--border);border-radius:6px;font-size:.875rem">
+          </div>
+          <div class="confirm-actions">
+            <button class="btn btn-ghost" id="btnCancelarContato">Cancelar</button>
+            <button class="btn btn-primary" id="btnSalvarContato">Salvar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Disparo em Massa: Nova Campanha ── -->
+    <div class="page" id="page-dm-campanha">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Nova Campanha</h1>
+          <p class="page-sub">Configure e crie uma nova campanha de disparo.</p>
+        </div>
+      </div>
+
+      <div class="alert" id="alertCampanha" style="margin-bottom:1rem"></div>
+
+      <div class="card" style="padding:1.5rem;max-width:680px">
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div>
+            <label class="form-label">Nome da Campanha</label>
+            <input type="text" id="inpCampNome" class="form-input" placeholder="Ex: Promoção Maio 2025">
+          </div>
+          <div>
+            <label class="form-label">Tipo de Envio</label>
+            <div style="display:flex;gap:.75rem">
+              <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+                <input type="radio" name="campTipo" value="text" checked> Texto
+              </label>
+              <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+                <input type="radio" name="campTipo" value="file"> Arquivo(s)
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Mensagem <span id="campMsgRequired" style="color:var(--text-muted);font-size:.8rem">(obrigatória para texto; opcional como legenda para arquivo)</span></label>
+            <textarea id="inpCampMensagem" class="form-input" rows="4" placeholder="Digite a mensagem…" style="resize:vertical"></textarea>
+          </div>
+          <div id="secCampArquivos" style="display:none">
+            <label class="form-label">Arquivos da Campanha</label>
+            <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+              <input type="file" id="inpCampArquivo" style="display:none" multiple>
+              <button class="btn btn-ghost" id="btnAddCampArquivo" style="display:inline-flex;align-items:center;gap:.4rem">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Selecionar arquivo
+              </button>
+            </div>
+            <div id="listaCampArquivos" style="margin-top:.75rem;display:flex;flex-direction:column;gap:.4rem"></div>
+            <p style="font-size:.8rem;color:var(--text-muted);margin-top:.5rem">Os arquivos são adicionados após salvar a campanha.</p>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" id="btnCriarCampanha">
+              Criar Campanha
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Disparo em Massa: Histórico / Campanhas ── -->
+    <div class="page" id="page-dm-historico">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Campanhas</h1>
+          <p class="page-sub">Acompanhe o progresso e gerencie campanhas.</p>
+        </div>
+        <button class="btn btn-ghost" onclick="loadCampanhas()" style="display:inline-flex;align-items:center;gap:.4rem">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+          Atualizar
+        </button>
+      </div>
+
+      <div class="alert" id="alertHistorico" style="margin-bottom:1rem"></div>
+      <div id="listaCampanhas" style="display:flex;flex-direction:column;gap:1rem"></div>
+
+      <!-- Modal arquivos campanha -->
+      <div class="confirm-overlay" id="modalCampArq" style="display:none">
+        <div class="confirm-box" style="max-width:520px">
+          <div class="confirm-header">
+            <div class="confirm-icon-wrap" style="background:#e3f2fd">📎</div>
+            <div>
+              <div class="confirm-title">Arquivos da Campanha</div>
+              <div class="confirm-msg" id="modalCampArqNome"></div>
+            </div>
+          </div>
+          <div id="modalCampArqLista" style="margin:1rem 0;max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem"></div>
+          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">
+            <input type="file" id="inpModalCampArquivo" multiple style="display:none">
+            <button class="btn btn-ghost" id="btnModalAddArq" style="display:inline-flex;align-items:center;gap:.4rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Adicionar arquivo
+            </button>
+          </div>
+          <div class="confirm-actions">
+            <button class="btn btn-primary" id="btnFecharModalArq">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2531,6 +2685,9 @@
     arquivo: 'Envio de Arquivo',
     docs: 'Documentações',
     telegram: 'Telegram',
+    'dm-contatos': 'Contatos',
+    'dm-campanha': 'Nova Campanha',
+    'dm-historico': 'Campanhas',
   };
   function _setTopbarPage(p) {
     document.getElementById('pageTitle').textContent = pages[p] || p;
@@ -3180,6 +3337,9 @@
     else if (page === 'arquivo') loadArquivos();
     else if (page === 'teste') loadTeste();
     else if (page === 'telegram') loadTelegram();
+    else if (page === 'dm-contatos') loadContatos();
+    else if (page === 'dm-campanha') initNovaCampanha();
+    else if (page === 'dm-historico') loadCampanhas();
   }
 
   // ── Telegram ──────────────────────────────────────────────────────────────────
@@ -3490,16 +3650,322 @@
   }
 
   function baixarDocErp() {
-    /**
-     * Faz o download do HTML da documentação ERP.
-     * O usuário pode abrir o arquivo em qualquer browser e salvar como PDF.
-     */
     const a = document.createElement('a');
     a.href = '/api/docs/erp';
     a.download = 'ZapDin-Integracao-ERP.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  DISPARO EM MASSA — Contatos
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  let _contatosData = [];
+
+  async function loadContatos() {
+    const q = document.getElementById('searchContatos').value || '';
+    const res = await fetch('/api/campanha/contatos?q=' + encodeURIComponent(q));
+    if (!res.ok) return;
+    _contatosData = await res.json();
+    renderContatos(_contatosData);
+  }
+
+  function renderContatos(lista) {
+    const tbody = document.getElementById('tbodyContatos');
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:2rem;color:var(--text-muted)">Nenhum contato cadastrado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(c => `
+      <tr>
+        <td>${c.phone}</td>
+        <td>${c.nome || '—'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="deletarContato(${c.id})" title="Excluir" style="color:var(--danger,#ef4444)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+          </button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('searchContatos').addEventListener('input', () => loadContatos());
+
+  // Modal novo contato
+  document.getElementById('btnNovoContato').addEventListener('click', () => {
+    document.getElementById('inpContatoPhone').value = '';
+    document.getElementById('inpContatoNome').value = '';
+    document.getElementById('modalContato').style.display = 'flex';
+  });
+  document.getElementById('btnCancelarContato').addEventListener('click', () => {
+    document.getElementById('modalContato').style.display = 'none';
+  });
+  document.getElementById('btnSalvarContato').addEventListener('click', async () => {
+    const phone = document.getElementById('inpContatoPhone').value.trim();
+    const nome  = document.getElementById('inpContatoNome').value.trim();
+    if (!phone) { showAlert('alertContatos', 'Informe o telefone.', 'error'); return; }
+    const res = await api('POST', '/api/campanha/contatos', { phone, nome });
+    document.getElementById('modalContato').style.display = 'none';
+    if (res.ok) { showAlert('alertContatos', 'Contato salvo!'); loadContatos(); }
+    else showAlert('alertContatos', 'Erro ao salvar contato.', 'error');
+  });
+
+  async function deletarContato(id) {
+    const ok = await showConfirm({ title: 'Excluir contato?', body: 'Esta ação não pode ser desfeita.', okLabel: 'Excluir', type: 'danger' });
+    if (!ok) return;
+    await api('DELETE', `/api/campanha/contatos/${id}`);
+    loadContatos();
+  }
+
+  // Importar CSV
+  document.getElementById('btnImportarCsv').addEventListener('click', () => {
+    document.getElementById('csvInput').click();
+  });
+  document.getElementById('csvInput').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/campanha/contatos/importar', { method: 'POST', body: fd });
+    const data = await res.json();
+    e.target.value = '';
+    if (data.ok) {
+      showAlert('alertContatos', `Importados: ${data.importados} — Erros: ${data.erros}`);
+      loadContatos();
+    } else showAlert('alertContatos', 'Erro ao importar.', 'error');
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  DISPARO EM MASSA — Nova Campanha
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  let _campanhaCriadaId = null;
+  let _campanhaCriadaArquivos = [];
+
+  function initNovaCampanha() {
+    // Reset form
+    document.getElementById('inpCampNome').value = '';
+    document.getElementById('inpCampMensagem').value = '';
+    document.querySelector('input[name="campTipo"][value="text"]').checked = true;
+    document.getElementById('secCampArquivos').style.display = 'none';
+    document.getElementById('listaCampArquivos').innerHTML = '';
+    _campanhaCriadaId = null;
+    _campanhaCriadaArquivos = [];
+  }
+
+  document.querySelectorAll('input[name="campTipo"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const isFile = radio.value === 'file' && radio.checked;
+      document.getElementById('secCampArquivos').style.display = isFile ? 'block' : 'none';
+    });
+  });
+
+  document.getElementById('btnAddCampArquivo').addEventListener('click', () => {
+    document.getElementById('inpCampArquivo').click();
+  });
+
+  document.getElementById('inpCampArquivo').addEventListener('change', async (e) => {
+    if (!_campanhaCriadaId) {
+      showAlert('alertCampanha', 'Crie a campanha primeiro antes de adicionar arquivos.', 'error');
+      e.target.value = '';
+      return;
+    }
+    for (const file of e.target.files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/campanha/${_campanhaCriadaId}/arquivo`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.ok) _campanhaCriadaArquivos.push(data);
+    }
+    e.target.value = '';
+    renderCampArquivos(_campanhaCriadaArquivos);
+  });
+
+  function renderCampArquivos(lista) {
+    const div = document.getElementById('listaCampArquivos');
+    div.innerHTML = lista.map((a, i) => `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:6px;font-size:.85rem">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <span style="flex:1">${a.nome_original}</span>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('btnCriarCampanha').addEventListener('click', async () => {
+    const nome = document.getElementById('inpCampNome').value.trim();
+    const mensagem = document.getElementById('inpCampMensagem').value.trim();
+    const tipo = document.querySelector('input[name="campTipo"]:checked').value;
+    if (!nome) { showAlert('alertCampanha', 'Informe o nome da campanha.', 'error'); return; }
+    if (tipo === 'text' && !mensagem) { showAlert('alertCampanha', 'Informe a mensagem.', 'error'); return; }
+    const res = await api('POST', '/api/campanha', { nome, tipo, mensagem });
+    if (!res.ok) { showAlert('alertCampanha', 'Erro ao criar campanha.', 'error'); return; }
+    const data = await res.json();
+    _campanhaCriadaId = data.id;
+    showAlert('alertCampanha', `Campanha "${nome}" criada! ${tipo === 'file' ? 'Agora adicione os arquivos.' : 'Vá em Campanhas para iniciar o disparo.'}`);
+    if (tipo !== 'file') {
+      setTimeout(() => showPage('dm-historico'), 1500);
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  DISPARO EM MASSA — Campanhas (Histórico)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  let _campModalId = null;
+
+  async function loadCampanhas() {
+    const res = await fetch('/api/campanha');
+    if (!res.ok) return;
+    const lista = await res.json();
+    renderCampanhas(lista);
+  }
+
+  function _progBar(env, total) {
+    const pct = total > 0 ? Math.round((env / total) * 100) : 0;
+    return `
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width .4s"></div>
+        </div>
+        <span style="font-size:.78rem;color:var(--text-muted);white-space:nowrap">${env}/${total} (${pct}%)</span>
+      </div>`;
+  }
+
+  const _statusLabel = { draft:'Rascunho', running:'Disparando', paused:'Pausada', done:'Concluída' };
+  const _statusColor = { draft:'var(--text-muted)', running:'var(--accent)', paused:'#f59e0b', done:'#6b7280' };
+
+  function renderCampanhas(lista) {
+    const div = document.getElementById('listaCampanhas');
+    if (!lista.length) {
+      div.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted)">Nenhuma campanha criada ainda.</div>';
+      return;
+    }
+    div.innerHTML = lista.map(c => {
+      const lbl = _statusLabel[c.status] || c.status;
+      const clr = _statusColor[c.status] || '#6b7280';
+      const tipoIcon = c.tipo === 'file' ? '📎' : '💬';
+      const dt = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '—';
+      return `
+      <div class="card" style="padding:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:600;font-size:1rem">${tipoIcon} ${c.nome}</div>
+            <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Criada em ${dt} · <span style="color:${clr};font-weight:600">${lbl}</span></div>
+          </div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+            ${c.tipo === 'file' ? `<button class="btn btn-ghost btn-sm" onclick="abrirModalArquivos(${c.id},'${escHtml(c.nome)}')">📎 Arquivos</button>` : ''}
+            ${c.status === 'draft' || c.status === 'done' || c.status === 'paused' ? `<button class="btn btn-primary btn-sm" onclick="iniciarCampanha(${c.id})">▶ Iniciar</button>` : ''}
+            ${c.status === 'running' ? `<button class="btn btn-ghost btn-sm" onclick="pausarCampanha(${c.id})" style="border-color:#f59e0b;color:#f59e0b">⏸ Pausar</button>` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="deletarCampanha(${c.id})" style="color:#ef4444">🗑</button>
+          </div>
+        </div>
+        <div style="margin-top:.75rem">${_progBar(c.enviados, c.total)}</div>
+        <div style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem">
+          Total: ${c.total} · Enviados: ${c.enviados} · Erros: ${c.erros}
+          ${c.mensagem ? `<span style="margin-left:.75rem;font-style:italic">"${escHtml(c.mensagem.substring(0,60))}${c.mensagem.length>60?'…':''}"</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function iniciarCampanha(id) {
+    const res = await api('POST', `/api/campanha/${id}/iniciar`);
+    if (res.ok) loadCampanhas();
+    else showAlert('alertHistorico', (await res.json?.())?.detail || 'Erro ao iniciar.', 'error');
+  }
+
+  async function pausarCampanha(id) {
+    await api('POST', `/api/campanha/${id}/pausar`);
+    loadCampanhas();
+  }
+
+  async function deletarCampanha(id) {
+    const ok = await showConfirm({ title: 'Excluir campanha?', body: 'Remove todos os envios e arquivos desta campanha.', okLabel: 'Excluir', type: 'danger' });
+    if (!ok) return;
+    await api('DELETE', `/api/campanha/${id}`);
+    loadCampanhas();
+  }
+
+  // ── Modal arquivos da campanha ────────────────────────────────────────────────
+
+  async function abrirModalArquivos(id, nome) {
+    _campModalId = id;
+    document.getElementById('modalCampArqNome').textContent = nome;
+    document.getElementById('modalCampArq').style.display = 'flex';
+    await recarregarModalArquivos();
+  }
+
+  async function recarregarModalArquivos() {
+    const res = await fetch(`/api/campanha/${_campModalId}/arquivos`);
+    const lista = await res.json();
+    const div = document.getElementById('modalCampArqLista');
+    if (!lista.length) {
+      div.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:1rem">Nenhum arquivo.</div>';
+      return;
+    }
+    div.innerHTML = lista.map(a => `
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;background:var(--bg);border-radius:6px;font-size:.85rem">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        <span style="flex:1">${escHtml(a.nome_original)}</span>
+        <button class="btn btn-ghost btn-sm" onclick="deletarArqModal(${a.id})" style="color:#ef4444;padding:.2rem .4rem">🗑</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('btnModalAddArq').addEventListener('click', () => {
+    document.getElementById('inpModalCampArquivo').click();
+  });
+
+  document.getElementById('inpModalCampArquivo').addEventListener('change', async (e) => {
+    for (const file of e.target.files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      await fetch(`/api/campanha/${_campModalId}/arquivo`, { method: 'POST', body: fd });
+    }
+    e.target.value = '';
+    recarregarModalArquivos();
+  });
+
+  async function deletarArqModal(arqId) {
+    await api('DELETE', `/api/campanha/${_campModalId}/arquivo/${arqId}`);
+    recarregarModalArquivos();
+  }
+
+  document.getElementById('btnFecharModalArq').addEventListener('click', () => {
+    document.getElementById('modalCampArq').style.display = 'none';
+    loadCampanhas();
+  });
+
+  // ── Auto-refresh campanhas em execução ────────────────────────────────────────
+  let _campRefreshTimer = null;
+  function _startCampRefresh() {
+    _campRefreshTimer = setInterval(async () => {
+      const page = document.querySelector('.page.active');
+      if (!page || page.id !== 'page-dm-historico') {
+        clearInterval(_campRefreshTimer);
+        return;
+      }
+      const res = await fetch('/api/campanha');
+      if (res.ok) renderCampanhas(await res.json());
+    }, 5000);
+  }
+
+  // Helper showPage (para navegação programática)
+  function showPage(p) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+    const navItem = document.querySelector(`.nav-item[data-page="${p}"]`);
+    if (navItem) navItem.classList.add('active');
+    const pageEl = document.getElementById('page-' + p);
+    if (pageEl) pageEl.classList.add('active');
+    _setTopbarPage(p);
+    onPageLoad(p);
   }
 </script>
 

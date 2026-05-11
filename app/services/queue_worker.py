@@ -287,6 +287,111 @@ async def _process_next(wa_manager, settings, get_db_direct) -> bool:
             wa_manager.schedule_status_check(arq["id"], sessao_id, empresa_id, arq["destinatario"])
         return True
 
+    # ── Campanha Envios ───────────────────────────────────────────────────────
+    async with get_db_direct() as db:
+        async with db.execute(
+            "SELECT ce.id, ce.campanha_id, ce.empresa_id, ce.phone, ce.nome, "
+            "       c.tipo, c.mensagem "
+            "FROM campanha_envios ce "
+            "JOIN campanhas c ON c.id = ce.campanha_id "
+            "WHERE ce.status='queued' AND c.status='running' "
+            "ORDER BY ce.id LIMIT 1"
+        ) as cur:
+            env = await cur.fetchone()
+
+    if env:
+        empresa_id = env["empresa_id"]
+        campanha_id = env["campanha_id"]
+        cfg = await _load_cfg(empresa_id, get_db_direct)
+
+        if not _within_hours(cfg):
+            return False
+
+        delay_min = _cfg_float(cfg, "wa_delay_min", settings.dispatch_min_delay)
+        delay_max = _cfg_float(cfg, "wa_delay_max", settings.dispatch_max_delay)
+        spintax_on = cfg.get("wa_spintax", "1") not in ("0", "false", "")
+
+        delay = random.uniform(delay_min, delay_max)
+        logger.info("Queue: campanha_envio %s campanha %s → delay %.1fs", env["id"], campanha_id, delay)
+        await asyncio.sleep(delay)
+
+        sessao_id = wa_manager.pick_session(empresa_id)
+        if not sessao_id:
+            return False
+
+        tipo = env["tipo"]
+        ok = False
+        err = None
+
+        if tipo == "text":
+            mensagem = env["mensagem"] or ""
+            if spintax_on:
+                mensagem = process_spintax(mensagem)
+            ok, err = await wa_manager.send_text(sessao_id, empresa_id, env["phone"], mensagem)
+
+        elif tipo == "file":
+            # Busca arquivos da campanha
+            async with get_db_direct() as db2:
+                async with db2.execute(
+                    "SELECT nome_original, nome_arquivo FROM campanha_arquivos WHERE campanha_id=? ORDER BY id",
+                    (campanha_id,),
+                ) as cur2:
+                    camp_arqs = await cur2.fetchall()
+
+            if not camp_arqs:
+                ok, err = False, "Nenhum arquivo na campanha"
+            else:
+                # Envia todos os arquivos deste contato
+                ok = True
+                for ca in camp_arqs:
+                    file_path = os.path.join(UPLOAD_DIR, ca["nome_arquivo"])
+                    if not os.path.exists(file_path):
+                        ok, err = False, f"Arquivo {ca['nome_original']} não encontrado"
+                        break
+                    mensagem = env["mensagem"] or ""
+                    if spintax_on:
+                        mensagem = process_spintax(mensagem)
+                    _ok, _err = await wa_manager.send_file(
+                        sessao_id, empresa_id, env["phone"], file_path,
+                        ca["nome_original"], mensagem or None,
+                    )
+                    if not _ok:
+                        ok, err = False, _err
+                        break
+                    await asyncio.sleep(random.uniform(1, 3))
+
+        st = "sent" if ok else "failed"
+        async with get_db_direct() as db3:
+            await db3.execute(
+                "UPDATE campanha_envios SET status=?, sent_at=?, erro=? WHERE id=?",
+                (st, now_dt() if ok else None, err, env["id"]),
+            )
+            if ok:
+                await db3.execute(
+                    "UPDATE campanhas SET enviados = enviados + 1 WHERE id=?", (campanha_id,)
+                )
+            else:
+                await db3.execute(
+                    "UPDATE campanhas SET erros = erros + 1 WHERE id=?", (campanha_id,)
+                )
+            # Verifica se campanha terminou
+            async with db3.execute(
+                "SELECT COUNT(*) as cnt FROM campanha_envios WHERE campanha_id=? AND status='queued'",
+                (campanha_id,),
+            ) as cur3:
+                remaining = await cur3.fetchone()
+            if remaining and remaining["cnt"] == 0:
+                await db3.execute(
+                    "UPDATE campanhas SET status='done', done_at=NOW() WHERE id=? AND status='running'",
+                    (campanha_id,),
+                )
+            await db3.commit()
+
+        logger.info("Queue: campanha_envio %s → %s", env["id"], st)
+        if ok:
+            asyncio.create_task(_notify_monitor_numero(env["phone"], env["nome"] or "", settings))
+        return True
+
     return False
 
 

@@ -330,3 +330,60 @@ async def init_db() -> None:
                 )
             except Exception:
                 pass
+
+        # ── Disparo em Massa ───────────────────────────────────────────────────
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS contatos (
+                id         BIGSERIAL PRIMARY KEY,
+                empresa_id BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                phone      TEXT NOT NULL,
+                nome       TEXT DEFAULT '',
+                ativo      BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (empresa_id, phone)
+            )
+        """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_contatos_empresa ON contatos(empresa_id)")
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS campanhas (
+                id         BIGSERIAL PRIMARY KEY,
+                empresa_id BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                nome       TEXT NOT NULL,
+                tipo       TEXT NOT NULL DEFAULT 'text',
+                mensagem   TEXT DEFAULT '',
+                status     TEXT DEFAULT 'draft',
+                total      INTEGER DEFAULT 0,
+                enviados   INTEGER DEFAULT 0,
+                erros      INTEGER DEFAULT 0,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                started_at TIMESTAMPTZ,
+                done_at    TIMESTAMPTZ
+            )
+        """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_campanhas_empresa ON campanhas(empresa_id)")
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS campanha_arquivos (
+                id            BIGSERIAL PRIMARY KEY,
+                campanha_id   BIGINT NOT NULL REFERENCES campanhas(id) ON DELETE CASCADE,
+                nome_original TEXT NOT NULL,
+                nome_arquivo  TEXT NOT NULL,
+                created_at    TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS campanha_envios (
+                id             BIGSERIAL PRIMARY KEY,
+                campanha_id    BIGINT NOT NULL REFERENCES campanhas(id) ON DELETE CASCADE,
+                empresa_id     BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                phone          TEXT NOT NULL,
+                nome           TEXT DEFAULT '',
+                status         TEXT DEFAULT 'queued',
+                erro           TEXT,
+                created_at     TIMESTAMPTZ DEFAULT NOW(),
+                sent_at        TIMESTAMPTZ
+            )
+        """)
+        await conn.execute("CREATE INDEX IF NOT EXISTS idx_campanha_envios_status ON campanha_envios(campanha_id, status)")
