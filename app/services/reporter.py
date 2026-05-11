@@ -25,14 +25,13 @@ async def _read_version() -> str:
         return "1.0.0"
 
 
-def _wa_status_global() -> str:
-    """Retorna o melhor status WA dentre todas as sessões ativas."""
+def _wa_status_for_empresa(empresa_id: int) -> str:
+    """Retorna status WA apenas das sessões desta empresa."""
     try:
         from .whatsapp_service import wa_manager
-        sessions_info = {k: s.status for k, s in wa_manager._sessions.items()}
-        statuses = set(sessions_info.values())
-        logger.warning("[reporter] WA sessions: %s → status=%s",
-                       sessions_info, statuses or "nenhuma")
+        prefix = f"{empresa_id}:"
+        statuses = {s.status for k, s in wa_manager._sessions.items() if k.startswith(prefix)}
+        logger.warning("[reporter] empresa=%s sessões=%s", empresa_id, statuses or "nenhuma")
         if "connected" in statuses:
             return "connected"
         if "qr_code" in statuses:
@@ -40,7 +39,7 @@ def _wa_status_global() -> str:
         if statuses:
             return "disconnected"
     except Exception as exc:
-        logger.warning("[reporter] _wa_status_global erro: %s", exc)
+        logger.warning("[reporter] _wa_status_for_empresa(%s) erro: %s", empresa_id, exc)
     return "disconnected"
 
 
@@ -64,7 +63,7 @@ async def _send_heartbeat() -> None:
             token = emp.get("token") or settings.monitor_client_token
             if not token:
                 continue
-            wa_status = _wa_status_global()
+            wa_status = _wa_status_for_empresa(emp.get("id", 0))
             payload = {
                 "nome": emp.get("nome", settings.client_name),
                 "cnpj": emp.get("cnpj", settings.client_cnpj),
