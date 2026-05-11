@@ -150,6 +150,11 @@ class WhatsAppSession:
         while self._running:
             stuck_since: Optional[datetime] = datetime.now()
             try:
+                # Aguarda lock livre antes de navegar (não interrompe envios em curso)
+                while self._lock.locked() and self._running:
+                    await asyncio.sleep(1)
+                if not self._running:
+                    break
                 await self._page.goto(
                     "https://web.whatsapp.com",
                     wait_until="domcontentloaded",
@@ -429,6 +434,15 @@ class WhatsAppSession:
                             if compose:
                                 break
                         break
+                    # Se a página voltou para home antes da conversa abrir, re-navega
+                    current_url = self._page.url
+                    if "web.whatsapp.com" in current_url and "send" not in current_url and "phone" not in current_url:
+                        if loop.time() > deadline - 55:  # só re-navega se ainda tiver tempo
+                            logger.warning("send_file [%s]: página voltou pra home, re-navegando…", self.session_id)
+                            await asyncio.wait_for(
+                                self._page.goto(url, wait_until="domcontentloaded"),
+                                timeout=20,
+                            )
 
                 if compose is None:
                     try:
