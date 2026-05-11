@@ -17,7 +17,7 @@ from .routers.internal import router as internal_router
 from .routers.monitor_sync import router as monitor_sync_router
 from .routers.docs_router import router as docs_router
 from .routers.campanha import router as campanha_router
-from .services import reporter, updater, telegram_service
+from .services import reporter, updater, telegram_service, queue_worker
 from .services.whatsapp_service import wa_manager
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
@@ -88,10 +88,7 @@ async def lifespan(app: FastAPI):
         reporter.start()
         updater.start()
         telegram_service.start()
-        # NOTA: queue_worker NÃO é iniciado aqui.
-        # Em produção, roda como serviço separado: ZapDinWorker (NSSM).
-        # Para desenvolver com tudo em um único processo, use:
-        #   from .services import queue_worker; queue_worker.start()
+        queue_worker.start()  # processa mensagens, arquivos e campanha_envios
 
     yield
 
@@ -109,6 +106,7 @@ async def lifespan(app: FastAPI):
     reporter.stop()
     updater.stop()
     telegram_service.stop()
+    queue_worker.stop()
 
 
 # ── App ────────────────────────────────────────────────────────────────────────

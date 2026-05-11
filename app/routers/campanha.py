@@ -271,7 +271,6 @@ async def iniciar_campanha(campanha_id: int, db=Depends(get_db), user=Depends(ge
             contatos = await cur.fetchall()
         if not contatos:
             raise HTTPException(400, "Nenhum contato ativo para disparar")
-        rows = [(campanha_id, empresa_id, c["phone"], c["nome"] or "") for c in contatos]
         await db.executemany(
             "INSERT INTO campanha_envios (campanha_id, empresa_id, phone, nome, status) VALUES (?,?,?,?,?)",
             [(campanha_id, empresa_id, c["phone"], c["nome"] or "", "queued") for c in contatos],
