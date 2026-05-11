@@ -597,8 +597,42 @@ class WhatsAppSession:
                             except Exception:
                                 pass
 
-                    # Confirma que o preview está pronto (aguarda 1s extra para estabilizar)
-                    logger.info("send_file [%s]: preview aberto, enviando via Enter", self.session_id)
+                    # Preview aberto — tenta encontrar o botão de envio correto via JS
+                    # (dentro do contexto do preview, não o botão do compose box)
+                    try:
+                        _scr2 = f"/tmp/wa_debug_{self.session_id}_preview_open.png"
+                        await self._page.screenshot(path=_scr2)
+                        logger.info("send_file [%s]: screenshot preview aberto: %s", self.session_id, _scr2)
+                        # Tenta clicar no send button que é irmão/pai do caption container
+                        _clicked = await self._page.evaluate("""
+                            () => {
+                                const cap = document.querySelector('[data-testid="media-caption-input-container"]');
+                                if (!cap) return 'no-cap';
+                                // Sobe até encontrar o footer/container do preview
+                                let el = cap;
+                                for (let i = 0; i < 6; i++) {
+                                    if (!el.parentElement) break;
+                                    el = el.parentElement;
+                                    // Procura botão de envio no mesmo container
+                                    const btn = el.querySelector('button[aria-label]') ||
+                                                el.querySelector('span[data-icon="send"]')?.closest('button') ||
+                                                el.querySelector('[data-testid="send"]') ||
+                                                [...el.querySelectorAll('button')].find(b => {
+                                                    const style = window.getComputedStyle(b);
+                                                    return style.backgroundColor.includes('rgb') && b.offsetParent !== null;
+                                                });
+                                    if (btn && btn !== cap) {
+                                        btn.click();
+                                        return 'clicked:' + (btn.getAttribute('aria-label') || btn.dataset.testid || 'unknown');
+                                    }
+                                }
+                                return 'not-found';
+                            }
+                        """)
+                        logger.info("send_file [%s]: JS send btn result: %s", self.session_id, _clicked)
+                    except Exception as _se:
+                        logger.warning("send_file [%s]: JS send btn falhou: %s", self.session_id, _se)
+                        _clicked = "error"
                     send_btn = True  # sinaliza sucesso para sair do loop
                     break
 
@@ -617,8 +651,10 @@ class WhatsAppSession:
                     asyncio.create_task(self._return_home())
                     return False, "Preview do arquivo não apareceu"
 
-                # Envia via Enter — mais confiável que clicar no botão de envio do overlay
-                await self._page.keyboard.press("Enter")
+                # Se JS não conseguiu clicar, tenta Enter como último recurso
+                if _clicked in ("not-found", "error", "no-cap"):
+                    logger.warning("send_file [%s]: JS falhou (%s), tentando Enter", self.session_id, _clicked)
+                    await self._page.keyboard.press("Enter")
                 await asyncio.sleep(3)
                 asyncio.create_task(self._return_home())
                 from . import telegram_service
