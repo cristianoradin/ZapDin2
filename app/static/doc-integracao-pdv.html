@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZapDin PDV — Documentação de Integração ERP</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:        #2e7d32;
+      --green-dark:   #1b5e20;
+      --green-light:  #e8f5e9;
+      --green-mid:    #c8e6c9;
+      --blue:         #1565c0;
+      --blue-light:   #e3f2fd;
+      --blue-mid:     #bbdefb;
+      --gray:         #f5f5f5;
+      --gray-mid:     #eeeeee;
+      --border:       #e0e0e0;
+      --text:         #212121;
+      --text-mid:     #555;
+      --text-light:   #888;
+      --red:          #c62828;
+      --red-light:    #ffebee;
+      --orange:       #e65100;
+      --orange-light: #fff3e0;
+      --purple:       #6a1b9a;
+      --purple-light: #f3e5f5;
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      color: var(--text);
+      background: #fff;
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem 4rem;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* ── Print bar ──────────────────────────────────────────────── */
+    .print-bar {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: .5rem 0 .6rem; margin-bottom: 1.5rem;
+      display: flex; align-items: center; justify-content: flex-end; gap: .75rem;
+    }
+    .print-bar span { font-size: .8rem; color: var(--text-light); }
+    .btn-print {
+      background: var(--green); color: #fff; border: none; border-radius: 6px;
+      padding: .45rem 1.1rem; font-size: .82rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: .4rem; transition: background .15s;
+    }
+    .btn-print:hover { background: var(--green-dark); }
+    @media print { .print-bar { display: none; } }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .doc-header { border-bottom: 4px solid var(--green); padding-bottom: 1.5rem; margin-bottom: 1.75rem; }
+    .doc-header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+    .doc-logo { font-size: 1.5rem; font-weight: 800; color: var(--green); }
+    .doc-logo span { color: var(--text-mid); font-weight: 400; font-size: 1rem; }
+    .doc-version { font-size: .75rem; background: var(--green-light); color: var(--green); padding: .2rem .65rem; border-radius: 10px; font-weight: 700; white-space: nowrap; }
+    .doc-title { font-size: 1.35rem; font-weight: 700; margin-bottom: .3rem; }
+    .doc-subtitle { font-size: .9rem; color: var(--text-mid); }
+
+    /* ── Sections ────────────────────────────────────────────────── */
+    .section { margin-bottom: 2.25rem; }
+    .section-title {
+      font-size: 1rem; font-weight: 700; color: var(--green);
+      border-left: 4px solid var(--green); padding-left: .65rem;
+      margin-bottom: 1rem;
+    }
+    .subsection-title { font-size: .9rem; font-weight: 700; margin: 1.25rem 0 .5rem; }
+
+    /* ── Info boxes ──────────────────────────────────────────────── */
+    .box { border-radius: 8px; padding: .75rem 1rem; margin: .75rem 0; font-size: .85rem; }
+    .box-green  { background: var(--green-light); border-left: 3px solid var(--green);  color: #1b5e20; }
+    .box-blue   { background: var(--blue-light);  border-left: 3px solid var(--blue);   color: #0d47a1; }
+    .box-orange { background: var(--orange-light);border-left: 3px solid var(--orange); color: var(--orange); }
+    .box-red    { background: var(--red-light);   border-left: 3px solid var(--red);    color: var(--red); }
+
+    /* ── Arch diagram ────────────────────────────────────────────── */
+    .arch { display: flex; align-items: center; justify-content: center; gap: .5rem;
+            flex-wrap: wrap; margin: 1rem 0; }
+    .arch-box { background: var(--green-light); border: 2px solid var(--green-mid);
+                border-radius: 8px; padding: .5rem .9rem; font-size: .82rem;
+                font-weight: 700; text-align: center; }
+    .arch-box.local { background: var(--blue-light); border-color: var(--blue-mid); color: var(--blue); }
+    .arch-box.erp   { background: var(--orange-light); border-color: #ffcc80; color: var(--orange); }
+    .arch-box.wa    { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+    .arch-arrow { font-size: 1.1rem; color: var(--text-mid); }
+    .arch-label { font-size: .7rem; color: var(--text-light); margin-top: .15rem; }
+
+    /* ── Tables ──────────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: .83rem; margin: .5rem 0 1rem; }
+    th { background: var(--green-light); font-size: .75rem; font-weight: 700;
+         text-transform: uppercase; letter-spacing: .05em; color: var(--green);
+         padding: .5rem .75rem; text-align: left; border-bottom: 2px solid var(--green-mid); }
+    td { padding: .5rem .75rem; border-bottom: 1px solid var(--gray-mid); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    code { background: var(--gray); padding: .1rem .35rem; border-radius: 4px;
+           font-family: 'Consolas','Courier New',monospace; font-size: .82rem; }
+    .req  { background: var(--green-light); color: var(--green); font-size: .7rem;
+            font-weight: 700; padding: .1rem .4rem; border-radius: 6px; }
+    .opt  { background: var(--gray-mid); color: var(--text-mid); font-size: .7rem;
+            font-weight: 700; padding: .1rem .4rem; border-radius: 6px; }
+    .badge-post { background: #dcfce7; color: #15803d; font-size: .7rem; font-weight: 700;
+                  padding: .15rem .45rem; border-radius: 5px; }
+    .badge-get  { background: #dbeafe; color: #1e40af; font-size: .7rem; font-weight: 700;
+                  padding: .15rem .45rem; border-radius: 5px; }
+    .badge-put  { background: #fef9c3; color: #854d0e; font-size: .7rem; font-weight: 700;
+                  padding: .15rem .45rem; border-radius: 5px; }
+    .badge-del  { background: #fee2e2; color: #991b1b; font-size: .7rem; font-weight: 700;
+                  padding: .15rem .45rem; border-radius: 5px; }
+
+    /* ── Code blocks ─────────────────────────────────────────────── */
+    .code-block {
+      background: #1e2433; color: #e2e8f0; border-radius: 8px;
+      padding: .9rem 1.1rem; overflow-x: auto; font-size: .8rem;
+      font-family: 'Consolas','Courier New',monospace; line-height: 1.7;
+      margin: .5rem 0 1rem; white-space: pre;
+    }
+    .cb-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em;
+                color: #64748b; margin-bottom: .3rem; }
+    .ck { color: #7dd3fc; }   /* key */
+    .cs { color: #86efac; }   /* string */
+    .cn { color: #fca5a5; }   /* number/bool */
+    .cc { color: #64748b; }   /* comment */
+    .ch { color: #fbbf24; }   /* header */
+    .cm { color: #a78bfa; }   /* method */
+    .cp { color: #7dd3fc; }   /* path */
+
+    /* ── Endpoint header ─────────────────────────────────────────── */
+    .ep-title {
+      display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0 .6rem;
+      padding: .7rem 1rem; background: var(--gray); border-radius: 8px;
+      border-left: 4px solid var(--green);
+    }
+    .ep-path { font-family: 'Consolas','Courier New',monospace; font-size: .88rem; font-weight: 700; }
+    .ep-desc { font-size: .78rem; color: var(--text-mid); margin-left: auto; }
+
+    /* ── Config grid ─────────────────────────────────────────────── */
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: .75rem 0; }
+    .config-item { background: var(--gray); border-radius: 8px; padding: .75rem 1rem; }
+    .config-key  { font-family: monospace; font-size: .82rem; font-weight: 700; color: var(--green); }
+    .config-val  { font-size: .78rem; color: var(--text-mid); margin-top: .15rem; }
+
+    /* ── TOC ─────────────────────────────────────────────────────── */
+    .toc { background: var(--green-light); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+    .toc-title { font-size: .8rem; font-weight: 700; text-transform: uppercase;
+                 letter-spacing: .08em; color: var(--green); margin-bottom: .6rem; }
+    .toc-list { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: .15rem .5rem; }
+    .toc-list a { font-size: .82rem; color: var(--green-dark); text-decoration: none; }
+    .toc-list a:hover { text-decoration: underline; }
+
+    /* ── Page break for print ────────────────────────────────────── */
+    .page-break { page-break-before: always; }
+
+    h4 { font-size: .85rem; font-weight: 700; margin: 1rem 0 .35rem; }
+    p  { font-size: .88rem; color: var(--text-mid); margin-bottom: .6rem; }
+  </style>
+</head>
+<body>
+
+<!-- Print bar -->
+<div class="print-bar">
+  <span>Use Ctrl+P → Salvar como PDF para exportar</span>
+  <button class="btn-print" onclick="window.print()">🖨️ Salvar como PDF</button>
+</div>
+
+<!-- Header -->
+<div class="doc-header">
+  <div class="doc-header-top">
+    <div class="doc-logo">📱 ZapDin PDV <span>— Integração ERP</span></div>
+    <div class="doc-version">v1.0 · 2026</div>
+  </div>
+  <div class="doc-title">Documentação de Integração: ERP → ZapDin PDV</div>
+  <div class="doc-subtitle">
+    Como configurar e integrar o sistema ERP com o ZapDin PDV para envio de
+    mensagens WhatsApp diretamente da máquina local do cliente (PDV/caixa).
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">📋 Conteúdo</div>
+  <ul class="toc-list">
+    <li><a href="#s1">1. O que é o ZapDin PDV</a></li>
+    <li><a href="#s2">2. Pré-requisitos</a></li>
+    <li><a href="#s3">3. Configuração (.env)</a></li>
+    <li><a href="#s4">4. Autenticação</a></li>
+    <li><a href="#s5">5. Verificar status</a></li>
+    <li><a href="#s6">6. Enviar comprovante de venda</a></li>
+    <li><a href="#s7">7. Enviar NF-e</a></li>
+    <li><a href="#s8">8. Enviar boleto</a></li>
+    <li><a href="#s9">9. Endpoint genérico</a></li>
+    <li><a href="#s10">10. Templates de mensagem</a></li>
+    <li><a href="#s11">11. Conectar WhatsApp (QR)</a></li>
+    <li><a href="#s12">12. Exemplos de código</a></li>
+    <li><a href="#s13">13. Tabela de erros</a></li>
+    <li><a href="#s14">14. Resumo dos endpoints</a></li>
+  </ul>
+</div>
+
+<!-- ── 1. O que é ──────────────────────────────────────────────────────────── -->
+<div class="section" id="s1">
+  <div class="section-title">1. O que é o ZapDin PDV</div>
+  <p>
+    O <strong>ZapDin PDV</strong> é um serviço instalado <strong>localmente na máquina do cliente</strong>
+    (computador do caixa / PDV). Ele expõe uma API REST simples que o ERP chama para enviar
+    mensagens WhatsApp — tudo sem depender de internet ou servidores externos no momento do envio.
+  </p>
+
+  <div class="arch">
+    <div class="arch-box erp">🖥️ ERP<div class="arch-label">chama a API</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box local">📱 ZapDin PDV<div class="arch-label">localhost:4600</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box local">⚙️ Evolution API<div class="arch-label">localhost:8080</div></div>
+    <div class="arch-arrow">→</div>
+    <div class="arch-box wa">✅ WhatsApp<div class="arch-label">cliente recebe</div></div>
+  </div>
+
+  <div class="box box-green">
+    ✅ <strong>Tudo local:</strong> O ERP chama <code>http://localhost:4600</code>.
+    O WhatsApp conecta nesta mesma máquina. Sem latência externa, sem dependência de internet no envio.
+  </div>
+</div>
+
+<!-- ── 2. Pré-requisitos ───────────────────────────────────────────────────── -->
+<div class="section" id="s2">
+  <div class="section-title">2. Pré-requisitos</div>
+
+  <table>
+    <thead><tr><th>Componente</th><th>Versão</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>ZapDin PDV instalado</td><td>v1.0+</td><td>Executar <code>INSTALAR_PDV.bat</code> como administrador</td></tr>
+      <tr><td>Evolution API rodando</td><td>v2.x</td><td>Instalado automaticamente pelo INSTALAR_PDV.bat (porta 8080)</td></tr>
+      <tr><td>WhatsApp conectado</td><td>—</td><td>Escanear QR code em <code>http://localhost:4600/setup/qr</code></td></tr>
+      <tr><td>PDV_API_KEY configurada</td><td>—</td><td>Chave definida no <code>.env</code> do PDV, enviada pelo ERP</td></tr>
+      <tr><td>Acesso à rede local</td><td>—</td><td>ERP e PDV devem estar na mesma máquina ou rede local</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box box-blue">
+    💡 <strong>Porta padrão:</strong> <code>4600</code>. Se precisar alterar, mude <code>PDV_PORT</code> no <code>.env</code>
+    e atualize a URL no ERP.
+  </div>
+</div>
+
+<!-- ── 3. Configuração ────────────────────────────────────────────────────── -->
+<div class="section" id="s3">
+  <div class="section-title">3. Configuração do PDV (.env)</div>
+  <p>O arquivo <code>.env</code> fica em <code>C:\ZapDinPDV\.env</code>. Os valores relevantes para o ERP são:</p>
+
+  <div class="config-grid">
+    <div class="config-item">
+      <div class="config-key">PDV_API_KEY</div>
+      <div class="config-val">Chave secreta que o ERP deve enviar no header <code>X-PDV-Key</code>. Defina um valor seguro.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">PDV_PORT</div>
+      <div class="config-val">Porta onde o PDV escuta. Padrão: <code>4600</code>. O ERP chama <code>http://localhost:{PDV_PORT}</code>.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">PDV_NOME</div>
+      <div class="config-val">Nome identificador deste PDV (ex: <code>Caixa 01</code>). Aparece nos logs e no status.</div>
+    </div>
+    <div class="config-item">
+      <div class="config-key">EVOLUTION_API_KEY</div>
+      <div class="config-val">Chave interna do Evolution API. Padrão: <code>zapdin-pdv-local</code>. Não alterar sem necessidade.</div>
+    </div>
+  </div>
+
+  <div class="subsection-title">Exemplo de .env</div>
+  <div class="cb-label">Arquivo: C:\ZapDinPDV\.env</div>
+  <div class="code-block"><span class="cc"># ZapDin PDV — Configuração</span>
+EVOLUTION_URL=http://localhost:8080
+EVOLUTION_API_KEY=zapdin-pdv-local
+
+ZAPDIN_URL=https://app.seuservidor.com.br
+ZAPDIN_PDV_TOKEN=pdv_xxxxxxxxxxxxxxxxxxx
+
+PDV_PORT=4600
+<span class="ch">PDV_API_KEY=minha-chave-secreta-123</span>   <span class="cc"># ← ERP usa esta chave</span>
+PDV_NOME=Caixa 01</div>
+</div>
+
+<!-- ── 4. Autenticação ────────────────────────────────────────────────────── -->
+<div class="section" id="s4">
+  <div class="section-title">4. Autenticação</div>
+  <p>
+    Todas as requisições devem incluir o header <code>X-PDV-Key</code> com o valor configurado
+    em <code>PDV_API_KEY</code> no <code>.env</code> do PDV.
+  </p>
+
+  <div class="cb-label">Header obrigatório em todas as requisições</div>
+  <div class="code-block"><span class="ch">X-PDV-Key:</span> <span class="cs">minha-chave-secreta-123</span>
+<span class="ch">Content-Type:</span> <span class="cs">application/json</span></div>
+
+  <div class="box box-red">
+    ❌ <strong>Sem o header</strong> o PDV retorna <code>401 Unauthorized</code> e a mensagem não é enviada.
+  </div>
+</div>
+
+<!-- ── 5. Verificar status ────────────────────────────────────────────────── -->
+<div class="section" id="s5">
+  <div class="section-title">5. Verificar Status do PDV</div>
+  <p>Antes de enviar, o ERP pode verificar se o PDV está ativo e o WhatsApp conectado.</p>
+
+  <div class="ep-title">
+    <span class="badge-get">GET</span>
+    <span class="ep-path">/status</span>
+    <span class="ep-desc">Retorna estado do PDV e das sessões WhatsApp</span>
+  </div>
+
+  <div class="cb-label">Resposta de sucesso (200)</div>
+  <div class="code-block">{
+  <span class="ck">"ok"</span>: <span class="cn">true</span>,
+  <span class="ck">"pdv"</span>: <span class="cs">"Caixa 01"</span>,
+  <span class="ck">"sessoes_conectadas"</span>: <span class="cn">1</span>,        <span class="cc">← checar se > 0 antes de enviar</span>
+  <span class="ck">"sessoes"</span>: [{
+    <span class="ck">"id"</span>: <span class="cs">"a1b2c3"</span>,
+    <span class="ck">"status"</span>: <span class="cs">"connected"</span>,            <span class="cc">← connected | connecting | disconnected</span>
+    <span class="ck">"phone"</span>: <span class="cs">"5544999990000"</span>
+  }]
+}</div>
+
+  <div class="box box-orange">
+    ⚠️ Se <code>sessoes_conectadas</code> for <code>0</code>, o WhatsApp não está conectado.
+    Oriente o operador a escanear o QR code em <code>http://localhost:4600/setup/qr</code>.
+  </div>
+</div>
+
+<!-- ── 6. Venda ───────────────────────────────────────────────────────────── -->
+<div class="section" id="s6">
+  <div class="section-title">6. Enviar Comprovante de Venda</div>
+
+  <div class="ep-title">
+    <span class="badge-post">POST</span>
+    <span class="ep-path">/erp/venda</span>
+    <span class="ep-desc">Envia comprovante de venda via WhatsApp</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Campo</th><th>Req.</th><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><code>phone</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número do cliente. Ex: <code>"44999990000"</code> ou <code>"+5544999990000"</code></td></tr>
+      <tr><td><code>numero_venda</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número ou código da venda. Ex: <code>"001234"</code></td></tr>
+      <tr><td><code>nome_cliente</code></td><td><span class="req">Sim</span></td><td>string</td><td>Nome completo do cliente</td></tr>
+      <tr><td><code>valor_total</code></td><td><span class="req">Sim</span></td><td>string</td><td>Valor total. Ex: <code>"350,00"</code></td></tr>
+      <tr><td><code>forma_pagamento</code></td><td><span class="opt">Não</span></td><td>string</td><td>Ex: <code>"PIX"</code>, <code>"Cartão de Débito"</code></td></tr>
+      <tr><td><code>data</code></td><td><span class="opt">Não</span></td><td>string</td><td>Data da venda. Ex: <code>"12/05/2026"</code></td></tr>
+      <tr><td><code>itens</code></td><td><span class="opt">Não</span></td><td>array</td><td>Lista de produtos (ver estrutura abaixo)</td></tr>
+      <tr><td><code>observacao</code></td><td><span class="opt">Não</span></td><td>string</td><td>Observação livre adicionada à mensagem</td></tr>
+      <tr><td><code>arquivo_base64</code></td><td><span class="opt">Não</span></td><td>string</td><td>PDF do comprovante em base64 — enviado após o texto</td></tr>
+      <tr><td><code>arquivo_nome</code></td><td><span class="opt">Não</span></td><td>string</td><td>Nome do arquivo. Ex: <code>"comprovante_001234.pdf"</code></td></tr>
+      <tr><td><code>sessao_id</code></td><td><span class="opt">Não</span></td><td>string</td><td>ID da sessão WhatsApp. Omita para usar a primeira conectada</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Estrutura de <code>itens</code></h4>
+  <div class="code-block">"itens": [
+  { <span class="ck">"descricao"</span>: <span class="cs">"Coca-Cola 2L"</span>, <span class="ck">"quantidade"</span>: <span class="cn">2</span>, <span class="ck">"valor_unitario"</span>: <span class="cs">"8,50"</span> },
+  { <span class="ck">"descricao"</span>: <span class="cs">"Pão de Forma"</span>,  <span class="ck">"quantidade"</span>: <span class="cn">1</span>, <span class="ck">"valor_unitario"</span>: <span class="cs">"12,00"</span> }
+]</div>
+
+  <h4>Exemplo de requisição</h4>
+  <div class="cb-label">POST http://localhost:4600/erp/venda</div>
+  <div class="code-block">{
+  <span class="ck">"phone"</span>: <span class="cs">"44999990000"</span>,
+  <span class="ck">"numero_venda"</span>: <span class="cs">"001234"</span>,
+  <span class="ck">"nome_cliente"</span>: <span class="cs">"João Silva"</span>,
+  <span class="ck">"valor_total"</span>: <span class="cs">"29,00"</span>,
+  <span class="ck">"forma_pagamento"</span>: <span class="cs">"PIX"</span>,
+  <span class="ck">"data"</span>: <span class="cs">"12/05/2026"</span>,
+  <span class="ck">"itens"</span>: [
+    { <span class="ck">"descricao"</span>: <span class="cs">"Coca-Cola 2L"</span>, <span class="ck">"quantidade"</span>: <span class="cn">2</span>, <span class="ck">"valor_unitario"</span>: <span class="cs">"8,50"</span> },
+    { <span class="ck">"descricao"</span>: <span class="cs">"Pão de Forma"</span>,  <span class="ck">"quantidade"</span>: <span class="cn">1</span>, <span class="ck">"valor_unitario"</span>: <span class="cs">"12,00"</span> }
+  ]
+}</div>
+
+  <h4>Resposta de sucesso</h4>
+  <div class="code-block">{ <span class="ck">"ok"</span>: <span class="cn">true</span>, <span class="ck">"phone"</span>: <span class="cs">"5544999990000"</span>, <span class="ck">"sessao_id"</span>: <span class="cs">"a1b2c3"</span>, <span class="ck">"enviados"</span>: [<span class="cs">"texto"</span>] }</div>
+</div>
+
+<!-- ── 7. NF-e ────────────────────────────────────────────────────────────── -->
+<div class="section page-break" id="s7">
+  <div class="section-title">7. Enviar NF-e (Nota Fiscal Eletrônica)</div>
+
+  <div class="ep-title">
+    <span class="badge-post">POST</span>
+    <span class="ep-path">/erp/nota-fiscal</span>
+    <span class="ep-desc">Envia NF-e com texto e opcionalmente o PDF</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Campo</th><th>Req.</th><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><code>phone</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número do cliente</td></tr>
+      <tr><td><code>numero_nf</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número da NF-e. Ex: <code>"000456"</code></td></tr>
+      <tr><td><code>nome_cliente</code></td><td><span class="req">Sim</span></td><td>string</td><td>Nome do destinatário</td></tr>
+      <tr><td><code>valor_total</code></td><td><span class="req">Sim</span></td><td>string</td><td>Valor total da nota</td></tr>
+      <tr><td><code>data</code></td><td><span class="opt">Não</span></td><td>string</td><td>Data de emissão</td></tr>
+      <tr><td><code>chave_acesso</code></td><td><span class="opt">Não</span></td><td>string</td><td>Chave de acesso (44 dígitos)</td></tr>
+      <tr><td><code>link_danfe</code></td><td><span class="opt">Não</span></td><td>string</td><td>URL para download da DANFE</td></tr>
+      <tr><td><code>arquivo_base64</code></td><td><span class="opt">Não</span></td><td>string</td><td>PDF da NF-e em base64</td></tr>
+      <tr><td><code>arquivo_nome</code></td><td><span class="opt">Não</span></td><td>string</td><td>Ex: <code>"nfe_000456.pdf"</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cb-label">Exemplo</div>
+  <div class="code-block">{
+  <span class="ck">"phone"</span>: <span class="cs">"44999990000"</span>,
+  <span class="ck">"numero_nf"</span>: <span class="cs">"000456"</span>,
+  <span class="ck">"nome_cliente"</span>: <span class="cs">"João Silva"</span>,
+  <span class="ck">"valor_total"</span>: <span class="cs">"350,00"</span>,
+  <span class="ck">"data"</span>: <span class="cs">"12/05/2026"</span>,
+  <span class="ck">"arquivo_base64"</span>: <span class="cs">"JVBERi0xLjQK..."</span>,   <span class="cc">← PDF em base64</span>
+  <span class="ck">"arquivo_nome"</span>: <span class="cs">"nfe_000456.pdf"</span>
+}</div>
+</div>
+
+<!-- ── 8. Boleto ──────────────────────────────────────────────────────────── -->
+<div class="section" id="s8">
+  <div class="section-title">8. Enviar Boleto Bancário</div>
+
+  <div class="ep-title">
+    <span class="badge-post">POST</span>
+    <span class="ep-path">/erp/boleto</span>
+    <span class="ep-desc">Envia boleto com linha digitável e/ou PDF</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Campo</th><th>Req.</th><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><code>phone</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número do cliente</td></tr>
+      <tr><td><code>nome_cliente</code></td><td><span class="req">Sim</span></td><td>string</td><td>Nome do pagador</td></tr>
+      <tr><td><code>valor_total</code></td><td><span class="req">Sim</span></td><td>string</td><td>Valor do boleto</td></tr>
+      <tr><td><code>data_vencimento</code></td><td><span class="req">Sim</span></td><td>string</td><td>Data de vencimento. Ex: <code>"20/05/2026"</code></td></tr>
+      <tr><td><code>linha_digitavel</code></td><td><span class="opt">Não</span></td><td>string</td><td>Código de barras digitável</td></tr>
+      <tr><td><code>link_boleto</code></td><td><span class="opt">Não</span></td><td>string</td><td>URL para visualizar/baixar</td></tr>
+      <tr><td><code>arquivo_base64</code></td><td><span class="opt">Não</span></td><td>string</td><td>PDF do boleto em base64</td></tr>
+      <tr><td><code>arquivo_nome</code></td><td><span class="opt">Não</span></td><td>string</td><td>Ex: <code>"boleto.pdf"</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 9. Endpoint genérico ───────────────────────────────────────────────── -->
+<div class="section page-break" id="s9">
+  <div class="section-title">9. Endpoint Genérico (Qualquer Evento)</div>
+  <p>Use quando quiser aproveitar templates customizados ou enviar outros tipos de notificação.</p>
+
+  <div class="ep-title">
+    <span class="badge-post">POST</span>
+    <span class="ep-path">/erp/notificar</span>
+    <span class="ep-desc">Evento + variáveis → template → WhatsApp</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Campo</th><th>Req.</th><th>Tipo</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><code>phone</code></td><td><span class="req">Sim</span></td><td>string</td><td>Número destino</td></tr>
+      <tr><td><code>evento</code></td><td><span class="req">Sim</span></td><td>string</td><td>Nome do template. Ex: <code>"venda_realizada"</code></td></tr>
+      <tr><td><code>vars</code></td><td><span class="opt">Não</span></td><td>object</td><td>Variáveis para preencher o template</td></tr>
+      <tr><td><code>arquivo_base64</code></td><td><span class="opt">Não</span></td><td>string</td><td>Arquivo em base64</td></tr>
+      <tr><td><code>arquivo_nome</code></td><td><span class="opt">Não</span></td><td>string</td><td>Nome do arquivo com extensão</td></tr>
+      <tr><td><code>arquivo_caption</code></td><td><span class="opt">Não</span></td><td>string</td><td>Legenda do arquivo</td></tr>
+      <tr><td><code>apenas_arquivo</code></td><td><span class="opt">Não</span></td><td>bool</td><td><code>true</code> = não envia texto, só o arquivo</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cb-label">Exemplo com evento personalizado</div>
+  <div class="code-block">{
+  <span class="ck">"phone"</span>: <span class="cs">"44999990000"</span>,
+  <span class="ck">"evento"</span>: <span class="cs">"custom"</span>,
+  <span class="ck">"vars"</span>: {
+    <span class="ck">"mensagem"</span>: <span class="cs">"Olá! Seu pedido já saiu para entrega. Previsão: 30 min. 🚚"</span>
+  }
+}</div>
+</div>
+
+<!-- ── 10. Templates ──────────────────────────────────────────────────────── -->
+<div class="section" id="s10">
+  <div class="section-title">10. Templates de Mensagem</div>
+  <p>
+    O PDV usa templates editáveis para montar as mensagens. As variáveis entre
+    <code>&#123;chaves&#125;</code> são substituídas pelos dados enviados pelo ERP.
+  </p>
+
+  <table>
+    <thead><tr><th>Evento</th><th>Descrição</th><th>Variáveis principais</th></tr></thead>
+    <tbody>
+      <tr><td><code>venda_realizada</code></td><td>Comprovante de venda</td><td><code>nome_cliente</code> <code>numero_venda</code> <code>valor_total</code> <code>forma_pagamento</code> <code>data</code> <code>itens</code></td></tr>
+      <tr><td><code>nota_fiscal</code></td><td>NF-e emitida</td><td><code>nome_cliente</code> <code>numero_nf</code> <code>valor_total</code> <code>data</code> <code>chave_acesso</code> <code>link_danfe</code></td></tr>
+      <tr><td><code>boleto</code></td><td>Boleto bancário</td><td><code>nome_cliente</code> <code>valor_total</code> <code>data_vencimento</code> <code>linha_digitavel</code> <code>link_boleto</code></td></tr>
+      <tr><td><code>pedido_confirmado</code></td><td>Confirmação de pedido</td><td><code>nome_cliente</code> <code>numero_pedido</code> <code>valor_total</code> <code>previsao_entrega</code></td></tr>
+      <tr><td><code>entrega_realizada</code></td><td>Entrega concluída</td><td><code>nome_cliente</code> <code>numero_pedido</code> <code>data</code></td></tr>
+      <tr><td><code>cobranca</code></td><td>Lembrete de pagamento</td><td><code>nome_cliente</code> <code>valor_total</code> <code>data_vencimento</code></td></tr>
+      <tr><td><code>custom</code></td><td>Mensagem livre</td><td><code>mensagem</code> (texto completo)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box box-blue">
+    💡 <strong>Editar templates:</strong> abra <code>http://localhost:4600/erp/templates/painel</code>
+    no navegador da máquina do PDV para editar as mensagens visualmente.
+    Também é possível via API: <code>PUT /erp/templates</code>.
+  </div>
+
+  <div class="box box-green">
+    ✅ <strong>Variável não enviada?</strong> O marcador é mantido na mensagem
+    (ex: se não enviar <code>forma_pagamento</code>, aparece <code>&#123;forma_pagamento&#125;</code>).
+    Edite o template para remover campos opcionais que não usa.
+  </div>
+</div>
+
+<!-- ── 11. QR Code ────────────────────────────────────────────────────────── -->
+<div class="section" id="s11">
+  <div class="section-title">11. Conectar o WhatsApp (QR Code)</div>
+  <p>
+    Antes de usar o PDV, o WhatsApp precisa ser conectado escaneando um QR code.
+    Este processo é feito uma única vez (ou quando o WhatsApp desconectar).
+  </p>
+
+  <table>
+    <thead><tr><th>Passo</th><th>Ação</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Abra <code>http://localhost:4600/setup/qr</code> no navegador da máquina do PDV</td></tr>
+      <tr><td>2</td><td>Uma página com QR code de configuração é exibida</td></tr>
+      <tr><td>3</td><td>Para conectar o WhatsApp, acesse <code>http://localhost:4600/whatsapp/sessoes</code> e crie uma sessão</td></tr>
+      <tr><td>4</td><td>Abra a página de QR da sessão e escaneie com o celular no WhatsApp</td></tr>
+      <tr><td>5</td><td>Após conectar, o PDV já está pronto para enviar mensagens</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box box-orange">
+    ⚠️ O WhatsApp pode desconectar se o celular ficar sem bateria ou sem internet.
+    Oriente o operador a verificar o ícone do ZapDin PDV na bandeja do sistema.
+    Clique no ícone → <strong>"Conectar WhatsApp"</strong> para reconectar.
+  </div>
+</div>
+
+<!-- ── 12. Exemplos de código ─────────────────────────────────────────────── -->
+<div class="section page-break" id="s12">
+  <div class="section-title">12. Exemplos de Código</div>
+
+  <div class="subsection-title">Python</div>
+  <div class="code-block">import requests
+
+PDV_URL = <span class="cs">"http://localhost:4600"</span>
+HEADERS = {<span class="cs">"X-PDV-Key"</span>: <span class="cs">"minha-chave-secreta-123"</span>, <span class="cs">"Content-Type"</span>: <span class="cs">"application/json"</span>}
+
+<span class="cc"># Verificar status antes de enviar</span>
+status = requests.get(f<span class="cs">"{PDV_URL}/status"</span>, headers=HEADERS).json()
+if status[<span class="cs">"sessoes_conectadas"</span>] == 0:
+    print(<span class="cs">"WhatsApp não conectado!"</span>)
+else:
+    <span class="cc"># Enviar comprovante de venda</span>
+    r = requests.post(f<span class="cs">"{PDV_URL}/erp/venda"</span>, headers=HEADERS, json={
+        <span class="cs">"phone"</span>: <span class="cs">"44999990000"</span>,
+        <span class="cs">"numero_venda"</span>: <span class="cs">"001234"</span>,
+        <span class="cs">"nome_cliente"</span>: <span class="cs">"João Silva"</span>,
+        <span class="cs">"valor_total"</span>: <span class="cs">"350,00"</span>,
+        <span class="cs">"forma_pagamento"</span>: <span class="cs">"PIX"</span>,
+        <span class="cs">"data"</span>: <span class="cs">"12/05/2026"</span>,
+    })
+    print(r.json())  <span class="cc"># {"ok": true, ...}</span></div>
+
+  <div class="subsection-title">C# / .NET</div>
+  <div class="code-block">using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+
+var client = new HttpClient();
+client.DefaultRequestHeaders.Add(<span class="cs">"X-PDV-Key"</span>, <span class="cs">"minha-chave-secreta-123"</span>);
+
+var payload = new {
+    phone          = <span class="cs">"44999990000"</span>,
+    numero_venda   = <span class="cs">"001234"</span>,
+    nome_cliente   = <span class="cs">"João Silva"</span>,
+    valor_total    = <span class="cs">"350,00"</span>,
+    forma_pagamento = <span class="cs">"PIX"</span>,
+    data           = <span class="cs">"12/05/2026"</span>
+};
+var json    = JsonSerializer.Serialize(payload);
+var content = new StringContent(json, Encoding.UTF8, <span class="cs">"application/json"</span>);
+var resp    = await client.PostAsync(<span class="cs">"http://localhost:4600/erp/venda"</span>, content);
+var result  = await resp.Content.ReadAsStringAsync();
+<span class="cc">// result = {"ok":true,"phone":"5544999990000","enviados":["texto"]}</span></div>
+
+  <div class="subsection-title">Delphi / Pascal</div>
+  <div class="code-block">uses IdHTTP, System.JSON;
+
+procedure TForm1.EnviarVenda;
+var HTTP: TIdHTTP; Body, Resp: TStringStream; J: TJSONObject;
+begin
+  HTTP := TIdHTTP.Create(nil);
+  try
+    HTTP.Request.CustomHeaders.AddValue(<span class="cs">'X-PDV-Key'</span>, <span class="cs">'minha-chave-secreta-123'</span>);
+    HTTP.Request.ContentType := <span class="cs">'application/json'</span>;
+
+    J := TJSONObject.Create;
+    J.AddPair(<span class="cs">'phone'</span>,          <span class="cs">'44999990000'</span>);
+    J.AddPair(<span class="cs">'numero_venda'</span>,   <span class="cs">'001234'</span>);
+    J.AddPair(<span class="cs">'nome_cliente'</span>,   <span class="cs">'João Silva'</span>);
+    J.AddPair(<span class="cs">'valor_total'</span>,    <span class="cs">'350,00'</span>);
+    J.AddPair(<span class="cs">'forma_pagamento'</span>, <span class="cs">'PIX'</span>);
+    J.AddPair(<span class="cs">'data'</span>,           <span class="cs">'12/05/2026'</span>);
+
+    Body := TStringStream.Create(J.ToString, TEncoding.UTF8);
+    Resp := TStringStream.Create(<span class="cs">''</span>, TEncoding.UTF8);
+    try
+      HTTP.Post(<span class="cs">'http://localhost:4600/erp/venda'</span>, Body, Resp);
+      ShowMessage(Resp.DataString);
+    finally
+      Body.Free; Resp.Free; J.Free;
+    end;
+  finally HTTP.Free; end;
+end;</div>
+
+  <div class="subsection-title">cURL</div>
+  <div class="code-block">curl -X POST http://localhost:4600/erp/venda \
+  -H <span class="cs">"X-PDV-Key: minha-chave-secreta-123"</span> \
+  -H <span class="cs">"Content-Type: application/json"</span> \
+  -d '{
+    "phone": "44999990000",
+    "numero_venda": "001234",
+    "nome_cliente": "João Silva",
+    "valor_total": "350,00",
+    "forma_pagamento": "PIX",
+    "data": "12/05/2026"
+  }'</div>
+</div>
+
+<!-- ── 13. Erros ──────────────────────────────────────────────────────────── -->
+<div class="section" id="s13">
+  <div class="section-title">13. Tabela de Erros</div>
+
+  <table>
+    <thead><tr><th>HTTP</th><th>Situação</th><th>Como resolver</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>401</code></td>
+        <td>Header <code>X-PDV-Key</code> ausente ou incorreto</td>
+        <td>Verifique o valor de <code>PDV_API_KEY</code> no <code>.env</code> do PDV</td>
+      </tr>
+      <tr>
+        <td><code>400</code></td>
+        <td>Template não encontrado ou inativo</td>
+        <td>Verifique o nome do evento. Consulte os ativos em <code>GET /erp/templates</code></td>
+      </tr>
+      <tr>
+        <td><code>400</code></td>
+        <td>Erro ao enviar pelo WhatsApp (número inválido, bloqueado, etc.)</td>
+        <td>Verifique o número do destinatário. Confira se o WhatsApp está conectado</td>
+      </tr>
+      <tr>
+        <td><code>503</code></td>
+        <td>Nenhuma sessão WhatsApp conectada</td>
+        <td>Oriente o operador a reconectar o WhatsApp via QR code</td>
+      </tr>
+      <tr>
+        <td><code>422</code></td>
+        <td>Campo obrigatório ausente ou tipo inválido</td>
+        <td>Verifique os campos marcados como <span class="req">Sim</span> na tabela do endpoint</td>
+      </tr>
+      <tr>
+        <td><code>000</code> / timeout</td>
+        <td>PDV não está rodando</td>
+        <td>Verifique se o ícone do ZapDin PDV aparece na bandeja do sistema Windows</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── 14. Resumo dos endpoints ───────────────────────────────────────────── -->
+<div class="section" id="s14">
+  <div class="section-title">14. Resumo de Todos os Endpoints</div>
+  <p>Base URL: <code>http://localhost:4600</code> &nbsp;|&nbsp; Header obrigatório: <code>X-PDV-Key: SUA_CHAVE</code></p>
+
+  <table>
+    <thead><tr><th>Método</th><th>Endpoint</th><th>Descrição</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/status</code></td><td>Status do PDV e sessões WhatsApp</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/erp/venda</code></td><td>Enviar comprovante de venda</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/erp/nota-fiscal</code></td><td>Enviar NF-e (texto + PDF opcional)</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/erp/boleto</code></td><td>Enviar boleto bancário</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/erp/notificar</code></td><td>Envio genérico por evento + variáveis</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/erp/templates</code></td><td>Listar templates configurados</td></tr>
+      <tr><td><span class="badge-put">PUT</span></td><td><code>/erp/templates</code></td><td>Criar ou editar template</td></tr>
+      <tr><td><span class="badge-del">DEL</span></td><td><code>/erp/templates/{evento}</code></td><td>Remover template</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/erp/templates/painel</code></td><td>Painel visual para editar templates</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/erp/docs</code></td><td>Esta documentação (HTML)</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/whatsapp/sessoes</code></td><td>Listar sessões WhatsApp</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/whatsapp/sessoes</code></td><td>Criar nova sessão WhatsApp</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/whatsapp/sessoes/{id}/qr-page</code></td><td>Página HTML para escanear QR</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/enviar/texto</code></td><td>Enviar texto livre (sem template)</td></tr>
+      <tr><td><span class="badge-post">POST</span></td><td><code>/enviar/arquivo</code></td><td>Enviar arquivo em base64</td></tr>
+      <tr><td><span class="badge-get">GET</span></td><td><code>/setup/qr</code></td><td>QR de configuração para o ERP</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Rodapé -->
+<div style="margin-top:3rem;padding-top:1rem;border-top:1px solid var(--border);
+            font-size:.78rem;color:var(--text-light);display:flex;
+            justify-content:space-between;align-items:center">
+  <span>ZapDin PDV v1.0 — Documentação de Integração ERP</span>
+  <span>Gerado pelo ZapDin App · zapdin.com.br</span>
+</div>
+
+</body>
+</html>

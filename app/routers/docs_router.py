@@ -22,6 +22,7 @@ router = APIRouter(prefix="/api/docs", tags=["docs"])
 
 _STATIC_DIR = Path(__file__).parent.parent / "static"
 _ERP_DOC = _STATIC_DIR / "doc-integracao-erp.html"
+_PDV_DOC = _STATIC_DIR / "doc-integracao-pdv.html"
 
 
 @router.get("/erp")
@@ -40,6 +41,37 @@ async def download_erp_doc(_: dict = Depends(get_current_user)):
         filename="ZapDin-Integracao-ERP.html",
         headers={"Content-Disposition": 'attachment; filename="ZapDin-Integracao-ERP.html"'},
     )
+
+
+@router.get("/pdv")
+async def download_pdv_doc(_: dict = Depends(get_current_user)):
+    """Serve o HTML de integração PDV como download direto."""
+    if not _PDV_DOC.exists():
+        return JSONResponse({"error": "Documento não encontrado."}, status_code=404)
+    return FileResponse(
+        path=str(_PDV_DOC),
+        media_type="text/html",
+        filename="ZapDin-PDV-Integracao-ERP.html",
+        headers={"Content-Disposition": 'attachment; filename="ZapDin-PDV-Integracao-ERP.html"'},
+    )
+
+
+@router.get("/abrir-pdv")
+async def abrir_pdv_no_browser(_: dict = Depends(get_current_user)):
+    """Abre o documento de integração PDV no browser padrão."""
+    if not _PDV_DOC.exists():
+        return JSONResponse({"error": "Documento não encontrado."}, status_code=404)
+    doc_path = str(_PDV_DOC.resolve())
+    try:
+        if sys.platform == "win32":
+            os.startfile(doc_path)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", doc_path])
+        else:
+            subprocess.Popen(["xdg-open", doc_path])
+        return {"ok": True}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
 
 @router.get("/abrir-erp")

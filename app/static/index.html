@@ -2111,10 +2111,20 @@
         <div class="info-banner info-banner-green" style="margin-bottom:0">
           <span class="ib-icon">📄</span>
           <div>
-            <strong>Documento para integrador:</strong><br>
+            <strong>Integração via ZapDin App (servidor):</strong><br>
             <div style="display:flex;gap:.5rem;margin-top:.4rem;flex-wrap:wrap">
               <button class="btn btn-primary btn-sm" onclick="abrirDocErpBrowser()">🌐 Abrir no Navegador</button>
               <button class="btn btn-ghost btn-sm" onclick="baixarDocErp()">⬇️ Baixar HTML</button>
+            </div>
+          </div>
+        </div>
+        <div class="info-banner" style="margin-bottom:0;background:#f0f9ff;border-color:#bae6fd">
+          <span class="ib-icon">📱</span>
+          <div>
+            <strong>Integração via ZapDin PDV (local na máquina do cliente):</strong><br>
+            <div style="display:flex;gap:.5rem;margin-top:.4rem;flex-wrap:wrap">
+              <button class="btn btn-primary btn-sm" onclick="abrirDocPdvBrowser()">🌐 Abrir no Navegador</button>
+              <button class="btn btn-ghost btn-sm" onclick="baixarDocPdv()">⬇️ Baixar HTML</button>
             </div>
           </div>
         </div>
@@ -4078,6 +4088,25 @@
     const a = document.createElement('a');
     a.href = '/api/docs/erp';
     a.download = 'ZapDin-Integracao-ERP.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function abrirDocPdvBrowser() {
+    try {
+      const r = await fetch('/api/docs/abrir-pdv');
+      const data = await r.json();
+      if (!data.ok) alert('Não foi possível abrir o documento: ' + (data.error || 'erro desconhecido'));
+    } catch (e) {
+      alert('Erro ao abrir o documento: ' + e.message);
+    }
+  }
+
+  function baixarDocPdv() {
+    const a = document.createElement('a');
+    a.href = '/api/docs/pdv';
+    a.download = 'ZapDin-PDV-Integracao-ERP.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
