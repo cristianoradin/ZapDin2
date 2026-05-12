@@ -840,8 +840,8 @@ class WhatsAppSession:
                                    self.session_id, _preview_closed, _sent_method)
 
                     if not _preview_closed:
-                        # Preview ainda aberto → envio não aconteceu → tenta Enter como último recurso
-                        logger.warning("send_file [%s]: preview não fechou, tentando Enter", self.session_id)
+                        # Preview ainda aberto → tenta Enter como último recurso
+                        logger.warning("send_file [%s]: preview não fechou, tentando Enter final", self.session_id)
                         try:
                             cap_el = await self._page.query_selector(_CAP_SEL)
                             if cap_el:
@@ -850,12 +850,19 @@ class WhatsAppSession:
                             await self._page.keyboard.press("Enter")
                             await asyncio.sleep(3)
                             _still_prev2 = await self._page.query_selector(_PREV_CONTAINER_SEL)
-                            logger.warning("send_file [%s]: após Enter final preview_exists=%s",
-                                           self.session_id, _still_prev2 is not None)
+                            _preview_closed = (_still_prev2 is None)
+                            logger.warning("send_file [%s]: após Enter final preview_closed=%s",
+                                           self.session_id, _preview_closed)
                         except Exception:
                             pass
 
-                    send_btn = True  # sinaliza que chegou até aqui
+                    if not _preview_closed:
+                        # Mesmo após todas as tentativas o preview não fechou → falhou de verdade
+                        logger.warning("send_file [%s]: arquivo NÃO enviado — preview não fechou", self.session_id)
+                        asyncio.create_task(self._return_home())
+                        return False, "Arquivo não foi enviado (preview não fechou)"
+
+                    send_btn = True  # preview fechou = arquivo enviado com sucesso
                     break
 
                 if not send_btn:
