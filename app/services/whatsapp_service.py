@@ -586,13 +586,16 @@ class WhatsAppSession:
                             logger.warning("send_file [%s]: sem confirmar — pressiona Enter", self.session_id)
                             await self._page.keyboard.press("Enter")
                             await asyncio.sleep(1)
-                        # Aguarda compose (até 15s) — NÃO verifica URL (SPA redireciona pra home)
-                        inner_deadline = loop.time() + 15
+                        # Aguarda compose (até 20s) — após dialog, WA abre a conversa
+                        await asyncio.sleep(1.5)  # dá tempo ao WA de abrir a conversa
+                        inner_deadline = loop.time() + 20
                         while loop.time() < inner_deadline:
                             await asyncio.sleep(1)
                             compose = await self._page.query_selector(_COMPOSE_SEL)
                             if compose:
-                                logger.warning("send_file [%s]: compose após dialog OK", self.session_id)
+                                logger.warning("send_file [%s]: compose após dialog OK url=%s",
+                                               self.session_id, self._page.url)
+                                await asyncio.sleep(0.5)  # estabiliza antes de anexar
                                 break
                             # Checa se apareceu novo dialog de erro
                             err_el = await self._page.query_selector('[role="dialog"]')
@@ -784,37 +787,30 @@ class WhatsAppSession:
                     except Exception as _de:
                         logger.warning("send_file [%s]: diagnóstico HTML falhou: %s", self.session_id, _de)
 
-                    # ── Estratégia de envio: JS click no botão send do preview ────
-                    # O botão de envio do preview tem testid/aria diferentes do compose.
-                    # Usamos JS para clicar o ÚLTIMO botão visível com testid/aria de envio
-                    # (o do compose fica no footer abaixo; o do preview fica acima).
+                    # ── Estratégia de envio: Enter é mais confiável que JS click ──
+                    # JS .click() em componentes React do WhatsApp não dispara
+                    # eventos sintéticos corretamente. keyboard.press("Enter")
+                    # é um evento real que o WhatsApp sempre aceita no preview.
                     _sent_method = "none"
-                    try:
-                        _sent_js = await self._page.evaluate("""
-                            () => {
-                                // Coleta todos os botões visíveis com testid ou aria de envio
-                                const all = [...document.querySelectorAll('button,[role="button"]')];
-                                const sends = all.filter(b => {
-                                    if (b.offsetParent === null) return false;
-                                    const tid = (b.dataset.testid || '').toLowerCase();
-                                    const lbl = (b.getAttribute('aria-label') || '').toLowerCase();
-                                    return tid.includes('send') || lbl.includes('send') || lbl.includes('enviar');
-                                });
-                                if (!sends.length) return 'nenhum';
-                                // O botão de envio do preview é o ÚLTIMO na lista DOM
-                                // (o compose send fica antes, no footer)
-                                sends[sends.length - 1].click();
-                                return sends[sends.length - 1].dataset.testid || sends[sends.length - 1].getAttribute('aria-label') || 'clicked';
-                            }
-                        """)
-                        logger.warning("send_file [%s]: JS send result='%s'", self.session_id, _sent_js)
-                        if _sent_js != "nenhum":
-                            _sent_method = f"js:{_sent_js}"
-                    except Exception as _je:
-                        logger.warning("send_file [%s]: JS send falhou: %s", self.session_id, _je)
 
+                    # 1. Tenta clicar o botão de envio do preview via Playwright nativo
+                    for _send_sel in (
+                        '[data-testid="wds-ic-send-filled"]',
+                        '[data-testid="send"]',
+                        '[data-testid="media-send-button"]',
+                    ):
+                        try:
+                            _sbtn = await self._page.query_selector(_send_sel)
+                            if _sbtn and await _sbtn.is_visible():
+                                await _sbtn.click()
+                                _sent_method = f"click:{_send_sel}"
+                                logger.warning("send_file [%s]: clicou preview send '%s'", self.session_id, _send_sel)
+                                break
+                        except Exception:
+                            pass
+
+                    # 2. Se não encontrou botão específico, usa Enter (sempre funciona)
                     if _sent_method == "none":
-                        # Fallback: foca o caption e pressiona Enter
                         try:
                             cap_el = await self._page.query_selector(_CAP_SEL)
                             if cap_el:
@@ -822,47 +818,38 @@ class WhatsAppSession:
                                 await asyncio.sleep(0.3)
                             await self._page.keyboard.press("Enter")
                             _sent_method = "enter"
-                            logger.warning("send_file [%s]: Enter pressionado (fallback)", self.session_id)
+                            logger.warning("send_file [%s]: Enter pressionado para envio", self.session_id)
                         except Exception as _ke:
                             logger.warning("send_file [%s]: Enter falhou: %s", self.session_id, _ke)
-                            _sent_method = "error"
 
-                    # Aguarda preview fechar (confirma que o envio aconteceu)
-                    _close_dl = loop2.time() + 8
+                    # Aguarda preview fechar — até 15s (conexão lenta pode demorar)
+                    _close_dl = loop2.time() + 15
                     _preview_closed = False
                     while loop2.time() < _close_dl:
                         await asyncio.sleep(0.5)
-                        _still_prev = await self._page.query_selector(_PREV_CONTAINER_SEL)
-                        if not _still_prev:
+                        if not await self._page.query_selector(_PREV_CONTAINER_SEL):
                             _preview_closed = True
                             break
                     logger.warning("send_file [%s]: preview_closed=%s método=%s",
                                    self.session_id, _preview_closed, _sent_method)
 
                     if not _preview_closed:
-                        # Preview ainda aberto → tenta Enter como último recurso
-                        logger.warning("send_file [%s]: preview não fechou, tentando Enter final", self.session_id)
+                        # Preview ainda aberto após 15s → tenta Enter uma última vez
+                        logger.warning("send_file [%s]: preview persistente, Enter final", self.session_id)
                         try:
-                            cap_el = await self._page.query_selector(_CAP_SEL)
-                            if cap_el:
-                                await _safe_click(cap_el)
-                                await asyncio.sleep(0.2)
                             await self._page.keyboard.press("Enter")
-                            await asyncio.sleep(3)
-                            _still_prev2 = await self._page.query_selector(_PREV_CONTAINER_SEL)
-                            _preview_closed = (_still_prev2 is None)
-                            logger.warning("send_file [%s]: após Enter final preview_closed=%s",
-                                           self.session_id, _preview_closed)
+                            await asyncio.sleep(4)
+                            _preview_closed = not await self._page.query_selector(_PREV_CONTAINER_SEL)
+                            logger.warning("send_file [%s]: após Enter final preview_closed=%s", self.session_id, _preview_closed)
                         except Exception:
                             pass
 
                     if not _preview_closed:
-                        # Mesmo após todas as tentativas o preview não fechou → falhou de verdade
                         logger.warning("send_file [%s]: arquivo NÃO enviado — preview não fechou", self.session_id)
                         asyncio.create_task(self._return_home())
                         return False, "Arquivo não foi enviado (preview não fechou)"
 
-                    send_btn = True  # preview fechou = arquivo enviado com sucesso
+                    send_btn = True  # preview fechou = arquivo enviado
                     break
 
                 if not send_btn:
