@@ -53,7 +53,7 @@ class EvoSession:
         self.qr_data: Optional[str] = None
         self.phone: Optional[str] = None
         self._poll_task: Optional[asyncio.Task] = None
-        self._qr_requested = False  # evita chamar /connect repetidamente
+        self._qr_requested = True   # busca QR logo no primeiro poll
 
     def start_polling(self):
         if not self._poll_task or self._poll_task.done():
@@ -102,9 +102,8 @@ class EvoSession:
                 if prev != self.status:
                     logger.info("EvoSession [%s] estado: %s", self.session_id, self.status)
 
-            # Busca QR apenas quando explicitamente solicitado pelo front
-            # (evita regenerar QR a cada poll, o que causava instabilidade)
-            if self._qr_requested and self.status == "disconnected":
+            # Busca QR apenas quando solicitado pelo front e não conectado
+            if self._qr_requested and self.status != "connected":
                 self._qr_requested = False
                 r2 = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
                 if r2.status_code == 200:
