@@ -129,6 +129,31 @@ async def validate_activation_token(
     }
 
 
+@router.get("/api/activate/client-info")
+async def client_info_by_token(
+    token: str,
+    db=Depends(get_db),
+):
+    """
+    Retorna o nome do cliente pelo token de heartbeat (MONITOR_CLIENT_TOKEN).
+    Usado pelo instalador para preencher CLIENT_NAME automaticamente.
+    NÃO requer autenticação — autenticado pelo token em si.
+    """
+    if not token:
+        raise HTTPException(status_code=400, detail="Token não pode ser vazio.")
+
+    async with db.execute(
+        "SELECT nome FROM clientes WHERE token = ? AND ativo = 1",
+        (token,),
+    ) as cur:
+        row = await cur.fetchone()
+
+    if not row:
+        raise HTTPException(status_code=401, detail="Token inválido ou cliente inativo.")
+
+    return {"ok": True, "nome": row["nome"]}
+
+
 @router.post("/api/clientes/{cliente_id}/activation-token")
 async def generate_activation_token(
     cliente_id: int,
