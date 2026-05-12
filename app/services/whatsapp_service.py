@@ -389,15 +389,52 @@ class WhatsAppSession:
                             await _safe_click(all_btns[-1])
                             asyncio.create_task(self._return_home())
                             return False, "Número não registrado no WhatsApp"
-                        # Dialog "Iniciar conversa" — clica Continuar (não-cancel)
-                        btn = all_btns[-1]
+
+                        # Dialog "Iniciar conversa" — tenta confirmar sem clicar Cancelar
+                        _cancel_words = {"cancelar", "cancel", "fechar", "close"}
+                        confirm_btn = None
+
+                        # 1. Botão <button> que não seja cancelar
                         for b, txt in zip(all_btns, btn_texts):
-                            if txt.lower() not in ("cancelar", "cancel", "fechar", "close"):
-                                btn = b
+                            if txt.lower() not in _cancel_words:
+                                confirm_btn = b
                                 break
-                        logger.warning("send_text [%s]: clicando '%s' no dialog",
-                                       self.session_id, (await btn.inner_text()).strip()[:30])
-                        await _safe_click(btn)
+
+                        # 2. Qualquer elemento clicável no dialog com texto "continuar"/"ok"
+                        if confirm_btn is None:
+                            try:
+                                dialog_el = await self._page.query_selector('[role="dialog"]')
+                                if dialog_el:
+                                    for sel in (
+                                        '[data-testid="popup-controls-ok"]',
+                                        '[data-testid="confirm-popup-continue"]',
+                                        'div[role="button"]',
+                                        'span[role="button"]',
+                                    ):
+                                        cands = await dialog_el.query_selector_all(sel)
+                                        for c in cands:
+                                            try:
+                                                t = (await c.inner_text()).strip().lower()
+                                                if t and t not in _cancel_words:
+                                                    confirm_btn = c
+                                                    break
+                                            except Exception:
+                                                pass
+                                        if confirm_btn:
+                                            break
+                            except Exception:
+                                pass
+
+                        if confirm_btn is not None:
+                            logger.warning("send_text [%s]: confirmando dialog '%s'",
+                                           self.session_id, (await confirm_btn.inner_text()).strip()[:30])
+                            await _safe_click(confirm_btn)
+                        else:
+                            # Último recurso: pressiona Enter para confirmar o dialog
+                            logger.warning("send_text [%s]: sem botão confirmar — pressiona Enter",
+                                           self.session_id)
+                            await self._page.keyboard.press("Enter")
+                            await asyncio.sleep(1)
                         # Aguarda compose (até 15s) — NÃO verifica URL (SPA redireciona pra home)
                         inner_deadline = loop.time() + 15
                         while loop.time() < inner_deadline:
@@ -515,15 +552,40 @@ class WhatsAppSession:
                             asyncio.create_task(self._return_home())
                             return False, "Número não registrado no WhatsApp"
 
-                        # Diálogo "Iniciar conversa" — clicar em Continuar (não-cancel)
-                        btn_to_click = all_btns[-1]  # fallback = último
+                        # Diálogo "Iniciar conversa" — confirma sem clicar Cancelar
+                        _cancel_words = {"cancelar", "cancel", "fechar", "close"}
+                        confirm_btn = None
                         for b, txt in zip(all_btns, btn_texts):
-                            if txt.lower() not in ("cancelar", "cancel", "fechar", "close"):
-                                btn_to_click = b
+                            if txt.lower() not in _cancel_words:
+                                confirm_btn = b
                                 break
-                        btn_text = (await btn_to_click.inner_text()).strip()
-                        logger.warning("send_file [%s]: clicando '%s' no dialog", self.session_id, btn_text[:30])
-                        await _safe_click(btn_to_click)
+                        if confirm_btn is None:
+                            try:
+                                dialog_el2 = await self._page.query_selector('[role="dialog"]')
+                                if dialog_el2:
+                                    for sel in ('div[role="button"]', 'span[role="button"]',
+                                                '[data-testid="popup-controls-ok"]'):
+                                        cands = await dialog_el2.query_selector_all(sel)
+                                        for c in cands:
+                                            try:
+                                                t = (await c.inner_text()).strip().lower()
+                                                if t and t not in _cancel_words:
+                                                    confirm_btn = c
+                                                    break
+                                            except Exception:
+                                                pass
+                                        if confirm_btn:
+                                            break
+                            except Exception:
+                                pass
+                        if confirm_btn is not None:
+                            logger.warning("send_file [%s]: confirmando dialog '%s'",
+                                           self.session_id, (await confirm_btn.inner_text()).strip()[:30])
+                            await _safe_click(confirm_btn)
+                        else:
+                            logger.warning("send_file [%s]: sem confirmar — pressiona Enter", self.session_id)
+                            await self._page.keyboard.press("Enter")
+                            await asyncio.sleep(1)
                         # Aguarda compose (até 15s) — NÃO verifica URL (SPA redireciona pra home)
                         inner_deadline = loop.time() + 15
                         while loop.time() < inner_deadline:
