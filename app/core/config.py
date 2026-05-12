@@ -35,9 +35,20 @@ class Settings(BaseSettings):
     dispatch_min_delay: float = 1.0   # segundos mínimos entre disparos
     dispatch_max_delay: float = 4.0   # segundos máximos entre disparos
 
+    # Backend de WhatsApp: "playwright" (padrão) ou "evolution"
+    wa_backend: str = "playwright"
+
+    # Evolution API (usado quando wa_backend=evolution)
+    evolution_url: str = "http://localhost:8080"
+    evolution_api_key: str = ""
+
     @property
     def is_locked(self) -> bool:
         return self.app_state.lower() == "locked"
+
+    @property
+    def use_evolution(self) -> bool:
+        return self.wa_backend.lower() == "evolution"
 
 
 settings = Settings()

@@ -169,7 +169,10 @@ async def _loop() -> None:
     global _last_processed_at, _processed_count, _last_error
     from ..core.config import settings
     from ..core.database import get_db_direct
-    from .whatsapp_service import wa_manager
+    if settings.use_evolution:
+        from .evolution_service import evo_manager as wa_manager
+    else:
+        from .whatsapp_service import wa_manager
 
     logger.info("Queue worker loop iniciado")
     while True:

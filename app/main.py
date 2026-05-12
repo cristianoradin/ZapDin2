@@ -18,7 +18,11 @@ from .routers.monitor_sync import router as monitor_sync_router
 from .routers.docs_router import router as docs_router
 from .routers.campanha import router as campanha_router
 from .services import reporter, updater, telegram_service, queue_worker
-from .services.whatsapp_service import wa_manager
+from .services.whatsapp_service import wa_manager as _playwright_manager
+from .services.evolution_service import evo_manager as _evo_manager
+
+# Seleciona o backend de WhatsApp conforme configuração
+wa_manager = _evo_manager if settings.use_evolution else _playwright_manager
 
 # ── Socket.IO ──────────────────────────────────────────────────────────────────
 sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
