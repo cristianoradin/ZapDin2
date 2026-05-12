@@ -247,8 +247,136 @@ async def delete_campanha_arquivo(
 
 # ── Iniciar / Pausar campanha ────────────────────────────────────────────────
 
+# ─────────────────────── Grupos de Contatos ─────────────────────────────────
+
+class GrupoIn(BaseModel):
+    nome: str
+
+
+@router.get("/grupos")
+async def list_grupos(db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    async with db.execute(
+        """SELECT g.id, g.nome, g.created_at,
+                  COUNT(gc.contato_id) AS total
+           FROM grupos_contatos g
+           LEFT JOIN grupo_contatos gc ON gc.grupo_id = g.id
+           WHERE g.empresa_id=?
+           GROUP BY g.id, g.nome, g.created_at
+           ORDER BY g.nome""",
+        (empresa_id,),
+    ) as cur:
+        rows = await cur.fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        if d.get("created_at"):
+            d["created_at"] = d["created_at"].isoformat()
+        result.append(d)
+    return result
+
+
+@router.post("/grupos")
+async def create_grupo(body: GrupoIn, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    nome = body.nome.strip()
+    if not nome:
+        raise HTTPException(400, "Nome obrigatório")
+    try:
+        cur = await db.execute(
+            "INSERT INTO grupos_contatos (empresa_id, nome) VALUES (?,?)",
+            (empresa_id, nome),
+        )
+        await db.commit()
+        return {"ok": True, "id": cur.lastrowid, "nome": nome}
+    except Exception as exc:
+        raise HTTPException(400, "Grupo já existe ou erro: " + str(exc))
+
+
+@router.put("/grupos/{grupo_id}")
+async def update_grupo(grupo_id: int, body: GrupoIn, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    nome = body.nome.strip()
+    if not nome:
+        raise HTTPException(400, "Nome obrigatório")
+    await db.execute(
+        "UPDATE grupos_contatos SET nome=? WHERE id=? AND empresa_id=?",
+        (nome, grupo_id, empresa_id),
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/grupos/{grupo_id}")
+async def delete_grupo(grupo_id: int, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    await db.execute(
+        "DELETE FROM grupos_contatos WHERE id=? AND empresa_id=?", (grupo_id, empresa_id)
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.get("/grupos/{grupo_id}/contatos")
+async def list_grupo_contatos(grupo_id: int, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    async with db.execute(
+        """SELECT c.id, c.phone, c.nome, c.ativo
+           FROM contatos c
+           JOIN grupo_contatos gc ON gc.contato_id = c.id
+           WHERE gc.grupo_id=? AND c.empresa_id=?
+           ORDER BY c.nome""",
+        (grupo_id, empresa_id),
+    ) as cur:
+        rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+class GrupoContatosIn(BaseModel):
+    contato_ids: List[int]
+
+
+@router.post("/grupos/{grupo_id}/contatos")
+async def add_grupo_contatos(grupo_id: int, body: GrupoContatosIn, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    # Verifica que o grupo pertence à empresa
+    async with db.execute(
+        "SELECT id FROM grupos_contatos WHERE id=? AND empresa_id=?", (grupo_id, empresa_id)
+    ) as cur:
+        if not await cur.fetchone():
+            raise HTTPException(404, "Grupo não encontrado")
+    added = 0
+    for cid in body.contato_ids:
+        try:
+            await db.execute(
+                "INSERT INTO grupo_contatos (grupo_id, contato_id) VALUES (?,?) ON CONFLICT DO NOTHING",
+                (grupo_id, cid),
+            )
+            added += 1
+        except Exception:
+            pass
+    await db.commit()
+    return {"ok": True, "adicionados": added}
+
+
+@router.delete("/grupos/{grupo_id}/contatos/{contato_id}")
+async def remove_grupo_contato(grupo_id: int, contato_id: int, db=Depends(get_db), user=Depends(get_current_user)):
+    empresa_id = _eid(user)
+    await db.execute(
+        """DELETE FROM grupo_contatos
+           WHERE grupo_id=? AND contato_id=?
+             AND grupo_id IN (SELECT id FROM grupos_contatos WHERE empresa_id=?)""",
+        (grupo_id, contato_id, empresa_id),
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+# ─────────────────────── Campanhas ──────────────────────────────────────────
+
 class IniciarPayload(BaseModel):
     contato_ids: Optional[List[int]] = None  # None ou [] = todos os ativos
+    grupo_id: Optional[int] = None           # se informado, usa contatos do grupo
 
 
 @router.post("/{campanha_id}/iniciar")
@@ -273,8 +401,17 @@ async def iniciar_campanha(
         # Remove envios antigos e recria
         await db.execute("DELETE FROM campanha_envios WHERE campanha_id=?", (campanha_id,))
 
-        # Filtra por IDs selecionados ou pega todos os ativos
-        if body.contato_ids:
+        # Filtra por grupo, IDs selecionados ou pega todos os ativos
+        if body.grupo_id:
+            async with db.execute(
+                """SELECT c.phone, c.nome FROM contatos c
+                   JOIN grupo_contatos gc ON gc.contato_id = c.id
+                   WHERE gc.grupo_id=? AND c.empresa_id=? AND c.ativo=TRUE
+                   ORDER BY c.nome""",
+                (body.grupo_id, empresa_id),
+            ) as cur:
+                contatos = await cur.fetchall()
+        elif body.contato_ids:
             placeholders = ",".join("?" * len(body.contato_ids))
             async with db.execute(
                 f"SELECT phone, nome FROM contatos WHERE empresa_id=? AND ativo=TRUE AND id IN ({placeholders})",

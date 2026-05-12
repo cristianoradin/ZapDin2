@@ -2370,13 +2370,27 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
         <div class="page-hero-text">
-          <h1>Lista de Contatos</h1>
-          <p>Cadastre os números de WhatsApp que receberão os disparos em massa. Importe via CSV ou adicione um a um.</p>
+          <h1>Contatos e Grupos</h1>
+          <p>Cadastre números de WhatsApp e organize-os em grupos para facilitar os disparos em massa.</p>
         </div>
       </div>
 
       <div class="alert" id="alertContatos"></div>
 
+      <!-- Abas: Contatos / Grupos -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:2px solid var(--border);padding-bottom:0">
+        <button id="tabBtnContatos" onclick="switchContatosTab('contatos')"
+          style="padding:.5rem 1.25rem;font-size:.875rem;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid var(--accent);color:var(--accent);margin-bottom:-2px">
+          👥 Contatos
+        </button>
+        <button id="tabBtnGrupos" onclick="switchContatosTab('grupos')"
+          style="padding:.5rem 1.25rem;font-size:.875rem;font-weight:600;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-mid);margin-bottom:-2px">
+          📂 Grupos
+        </button>
+      </div>
+
+      <!-- Painel Contatos -->
+      <div id="tabPanelContatos">
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
           <div class="section-header" style="margin-bottom:0">
@@ -2418,6 +2432,96 @@
         <div class="info-banner info-banner-blue" style="margin-top:1.25rem;margin-bottom:0">
           <span class="ib-icon">ℹ️</span>
           <div>CSV: uma linha por contato no formato <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">DDD+numero,nome</code> — o prefixo 55 é adicionado automaticamente. Ex: <code style="background:rgba(0,0,0,.06);padding:.05rem .35rem;border-radius:4px">11999990000,João Silva</code></div>
+        </div>
+      </div>
+
+      </div> <!-- /tabPanelContatos -->
+
+      <!-- Painel Grupos -->
+      <div id="tabPanelGrupos" style="display:none">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+            <div class="section-header" style="margin-bottom:0">
+              <div class="section-header-icon shi-green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+              </div>
+              <h2>Grupos de Contatos</h2>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btnNovoGrupo" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Novo Grupo
+            </button>
+          </div>
+          <div id="listaGrupos">
+            <div style="text-align:center;padding:2.5rem;color:var(--text-mid)">Carregando…</div>
+          </div>
+        </div>
+
+        <!-- Painel de contatos do grupo selecionado -->
+        <div class="card" id="cardGrupoContatos" style="display:none;margin-top:1rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+            <div class="section-header" style="margin-bottom:0">
+              <div class="section-header-icon shi-green">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              </div>
+              <h2>Contatos do grupo: <strong id="grupoSelecionadoNome" style="color:var(--accent)">—</strong></h2>
+            </div>
+            <button class="btn btn-primary btn-sm" id="btnAddContatosGrupo" style="display:inline-flex;align-items:center;gap:.35rem">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Adicionar Contatos
+            </button>
+          </div>
+          <div id="tbodyGrupoContatos">
+            <div style="text-align:center;padding:2rem;color:var(--text-mid)">Selecione um grupo acima.</div>
+          </div>
+        </div>
+      </div> <!-- /tabPanelGrupos -->
+
+      <!-- Modal novo grupo -->
+      <div class="confirm-overlay" id="modalGrupoContato">
+        <div class="confirm-box" style="max-width:420px">
+          <div class="confirm-header">
+            <div class="confirm-icon-wrap info">📂</div>
+            <div class="confirm-text">
+              <div class="confirm-title" id="modalGrupoContatoTitulo">Novo Grupo</div>
+              <div class="confirm-body">Dê um nome para identificar este grupo de contatos.</div>
+            </div>
+          </div>
+          <div style="padding:1rem 1.5rem">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Nome do grupo</label>
+              <input type="text" id="inpGrupoNome" placeholder="Ex: Clientes VIP" />
+            </div>
+          </div>
+          <div class="confirm-footer">
+            <button class="confirm-btn confirm-btn-cancel" id="btnCancelarGrupo">Cancelar</button>
+            <button class="confirm-btn confirm-btn-ok info" id="btnSalvarGrupo">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal adicionar contatos ao grupo -->
+      <div class="confirm-overlay" id="modalAddContatosGrupo">
+        <div class="confirm-box" style="max-width:520px;width:100%">
+          <div class="confirm-header">
+            <div class="confirm-icon-wrap info">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="confirm-text">
+              <div class="confirm-title">Adicionar ao Grupo</div>
+              <div class="confirm-body">Selecione os contatos para adicionar.</div>
+            </div>
+          </div>
+          <div style="padding:.75rem 1.5rem">
+            <input type="text" id="searchAddContatos" placeholder="Buscar contato…" style="width:100%;padding:.45rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none;margin-bottom:.75rem;box-sizing:border-box" />
+            <div id="listaAddContatos" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:.3rem;border:1px solid var(--border);border-radius:8px;padding:.5rem;background:var(--surface2)">
+              <div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>
+            </div>
+          </div>
+          <div class="confirm-footer">
+            <button class="confirm-btn confirm-btn-cancel" id="btnCancelarAddContatos">Cancelar</button>
+            <button class="confirm-btn confirm-btn-ok info" id="btnConfirmarAddContatos">Adicionar</button>
+          </div>
         </div>
       </div>
 
@@ -2503,7 +2607,7 @@
             <label>Arquivos da Campanha</label>
             <input type="file" id="inpCampArquivo" style="display:none" multiple>
             <div id="listaCampArquivos" style="margin-bottom:.75rem;display:flex;flex-direction:column;gap:.4rem"></div>
-            <button class="btn btn-ghost btn-sm" id="btnAddCampArquivo" style="display:inline-flex;align-items:center;gap:.35rem">
+            <button class="btn btn-ghost btn-sm" id="btnAddCampArquivo" disabled style="display:inline-flex;align-items:center;gap:.35rem;opacity:.45;cursor:not-allowed">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               Selecionar arquivo
             </button>
@@ -2611,19 +2715,44 @@
             </div>
           </div>
           <div style="padding:.75rem 1.5rem">
-            <!-- Busca + ações -->
-            <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
-              <input type="text" id="searchSelContatos" placeholder="Buscar contato…" style="flex:1;padding:.45rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none" />
-              <button class="btn btn-ghost btn-sm" id="btnSelecionarTodos">Todos</button>
-              <button class="btn btn-ghost btn-sm" id="btnDesmarcarTodos">Nenhum</button>
+            <!-- Seletor: Todos / Por Grupo / Contatos individuais -->
+            <div style="display:flex;gap:.5rem;margin-bottom:.85rem;border-bottom:1px solid var(--border);padding-bottom:.65rem">
+              <button id="selModoTodos" class="btn btn-primary btn-sm" onclick="_setSelModo('todos')" style="font-size:.78rem">🌐 Todos</button>
+              <button id="selModoGrupo" class="btn btn-ghost btn-sm" onclick="_setSelModo('grupo')" style="font-size:.78rem">📂 Por Grupo</button>
+              <button id="selModoIndividual" class="btn btn-ghost btn-sm" onclick="_setSelModo('individual')" style="font-size:.78rem">👤 Individual</button>
             </div>
-            <!-- Contador -->
-            <div style="font-size:.8rem;color:var(--text-mid);margin-bottom:.5rem">
-              <span id="selContatosCount">0</span> contatos selecionados de <span id="selContatosTotal">0</span>
+
+            <!-- Modo: grupo -->
+            <div id="selPainelGrupo" style="display:none;margin-bottom:.75rem">
+              <label style="font-size:.82rem;font-weight:600;color:var(--text-mid);display:block;margin-bottom:.35rem">Selecione o grupo:</label>
+              <select id="selGrupoId" style="width:100%;padding:.5rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.875rem;font-family:inherit;outline:none;background:var(--surface)">
+                <option value="">Carregando grupos…</option>
+              </select>
             </div>
-            <!-- Lista de contatos com checkbox -->
-            <div id="listaSelContatos" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.3rem;border:1px solid var(--border);border-radius:8px;padding:.5rem;background:var(--surface2)">
-              <div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>
+
+            <!-- Modo: individual — busca + ações -->
+            <div id="selPainelIndividual" style="display:none">
+              <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem">
+                <input type="text" id="searchSelContatos" placeholder="Buscar contato…" style="flex:1;padding:.45rem .75rem;border:1px solid var(--border);border-radius:8px;font-size:.85rem;font-family:inherit;outline:none" />
+                <button class="btn btn-ghost btn-sm" id="btnSelecionarTodos">Todos</button>
+                <button class="btn btn-ghost btn-sm" id="btnDesmarcarTodos">Nenhum</button>
+              </div>
+              <!-- Contador -->
+              <div style="font-size:.8rem;color:var(--text-mid);margin-bottom:.5rem">
+                <span id="selContatosCount">0</span> contatos selecionados de <span id="selContatosTotal">0</span>
+              </div>
+              <!-- Lista de contatos com checkbox -->
+              <div id="listaSelContatos" style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:.3rem;border:1px solid var(--border);border-radius:8px;padding:.5rem;background:var(--surface2)">
+                <div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>
+              </div>
+            </div>
+
+            <!-- Modo: todos — mensagem informativa -->
+            <div id="selPainelTodos">
+              <div class="info-banner info-banner-blue" style="margin:0">
+                <span class="ib-icon">ℹ️</span>
+                <div>O disparo será enviado para <strong>todos os contatos ativos</strong> da sua lista.</div>
+              </div>
             </div>
           </div>
           <div class="confirm-footer">
@@ -3254,10 +3383,21 @@
     }, 4000);
   }
 
-  // Auto-refresh do status das sessões a cada 5s enquanto na página
+  // Auto-refresh do status das sessões — 2s se há sessão pendente, 5s se tudo conectado
+  let _waRefreshInterval = 5000;
+  async function _refreshWAAdaptive() {
+    await loadSessoes();
+    const cont = document.getElementById('listaSessoes');
+    const hasPending = cont && cont.querySelector('.chip-yellow, .chip-red, .chip-gray');
+    const next = hasPending ? 2000 : 5000;
+    if (next !== _waRefreshInterval) {
+      _waRefreshInterval = next;
+      _iniciarRefreshWA();  // reinicia com novo intervalo
+    }
+  }
   function _iniciarRefreshWA() {
     _pararRefreshWA();
-    _waRefresh = setInterval(loadSessoes, 5000);
+    _waRefresh = setInterval(_refreshWAAdaptive, _waRefreshInterval);
   }
   function _pararRefreshWA() {
     if (_waRefresh) { clearInterval(_waRefresh); _waRefresh = null; }
@@ -3813,6 +3953,166 @@
 
   let _contatosData = [];
 
+  // ── Abas Contatos / Grupos ────────────────────────────────────────────────
+  function switchContatosTab(tab) {
+    const isContatos = tab === 'contatos';
+    document.getElementById('tabPanelContatos').style.display  = isContatos ? '' : 'none';
+    document.getElementById('tabPanelGrupos').style.display    = isContatos ? 'none' : '';
+    document.getElementById('tabBtnContatos').style.borderBottomColor = isContatos ? 'var(--accent)' : 'transparent';
+    document.getElementById('tabBtnContatos').style.color      = isContatos ? 'var(--accent)' : 'var(--text-mid)';
+    document.getElementById('tabBtnGrupos').style.borderBottomColor   = isContatos ? 'transparent' : 'var(--accent)';
+    document.getElementById('tabBtnGrupos').style.color        = isContatos ? 'var(--text-mid)' : 'var(--accent)';
+    if (!isContatos) loadGrupos();
+  }
+
+  // ── Grupos ────────────────────────────────────────────────────────────────
+  let _gruposData = [];
+  let _grupoSelecionadoId = null;
+  let _allContatosParaGrupo = [];
+
+  async function loadGrupos() {
+    const res = await fetch('/api/campanha/grupos');
+    if (!res.ok) return;
+    _gruposData = await res.json();
+    const div = document.getElementById('listaGrupos');
+    if (!_gruposData.length) {
+      div.innerHTML = '<div style="text-align:center;padding:2.5rem;color:var(--text-mid)">Nenhum grupo criado. Clique em <strong>Novo Grupo</strong> para começar.</div>';
+      return;
+    }
+    div.innerHTML = `<table><thead><tr><th>Nome</th><th style="width:100px;text-align:center">Contatos</th><th style="width:120px;text-align:right">Ações</th></tr></thead><tbody>
+      ${_gruposData.map(g => `
+        <tr>
+          <td><span style="font-weight:600;cursor:pointer;color:var(--accent)" onclick="selecionarGrupo(${g.id},'${escHtml(g.nome)}')">${escHtml(g.nome)}</span></td>
+          <td style="text-align:center"><span class="chip chip-green" style="font-size:.72rem">${g.total}</span></td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn btn-ghost btn-sm" onclick="selecionarGrupo(${g.id},'${escHtml(g.nome)}')">Gerenciar</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="deletarGrupo(${g.id},'${escHtml(g.nome)}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+          </td>
+        </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  async function selecionarGrupo(id, nome) {
+    _grupoSelecionadoId = id;
+    document.getElementById('grupoSelecionadoNome').textContent = nome;
+    document.getElementById('cardGrupoContatos').style.display = '';
+    await _carregarContatosGrupo(id);
+  }
+
+  async function _carregarContatosGrupo(id) {
+    const div = document.getElementById('tbodyGrupoContatos');
+    div.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-mid)">Carregando…</div>';
+    const res = await fetch(`/api/campanha/grupos/${id}/contatos`);
+    const lista = res.ok ? await res.json() : [];
+    if (!lista.length) {
+      div.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-mid)">Nenhum contato neste grupo. Clique em <strong>Adicionar Contatos</strong>.</div>';
+      return;
+    }
+    div.innerHTML = `<table><thead><tr><th>Telefone</th><th>Nome</th><th style="width:60px;text-align:center">Remover</th></tr></thead><tbody>
+      ${lista.map(c => `
+        <tr>
+          <td style="font-family:monospace;font-size:.85rem">${_fmtPhone(c.phone)}</td>
+          <td>${escHtml(c.nome || '—')}</td>
+          <td style="text-align:center">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="removerDoGrupo(${c.id})"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </td>
+        </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  async function removerDoGrupo(contatoId) {
+    await api('DELETE', `/api/campanha/grupos/${_grupoSelecionadoId}/contatos/${contatoId}`);
+    _carregarContatosGrupo(_grupoSelecionadoId);
+    loadGrupos();
+  }
+
+  async function deletarGrupo(id, nome) {
+    const ok = await showConfirm({ title: `Excluir grupo "${nome}"?`, body: 'Os contatos não serão excluídos, apenas o grupo.', okLabel: 'Excluir', type: 'danger' });
+    if (!ok) return;
+    await api('DELETE', `/api/campanha/grupos/${id}`);
+    if (_grupoSelecionadoId === id) {
+      _grupoSelecionadoId = null;
+      document.getElementById('cardGrupoContatos').style.display = 'none';
+    }
+    loadGrupos();
+  }
+
+  // ── Novo Grupo ───────────────────────────────────────────────────────────
+  let _editGrupoId = null;
+  document.getElementById('btnNovoGrupo').addEventListener('click', () => {
+    _editGrupoId = null;
+    document.getElementById('modalGrupoContatoTitulo').textContent = 'Novo Grupo';
+    document.getElementById('inpGrupoNome').value = '';
+    document.getElementById('modalGrupoContato').classList.add('open');
+  });
+  document.getElementById('btnCancelarGrupo').addEventListener('click', () => {
+    document.getElementById('modalGrupoContato').classList.remove('open');
+  });
+  document.getElementById('btnSalvarGrupo').addEventListener('click', async () => {
+    const nome = document.getElementById('inpGrupoNome').value.trim();
+    if (!nome) return;
+    const method = _editGrupoId ? 'PUT' : 'POST';
+    const path = _editGrupoId ? `/api/campanha/grupos/${_editGrupoId}` : '/api/campanha/grupos';
+    const res = await api(method, path, { nome });
+    if (res.ok !== false) {
+      document.getElementById('modalGrupoContato').classList.remove('open');
+      loadGrupos();
+    } else {
+      showAlert('alertContatos', res.detail || 'Erro ao salvar grupo.', 'error');
+    }
+  });
+
+  // ── Adicionar contatos ao grupo ──────────────────────────────────────────
+  document.getElementById('btnAddContatosGrupo').addEventListener('click', async () => {
+    const div = document.getElementById('listaAddContatos');
+    div.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-mid)">Carregando…</div>';
+    document.getElementById('searchAddContatos').value = '';
+    document.getElementById('modalAddContatosGrupo').classList.add('open');
+    const r1 = await fetch('/api/campanha/contatos');
+    const todos = r1.ok ? await r1.json() : [];
+    const r2 = await fetch(`/api/campanha/grupos/${_grupoSelecionadoId}/contatos`);
+    const noGrupo = r2.ok ? await r2.json() : [];
+    const noGrupoIds = new Set(noGrupo.map(c => c.id));
+    _allContatosParaGrupo = todos.filter(c => !noGrupoIds.has(c.id) && c.ativo !== false);
+    _renderAddContatos(_allContatosParaGrupo);
+  });
+
+  function _renderAddContatos(lista) {
+    const div = document.getElementById('listaAddContatos');
+    if (!lista.length) {
+      div.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-mid)">Todos os contatos já estão no grupo.</div>';
+      return;
+    }
+    div.innerHTML = lista.map(c => `
+      <label style="display:flex;align-items:center;gap:.625rem;padding:.4rem .5rem;border-radius:6px;cursor:pointer" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+        <input type="checkbox" class="add-grupo-cb" data-id="${c.id}" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0" />
+        <span style="font-weight:500;font-size:.875rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(c.nome || '—')}</span>
+        <span style="font-size:.78rem;color:var(--text-mid);flex-shrink:0">${_fmtPhone(c.phone)}</span>
+      </label>`).join('');
+  }
+
+  document.getElementById('searchAddContatos').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    _renderAddContatos(_allContatosParaGrupo.filter(c =>
+      (c.nome || '').toLowerCase().includes(q) || String(c.phone).includes(q)
+    ));
+  });
+
+  document.getElementById('btnCancelarAddContatos').addEventListener('click', () => {
+    document.getElementById('modalAddContatosGrupo').classList.remove('open');
+  });
+
+  document.getElementById('btnConfirmarAddContatos').addEventListener('click', async () => {
+    const ids = [...document.querySelectorAll('.add-grupo-cb:checked')].map(cb => Number(cb.dataset.id));
+    if (!ids.length) { showAlert('alertContatos', 'Selecione ao menos um contato.', 'error'); return; }
+    const res = await api('POST', `/api/campanha/grupos/${_grupoSelecionadoId}/contatos`, { contato_ids: ids });
+    document.getElementById('modalAddContatosGrupo').classList.remove('open');
+    if (res.ok !== false) {
+      _carregarContatosGrupo(_grupoSelecionadoId);
+      loadGrupos();
+    }
+  });
+
   async function loadContatos() {
     const q = document.getElementById('searchContatos').value || '';
     const res = await fetch('/api/campanha/contatos?q=' + encodeURIComponent(q));
@@ -3930,6 +4230,8 @@
     document.getElementById('listaCampArquivos').innerHTML = '';
     _campanhaCriadaId = null;
     _campanhaCriadaArquivos = [];
+    const btnArq = document.getElementById('btnAddCampArquivo');
+    btnArq.disabled = true; btnArq.style.opacity = '0.45'; btnArq.style.cursor = 'not-allowed';
   }
 
   document.querySelectorAll('input[name="campTipo"]').forEach(radio => {
@@ -3950,25 +4252,74 @@
       return;
     }
     for (const file of e.target.files) {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`/api/campanha/${_campanhaCriadaId}/arquivo`, { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.ok) _campanhaCriadaArquivos.push(data);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        showAlert('alertCampanha', `Enviando "${file.name}"…`);
+        const previewUrl = URL.createObjectURL(file);
+        const res = await fetch(`/api/campanha/${_campanhaCriadaId}/arquivo`, { method: 'POST', body: fd });
+        if (!res.ok) {
+          const txt = await res.text();
+          showAlert('alertCampanha', `Erro ao enviar "${file.name}": HTTP ${res.status} — ${txt.slice(0,100)}`, 'error');
+          URL.revokeObjectURL(previewUrl);
+          continue;
+        }
+        const data = await res.json();
+        if (data.ok) {
+          _campanhaCriadaArquivos.push({ ...data, previewUrl, fileType: file.type, fileSize: file.size });
+          showAlert('alertCampanha', `Arquivo "${file.name}" adicionado com sucesso!`);
+        } else {
+          showAlert('alertCampanha', `Falha ao adicionar "${file.name}".`, 'error');
+          URL.revokeObjectURL(previewUrl);
+        }
+      } catch (err) {
+        showAlert('alertCampanha', `Erro: ${err.message}`, 'error');
+      }
     }
     e.target.value = '';
     renderCampArquivos(_campanhaCriadaArquivos);
   });
 
+  function _fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+
   function renderCampArquivos(lista) {
     const div = document.getElementById('listaCampArquivos');
-    div.innerHTML = lista.map(a => `
-      <div style="display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;background:var(--surface2);border:1px solid var(--border-soft);border-radius:8px;font-size:.85rem">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
-        <span style="flex:1;font-weight:500">${escHtml(a.nome_original)}</span>
-        <span class="chip chip-green" style="font-size:.7rem">✓ Adicionado</span>
-      </div>
-    `).join('');
+    if (!lista.length) { div.innerHTML = ''; return; }
+    div.innerHTML = lista.map((a, i) => {
+      const isImg = a.fileType && a.fileType.startsWith('image/');
+      const isPdf = a.nome_original && a.nome_original.toLowerCase().endsWith('.pdf');
+      const nome = escHtml(a.nome_original || '');
+      const size = _fmtSize(a.fileSize);
+
+      let preview = '';
+      if (isImg && a.previewUrl) {
+        preview = `<img src="${a.previewUrl}" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border-soft);flex-shrink:0" />`;
+      } else if (isPdf) {
+        preview = `<div style="width:64px;height:64px;background:#fee2e2;border-radius:6px;border:1px solid #fca5a5;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+          <span style="font-size:.6rem;font-weight:700;color:#dc2626;margin-top:2px">PDF</span>
+        </div>`;
+      } else {
+        preview = `<div style="width:64px;height:64px;background:var(--accent-soft);border-radius:6px;border:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </div>`;
+      }
+
+      return `<div style="display:flex;align-items:center;gap:.75rem;padding:.625rem;background:var(--surface);border:1px solid var(--border-soft);border-radius:10px">
+        ${preview}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nome}</div>
+          ${size ? `<div style="font-size:.75rem;color:var(--text-mid);margin-top:2px">${size}</div>` : ''}
+          <span class="chip chip-green" style="font-size:.7rem;margin-top:4px">✓ Adicionado</span>
+        </div>
+        ${a.previewUrl && isImg ? `<a href="${a.previewUrl}" target="_blank" style="font-size:.75rem;color:var(--accent);white-space:nowrap">Ver</a>` : ''}
+      </div>`;
+    }).join('');
   }
 
   document.getElementById('btnCriarCampanha').addEventListener('click', async () => {
@@ -3980,8 +4331,14 @@
     const res = await api('POST', '/api/campanha', { nome, tipo, mensagem });
     if (!res.ok) { showAlert('alertCampanha', 'Erro ao criar campanha.', 'error'); return; }
     _campanhaCriadaId = res.id;
-    showAlert('alertCampanha', `Campanha "${nome}" criada! ${tipo === 'file' ? 'Agora adicione os arquivos acima.' : 'Vá em Campanhas para iniciar o disparo.'}`);
-    if (tipo !== 'file') {
+    if (tipo === 'file') {
+      const btn = document.getElementById('btnAddCampArquivo');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      showAlert('alertCampanha', `Campanha "${nome}" criada! Agora clique em "Selecionar arquivo" para adicionar o(s) arquivo(s).`);
+    } else {
+      showAlert('alertCampanha', `Campanha "${nome}" criada! Vá em Campanhas para iniciar o disparo.`);
       setTimeout(() => showPage('dm-historico'), 1500);
     }
   });
@@ -4117,22 +4474,45 @@
 
   let _selCampanhaId = null;
   let _selContatosAll = [];   // todos os contatos carregados
+  let _selModo = 'todos';     // 'todos' | 'grupo' | 'individual'
+
+  function _setSelModo(modo) {
+    _selModo = modo;
+    document.getElementById('selPainelTodos').style.display      = modo === 'todos'      ? '' : 'none';
+    document.getElementById('selPainelGrupo').style.display      = modo === 'grupo'      ? '' : 'none';
+    document.getElementById('selPainelIndividual').style.display  = modo === 'individual' ? '' : 'none';
+    ['Todos','Grupo','Individual'].forEach(m => {
+      const btn = document.getElementById('selModo' + m);
+      btn.className = 'btn btn-sm ' + (_selModo === m.toLowerCase() ? 'btn-primary' : 'btn-ghost');
+    });
+    if (modo === 'grupo') _carregarGruposSelect();
+    if (modo === 'individual') _carregarSelContatos();
+  }
+
+  async function _carregarGruposSelect() {
+    const sel = document.getElementById('selGrupoId');
+    sel.innerHTML = '<option value="">Carregando…</option>';
+    const r = await fetch('/api/campanha/grupos');
+    const grupos = r.ok ? await r.json() : [];
+    if (!grupos.length) {
+      sel.innerHTML = '<option value="">Nenhum grupo cadastrado</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">— Selecione um grupo —</option>' +
+      grupos.map(g => `<option value="${g.id}">${escHtml(g.nome)} (${g.total} contatos)</option>`).join('');
+  }
 
   async function iniciarCampanha(id) {
     _selCampanhaId = id;
-    // Busca nome da campanha para o subtítulo
     const campEl = document.querySelector(`[data-camp-id="${id}"]`);
-    // Atualiza subtítulo do modal
     const campNome = campEl ? campEl.dataset.campNome : '';
     document.getElementById('modalSelContatosCampNome').textContent =
       campNome ? `Campanha: "${campNome}"` : 'Escolha os destinatários desta campanha.';
 
-    // Limpa busca
-    document.getElementById('searchSelContatos').value = '';
+    // Reset ao modo "todos"
+    _setSelModo('todos');
 
-    // Abre o modal e carrega contatos
     document.getElementById('modalSelecionarContatos').classList.add('open');
-    await _carregarSelContatos();
   }
 
   async function _carregarSelContatos() {
@@ -4201,16 +4581,31 @@
   });
 
   document.getElementById('btnConfirmarIniciar').addEventListener('click', async () => {
-    const ids = [...document.querySelectorAll('.sel-contato-cb:checked')].map(cb => Number(cb.dataset.id));
-    if (!ids.length) {
-      showAlert('alertHistorico', 'Selecione pelo menos um contato.', 'error');
-      return;
+    let payload = {};
+    let descricao = '';
+
+    if (_selModo === 'todos') {
+      payload = {};
+      descricao = 'todos os contatos ativos';
+    } else if (_selModo === 'grupo') {
+      const grupoId = parseInt(document.getElementById('selGrupoId').value);
+      if (!grupoId) { showAlert('alertHistorico', 'Selecione um grupo.', 'error'); return; }
+      const opt = document.getElementById('selGrupoId').selectedOptions[0];
+      payload = { grupo_id: grupoId };
+      descricao = `grupo "${opt.textContent.split('(')[0].trim()}"`;
+    } else {
+      const ids = [...document.querySelectorAll('.sel-contato-cb:checked')].map(cb => Number(cb.dataset.id));
+      if (!ids.length) { showAlert('alertHistorico', 'Selecione pelo menos um contato.', 'error'); return; }
+      payload = { contato_ids: ids };
+      descricao = `${ids.length} contato(s) selecionados`;
     }
+
     document.getElementById('modalSelecionarContatos').classList.remove('open');
-    const res = await api('POST', `/api/campanha/${_selCampanhaId}/iniciar`, { contato_ids: ids });
+    const res = await api('POST', `/api/campanha/${_selCampanhaId}/iniciar`, payload);
     if (res.ok) {
-      showAlert('alertHistorico', `Disparo iniciado para ${ids.length} contato(s)!`);
+      showAlert('alertHistorico', `Disparo iniciado para ${descricao}!`);
       loadCampanhas();
+      _startCampRefresh();
     } else {
       showAlert('alertHistorico', res.detail || 'Erro ao iniciar campanha.', 'error');
     }
@@ -4283,16 +4678,26 @@
   // ── Auto-refresh campanhas em execução ────────────────────────────────────────
   let _campRefreshTimer = null;
   function _startCampRefresh() {
+    if (_campRefreshTimer) clearInterval(_campRefreshTimer);
     _campRefreshTimer = setInterval(async () => {
       const page = document.querySelector('.page.active');
       if (!page || page.id !== 'page-dm-historico') {
         clearInterval(_campRefreshTimer);
+        _campRefreshTimer = null;
         return;
       }
       const res = await fetch('/api/campanha');
-      if (res.ok) renderCampanhas(await res.json());
+      if (!res.ok) return;
+      const lista = await res.json();
+      renderCampanhas(lista);
       loadWorkerStatus();
-    }, 5000);
+      // Para o auto-refresh quando não houver mais campanhas em execução
+      const hasRunning = lista.some(c => c.status === 'running');
+      if (!hasRunning) {
+        clearInterval(_campRefreshTimer);
+        _campRefreshTimer = null;
+      }
+    }, 3000);
   }
 
   // Helper showPage (para navegação programática)

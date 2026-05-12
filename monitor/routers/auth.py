@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # Todos os menus disponíveis no app de envio
-ALL_APP_MENUS = ["dashboard", "mensagem", "whatsapp", "teste", "token", "arquivo", "docs", "telegram"]
+ALL_APP_MENUS = ["dashboard", "mensagem", "whatsapp", "teste", "token", "arquivo", "docs", "dm-contatos", "dm-campanha", "dm-historico", "telegram"]
 
 
 # ── Helpers de sincronização Monitor → App ────────────────────────────────────

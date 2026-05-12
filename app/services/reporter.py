@@ -28,10 +28,14 @@ async def _read_version() -> str:
 def _wa_status_for_empresa(empresa_id: int) -> str:
     """Retorna status WA apenas das sessões desta empresa."""
     try:
-        from .whatsapp_service import wa_manager
+        from ..core.config import settings as _settings
+        if _settings.use_evolution:
+            from .evolution_service import evo_manager as wa_manager
+        else:
+            from .whatsapp_service import wa_manager
         prefix = f"{empresa_id}:"
         statuses = {s.status for k, s in wa_manager._sessions.items() if k.startswith(prefix)}
-        logger.warning("[reporter] empresa=%s sessões=%s", empresa_id, statuses or "nenhuma")
+        logger.debug("[reporter] empresa=%s sessões=%s", empresa_id, statuses or "nenhuma")
         if "connected" in statuses:
             return "connected"
         if "qr_code" in statuses:

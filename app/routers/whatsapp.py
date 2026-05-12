@@ -6,7 +6,12 @@ import tempfile
 
 from ..core.database import get_db
 from ..core.security import get_current_user
-from ..services.whatsapp_service import wa_manager
+from ..core.config import settings
+
+if settings.use_evolution:
+    from ..services.evolution_service import evo_manager as wa_manager
+else:
+    from ..services.whatsapp_service import wa_manager
 
 router = APIRouter(prefix="/api/sessoes", tags=["whatsapp"])
 

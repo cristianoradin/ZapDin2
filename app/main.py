@@ -17,6 +17,7 @@ from .routers.internal import router as internal_router
 from .routers.monitor_sync import router as monitor_sync_router
 from .routers.docs_router import router as docs_router
 from .routers.campanha import router as campanha_router
+from .routers.pdv_router import router as pdv_router
 from .services import reporter, updater, telegram_service, queue_worker
 from .services.whatsapp_service import wa_manager as _playwright_manager
 from .services.evolution_service import evo_manager as _evo_manager
@@ -134,6 +135,7 @@ fastapi_app.include_router(stats.router)
 fastapi_app.include_router(telegram_router.router)
 fastapi_app.include_router(docs_router)             # /api/docs/* (documentação)
 fastapi_app.include_router(campanha_router)         # /api/campanha/* (disparo em massa)
+fastapi_app.include_router(pdv_router)              # /api/pdv/* (ZapDin PDV local)
 
 
 @fastapi_app.post("/api/logout")

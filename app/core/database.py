@@ -387,3 +387,47 @@ async def init_db() -> None:
             )
         """)
         await conn.execute("CREATE INDEX IF NOT EXISTS idx_campanha_envios_status ON campanha_envios(campanha_id, status)")
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS grupos_contatos (
+                id         BIGSERIAL PRIMARY KEY,
+                empresa_id BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                nome       TEXT NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (empresa_id, nome)
+            )
+        """)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS grupo_contatos (
+                grupo_id   BIGINT NOT NULL REFERENCES grupos_contatos(id) ON DELETE CASCADE,
+                contato_id BIGINT NOT NULL REFERENCES contatos(id) ON DELETE CASCADE,
+                PRIMARY KEY (grupo_id, contato_id)
+            )
+        """)
+
+        # Tokens de máquina para o PDV (sem usuário/senha)
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS pdv_tokens (
+                id           BIGSERIAL PRIMARY KEY,
+                empresa_id   BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                token        TEXT UNIQUE NOT NULL,
+                nome         TEXT NOT NULL DEFAULT 'PDV',
+                ativo        BOOLEAN DEFAULT TRUE,
+                criado_em    TIMESTAMPTZ DEFAULT NOW(),
+                ultimo_uso   TIMESTAMPTZ
+            )
+        """)
+
+        # Sessões PDV locais reportadas pelos clientes
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS pdv_sessoes (
+                id           BIGSERIAL PRIMARY KEY,
+                empresa_id   BIGINT NOT NULL REFERENCES empresas(id) ON DELETE CASCADE,
+                sessao_id    TEXT NOT NULL,
+                pdv_nome     TEXT NOT NULL DEFAULT '',
+                phone        TEXT,
+                status       TEXT NOT NULL DEFAULT 'unknown',
+                updated_at   TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (empresa_id, sessao_id)
+            )
+        """)

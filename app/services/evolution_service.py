@@ -73,11 +73,26 @@ class EvoSession:
                 self.phone = phone
         elif state in ("connecting", "pairingCode"):
             self.status = "connecting"
+            # Após escanear o QR, começa a checar ativamente até confirmar "open"
+            asyncio.create_task(self._poll_until_open())
         else:
             self.status = "disconnected"
 
         if prev != self.status:
             logger.info("EvoSession [%s] %s → %s", self.session_id, prev, self.status)
+
+    async def _poll_until_open(self):
+        """Checa connectionState a cada 2s por até 30s após o QR ser escaneado."""
+        for _ in range(15):
+            await asyncio.sleep(2)
+            if self.status == "connected":
+                return
+            try:
+                await self._check_state()
+            except Exception:
+                pass
+            if self.status == "connected":
+                return
 
     # ── Heartbeat leve — apenas confirma estado a cada 60s ───────────────────
 
@@ -92,13 +107,13 @@ class EvoSession:
 
     async def _heartbeat_loop(self):
         """Confirma estado real a cada 60s. Não gera QR — isso é responsabilidade do webhook."""
-        await asyncio.sleep(15)   # aguarda webhook chegar antes da primeira checagem
+        await asyncio.sleep(3)   # checagem rápida logo no início
         while True:
             try:
                 await self._check_state()
             except Exception as exc:
                 logger.debug("EvoSession heartbeat [%s]: %s", self.session_id, exc)
-            await asyncio.sleep(60 if self.status == "connected" else 20)
+            await asyncio.sleep(60 if self.status == "connected" else 15)
 
     async def _check_state(self):
         inst = _instance_name(self.empresa_id, self.session_id)
@@ -115,11 +130,25 @@ class EvoSession:
         self.on_connection_update(state)
 
     async def fetch_qr_now(self):
-        """Solicita geração imediata de QR (chamado quando front abre a página)."""
-        if self.status == "connected":
-            return
+        """Solicita QR ou confirma estado conectado (chamado no startup e quando front abre a página)."""
         inst = _instance_name(self.empresa_id, self.session_id)
         try:
+            # Primeiro verifica estado real — pode já estar conectado
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                rs = await client.get(_url(f"instance/connectionState/{inst}"), headers=_h())
+            if rs.status_code == 200:
+                state = (
+                    rs.json().get("instance", {}).get("state")
+                    or rs.json().get("state")
+                    or "close"
+                )
+                if state == "open":
+                    self.on_connection_update("open")
+                    return   # já conectado, não precisa gerar QR
+
+            if self.status == "connected":
+                return
+
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 r = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
             if r.status_code == 200:
@@ -339,41 +368,8 @@ class EvoManager:
         mtype = _media_type(ext)
         mime = _mimetype(ext)
 
-        # Gera token temporário — Evolution API busca o arquivo via URL local
-        token = secrets.token_urlsafe(24)
-        with _file_tokens_lock:
-            _file_tokens[token] = file_path
-
-        serve_url = f"http://127.0.0.1:{settings.port}/api/evo-file/{token}"
-
-        try:
-            async with httpx.AsyncClient(timeout=90.0) as client:
-                r = await client.post(
-                    _url(f"message/sendMedia/{inst}"),
-                    json={
-                        "number": number,
-                        "mediatype": mtype,
-                        "mimetype": mime,
-                        "caption": caption or "",
-                        "media": serve_url,
-                        "fileName": filename,
-                    },
-                    headers=_h(),
-                )
-            if r.status_code in (200, 201):
-                logger.info("EvoManager send_file OK: %s → %s", filename, number)
-                return True, None
-            logger.warning(
-                "EvoManager send_file URL falhou (%s), tentando base64: %s",
-                r.status_code, r.text[:200],
-            )
-            return await self._send_file_b64(inst, number, file_path, filename, mime, mtype, caption)
-        except Exception as exc:
-            logger.error("EvoManager send_file exc: %s", exc)
-            return await self._send_file_b64(inst, number, file_path, filename, mime, mtype, caption)
-        finally:
-            with _file_tokens_lock:
-                _file_tokens.pop(token, None)
+        # Envia sempre via base64 — mais confiável que URL (evita race condition de token)
+        return await self._send_file_b64(inst, number, file_path, filename, mime, mtype, caption)
 
     async def _send_file_b64(
         self, inst, number, file_path, filename, mime, mtype, caption
