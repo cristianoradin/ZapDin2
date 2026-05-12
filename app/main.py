@@ -46,6 +46,8 @@ async def disconnect(sid):
 _LOCK_ALLOWED_PREFIXES = (
     "/activate",
     "/api/activate",
+    "/api/evo-webhook",   # Evolution API envia eventos mesmo durante ativação
+    "/api/evo-file/",
     "/login",
     "/static/",
     "/logo/",
@@ -156,6 +158,17 @@ async def evo_file_serve(token: str):
     if not path or not os.path.exists(path):
         return JSONResponse({"error": "not found"}, status_code=404)
     return FileResponse(path)
+
+
+@fastapi_app.post("/api/evo-webhook")
+async def evo_webhook(request: Request):
+    """Recebe eventos da Evolution API em tempo real (QR, conexão, etc.)."""
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"ok": False}, status_code=400)
+    wa_manager.handle_webhook(payload)
+    return {"ok": True}
 
 
 # ── Arquivos estáticos ────────────────────────────────────────────────────────

@@ -1,12 +1,7 @@
 """
 evolution_service.py — integração com Evolution API (open source WhatsApp REST API).
 
-Expõe a mesma interface do wa_manager (whatsapp_service.py):
-  - load_from_db, add_session, remove_session
-  - pick_session, get_qr, get_status
-  - send_text, send_file, schedule_status_check
-
-Documentação Evolution API: https://github.com/EvolutionAPI/evolution-api
+Usa webhooks para receber QR e status em tempo real, sem polling instável.
 """
 import asyncio
 import base64
@@ -25,7 +20,6 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = 30.0
 
 # ── Tokens temporários para servir arquivos à Evolution API ──────────────────
-# Mapa token → caminho absoluto do arquivo; limpo após uso ou TTL curto
 _file_tokens: Dict[str, str] = {}
 _file_tokens_lock = threading.Lock()
 
@@ -42,6 +36,11 @@ def _instance_name(empresa_id: int, session_id: str) -> str:
     return f"e{empresa_id}_{session_id}"
 
 
+def _webhook_url() -> str:
+    """URL que a Evolution API vai chamar quando houver eventos."""
+    return f"http://127.0.0.1:{settings.port}/api/evo-webhook"
+
+
 # ── Sessão local ──────────────────────────────────────────────────────────────
 
 class EvoSession:
@@ -52,71 +51,88 @@ class EvoSession:
         self.status = "disconnected"
         self.qr_data: Optional[str] = None
         self.phone: Optional[str] = None
-        self._poll_task: Optional[asyncio.Task] = None
-        self._qr_requested = True   # busca QR logo no primeiro poll
+        self._heartbeat_task: Optional[asyncio.Task] = None
 
-    def start_polling(self):
-        if not self._poll_task or self._poll_task.done():
-            self._poll_task = asyncio.create_task(self._poll_loop())
+    # ── Webhook handlers (chamados pelo EvoManager) ───────────────────────────
 
-    def stop_polling(self):
-        if self._poll_task:
-            self._poll_task.cancel()
-            self._poll_task = None
+    def on_qr_updated(self, qr_base64: str):
+        """Recebe QR em tempo real via webhook."""
+        if not qr_base64.startswith("data:"):
+            qr_base64 = "data:image/png;base64," + qr_base64
+        self.qr_data = qr_base64
+        self.status = "disconnected"
+        logger.info("EvoSession [%s] QR atualizado via webhook", self.session_id)
 
-    def request_qr(self):
-        """Marca que o front pediu o QR — próximo poll fará a chamada /connect."""
-        self._qr_requested = True
+    def on_connection_update(self, state: str, phone: Optional[str] = None):
+        """Recebe mudança de estado em tempo real via webhook."""
+        prev = self.status
+        if state == "open":
+            self.status = "connected"
+            self.qr_data = None      # limpa QR após conectar
+            if phone:
+                self.phone = phone
+        elif state in ("connecting", "pairingCode"):
+            self.status = "connecting"
+        else:
+            self.status = "disconnected"
 
-    async def _poll_loop(self):
+        if prev != self.status:
+            logger.info("EvoSession [%s] %s → %s", self.session_id, prev, self.status)
+
+    # ── Heartbeat leve — apenas confirma estado a cada 60s ───────────────────
+
+    def start_heartbeat(self):
+        if not self._heartbeat_task or self._heartbeat_task.done():
+            self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+
+    def stop_heartbeat(self):
+        if self._heartbeat_task:
+            self._heartbeat_task.cancel()
+            self._heartbeat_task = None
+
+    async def _heartbeat_loop(self):
+        """Confirma estado real a cada 60s. Não gera QR — isso é responsabilidade do webhook."""
+        await asyncio.sleep(15)   # aguarda webhook chegar antes da primeira checagem
         while True:
             try:
-                await self._refresh_status()
+                await self._check_state()
             except Exception as exc:
-                logger.debug("EvoSession poll [%s]: %s", self.session_id, exc)
-            # Conectado: checa a cada 30s. Desconectado: checa estado a cada 8s.
-            await asyncio.sleep(30 if self.status == "connected" else 8)
+                logger.debug("EvoSession heartbeat [%s]: %s", self.session_id, exc)
+            await asyncio.sleep(60 if self.status == "connected" else 20)
 
-    async def _refresh_status(self):
+    async def _check_state(self):
         inst = _instance_name(self.empresa_id, self.session_id)
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            r = await client.get(
-                _url(f"instance/connectionState/{inst}"), headers=_h()
-            )
-            if r.status_code == 200:
-                data = r.json()
-                # Suporte a diferentes formatos da Evolution API v1/v2
-                state = (
-                    data.get("instance", {}).get("state")
-                    or data.get("state")
-                    or "close"
-                )
-                if state == "open":
-                    self.status = "connected"
-                    self.qr_data = None
-                    self._qr_requested = False
-                    logger.info("EvoSession [%s] conectado", self.session_id)
-                    return
-                prev = self.status
-                self.status = "connecting" if state == "connecting" else "disconnected"
-                if prev != self.status:
-                    logger.info("EvoSession [%s] estado: %s", self.session_id, self.status)
+            r = await client.get(_url(f"instance/connectionState/{inst}"), headers=_h())
+        if r.status_code != 200:
+            return
+        data = r.json()
+        state = (
+            data.get("instance", {}).get("state")
+            or data.get("state")
+            or "close"
+        )
+        self.on_connection_update(state)
 
-            # Busca QR apenas quando solicitado pelo front e não conectado
-            if self._qr_requested and self.status != "connected":
-                self._qr_requested = False
-                r2 = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
-                if r2.status_code == 200:
-                    d = r2.json()
-                    qr = (
-                        d.get("base64")
-                        or d.get("qrcode", {}).get("base64")
-                        or d.get("qr", "")
-                    )
-                    if qr and not qr.startswith("data:"):
-                        qr = "data:image/png;base64," + qr
-                    self.qr_data = qr or None
-                    logger.info("EvoSession [%s] QR gerado", self.session_id)
+    async def fetch_qr_now(self):
+        """Solicita geração imediata de QR (chamado quando front abre a página)."""
+        if self.status == "connected":
+            return
+        inst = _instance_name(self.empresa_id, self.session_id)
+        try:
+            async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                r = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
+            if r.status_code == 200:
+                d = r.json()
+                qr = (
+                    d.get("base64")
+                    or d.get("qrcode", {}).get("base64")
+                    or d.get("qr", "")
+                )
+                if qr:
+                    self.on_qr_updated(qr)
+        except Exception as exc:
+            logger.debug("fetch_qr_now [%s]: %s", self.session_id, exc)
 
 
 # ── Manager ───────────────────────────────────────────────────────────────────
@@ -125,6 +141,8 @@ class EvoManager:
     def __init__(self):
         self._sessions: Dict[str, EvoSession] = {}
         self._rr_index = 0
+        # Índice inverso: instanceName → EvoSession (para despacho de webhook)
+        self._inst_index: Dict[str, EvoSession] = {}
 
     def _key(self, empresa_id: int, session_id: str) -> str:
         return f"{empresa_id}:{session_id}"
@@ -143,7 +161,10 @@ class EvoManager:
         await self._ensure_instance(inst)
         sess = EvoSession(session_id, nome, empresa_id)
         self._sessions[key] = sess
-        sess.start_polling()
+        self._inst_index[inst] = sess
+        sess.start_heartbeat()
+        # Busca estado atual e QR imediatamente
+        asyncio.create_task(sess.fetch_qr_now())
         logger.info("EvoManager: sessão %s empresa %s", session_id, empresa_id)
 
     async def remove_session(self, session_id: str, empresa_id: int) -> None:
@@ -151,8 +172,9 @@ class EvoManager:
         sess = self._sessions.pop(key, None)
         if not sess:
             return
-        sess.stop_polling()
+        sess.stop_heartbeat()
         inst = _instance_name(empresa_id, session_id)
+        self._inst_index.pop(inst, None)
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
                 await client.delete(_url(f"instance/delete/{inst}"), headers=_h())
@@ -161,29 +183,94 @@ class EvoManager:
 
     async def stop(self) -> None:
         for sess in list(self._sessions.values()):
-            sess.stop_polling()
+            sess.stop_heartbeat()
+
+    # ── Webhook handler (chamado pelo endpoint POST /api/evo-webhook) ─────────
+
+    def handle_webhook(self, payload: dict) -> None:
+        """Processa evento recebido da Evolution API em tempo real."""
+        event = (payload.get("event") or "").upper()
+        inst = payload.get("instance") or payload.get("instanceName") or ""
+        data = payload.get("data") or {}
+
+        sess = self._inst_index.get(inst)
+        if not sess:
+            return
+
+        if event in ("QRCODE_UPDATED", "QRCODE.UPDATED"):
+            qr = (
+                data.get("base64")
+                or data.get("qrcode", {}).get("base64")
+                or ""
+            )
+            if qr:
+                sess.on_qr_updated(qr)
+
+        elif event in ("CONNECTION_UPDATE", "CONNECTION.UPDATE"):
+            state = data.get("state") or data.get("instance", {}).get("state") or ""
+            phone = (
+                data.get("wuid")
+                or data.get("phone")
+                or data.get("number")
+                or None
+            )
+            if state:
+                sess.on_connection_update(state, phone)
+
+    # ── Provisiona instância + webhook na Evolution API ───────────────────────
 
     async def _ensure_instance(self, inst: str) -> bool:
+        wh_url = _webhook_url()
+        webhook_cfg = {
+            "url": wh_url,
+            "byEvents": False,
+            "base64": False,
+            "events": ["QRCODE_UPDATED", "CONNECTION_UPDATE"],
+        }
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+                # Checa se já existe
                 r = await client.get(_url("instance/fetchInstances"), headers=_h())
                 if r.status_code == 200:
-                    existentes = [
+                    existentes = {
                         i.get("instance", {}).get("instanceName")
                         for i in r.json()
-                    ]
+                    }
                     if inst in existentes:
+                        # Atualiza webhook (caso URL tenha mudado)
+                        await client.post(
+                            _url(f"webhook/set/{inst}"),
+                            json=webhook_cfg,
+                            headers=_h(),
+                        )
                         return True
+
+                # Cria nova instância já com webhook configurado
                 r2 = await client.post(
                     _url("instance/create"),
-                    json={"instanceName": inst, "qrcode": True, "integration": "WHATSAPP-BAILEYS"},
+                    json={
+                        "instanceName": inst,
+                        "qrcode": True,
+                        "integration": "WHATSAPP-BAILEYS",
+                        "webhook": webhook_cfg,
+                    },
                     headers=_h(),
                 )
                 logger.info("Evolution create %s → %s", inst, r2.status_code)
-                return r2.status_code in (200, 201)
+                if r2.status_code in (200, 201):
+                    # Configura webhook separadamente também (compatibilidade v1/v2)
+                    await client.post(
+                        _url(f"webhook/set/{inst}"),
+                        json=webhook_cfg,
+                        headers=_h(),
+                    )
+                    return True
+                return False
         except Exception as exc:
             logger.error("_ensure_instance [%s]: %s", inst, exc)
             return False
+
+    # ── Interface pública ─────────────────────────────────────────────────────
 
     def pick_session(self, empresa_id: int) -> Optional[str]:
         prefix = f"{empresa_id}:"
@@ -202,9 +289,9 @@ class EvoManager:
         sess = self._sessions.get(self._key(empresa_id, session_id))
         if not sess:
             return None
-        # Sinaliza que o front quer o QR — o próximo poll vai buscá-lo
-        if sess.status != "connected":
-            sess.request_qr()
+        # Se não tiver QR, solicita geração imediata (não-bloqueante)
+        if not sess.qr_data and sess.status != "connected":
+            asyncio.create_task(sess.fetch_qr_now())
         return sess.qr_data
 
     def get_status(self, empresa_id: int) -> list:
@@ -214,6 +301,8 @@ class EvoManager:
             for k, s in self._sessions.items()
             if k.startswith(prefix)
         ]
+
+    # ── Envio de texto ────────────────────────────────────────────────────────
 
     async def send_text(
         self, session_id: str, empresa_id: int, phone: str, message: str
@@ -233,6 +322,8 @@ class EvoManager:
         except Exception as exc:
             return False, str(exc)
 
+    # ── Envio de arquivo ──────────────────────────────────────────────────────
+
     async def send_file(
         self,
         session_id: str,
@@ -248,13 +339,11 @@ class EvoManager:
         mtype = _media_type(ext)
         mime = _mimetype(ext)
 
-        # ── Gera token temporário e URL acessível pela Evolution API ─────────
+        # Gera token temporário — Evolution API busca o arquivo via URL local
         token = secrets.token_urlsafe(24)
         with _file_tokens_lock:
             _file_tokens[token] = file_path
 
-        # A Evolution API buscará o arquivo via localhost para evitar problemas
-        # com base64 muito grande no corpo JSON (especialmente para PDFs/docs).
         serve_url = f"http://127.0.0.1:{settings.port}/api/evo-file/{token}"
 
         try:
@@ -266,7 +355,7 @@ class EvoManager:
                         "mediatype": mtype,
                         "mimetype": mime,
                         "caption": caption or "",
-                        "media": serve_url,   # Evolution API faz GET nesta URL
+                        "media": serve_url,
                         "fileName": filename,
                     },
                     headers=_h(),
@@ -274,7 +363,6 @@ class EvoManager:
             if r.status_code in (200, 201):
                 logger.info("EvoManager send_file OK: %s → %s", filename, number)
                 return True, None
-            # Fallback: tenta via base64 direto
             logger.warning(
                 "EvoManager send_file URL falhou (%s), tentando base64: %s",
                 r.status_code, r.text[:200],
@@ -290,12 +378,11 @@ class EvoManager:
     async def _send_file_b64(
         self, inst, number, file_path, filename, mime, mtype, caption
     ) -> Tuple[bool, Optional[str]]:
-        """Fallback: envia o arquivo como base64 com prefixo data URI."""
+        """Fallback: envia como data URI base64."""
         try:
             with open(file_path, "rb") as f:
                 raw = f.read()
-            b64 = base64.b64encode(raw).decode()
-            data_uri = f"data:{mime};base64,{b64}"
+            data_uri = f"data:{mime};base64,{base64.b64encode(raw).decode()}"
             async with httpx.AsyncClient(timeout=90.0) as client:
                 r = await client.post(
                     _url(f"message/sendMedia/{inst}"),
@@ -317,7 +404,7 @@ class EvoManager:
             return False, str(exc)
 
     def schedule_status_check(self, arquivo_id, session_id, empresa_id, phone):
-        pass  # Evolution API não suporta polling de status de entrega
+        pass
 
 
 # ── MIME helpers ──────────────────────────────────────────────────────────────
