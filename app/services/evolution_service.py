@@ -53,6 +53,7 @@ class EvoSession:
         self.qr_data: Optional[str] = None
         self.phone: Optional[str] = None
         self._poll_task: Optional[asyncio.Task] = None
+        self._qr_requested = False  # evita chamar /connect repetidamente
 
     def start_polling(self):
         if not self._poll_task or self._poll_task.done():
@@ -63,13 +64,18 @@ class EvoSession:
             self._poll_task.cancel()
             self._poll_task = None
 
+    def request_qr(self):
+        """Marca que o front pediu o QR — próximo poll fará a chamada /connect."""
+        self._qr_requested = True
+
     async def _poll_loop(self):
         while True:
             try:
                 await self._refresh_status()
             except Exception as exc:
                 logger.debug("EvoSession poll [%s]: %s", self.session_id, exc)
-            await asyncio.sleep(5 if self.status != "connected" else 30)
+            # Conectado: checa a cada 30s. Desconectado: checa estado a cada 8s.
+            await asyncio.sleep(30 if self.status == "connected" else 8)
 
     async def _refresh_status(self):
         inst = _instance_name(self.empresa_id, self.session_id)
@@ -78,21 +84,40 @@ class EvoSession:
                 _url(f"instance/connectionState/{inst}"), headers=_h()
             )
             if r.status_code == 200:
-                state = r.json().get("instance", {}).get("state", "close")
+                data = r.json()
+                # Suporte a diferentes formatos da Evolution API v1/v2
+                state = (
+                    data.get("instance", {}).get("state")
+                    or data.get("state")
+                    or "close"
+                )
                 if state == "open":
                     self.status = "connected"
                     self.qr_data = None
+                    self._qr_requested = False
+                    logger.info("EvoSession [%s] conectado", self.session_id)
                     return
+                prev = self.status
                 self.status = "connecting" if state == "connecting" else "disconnected"
+                if prev != self.status:
+                    logger.info("EvoSession [%s] estado: %s", self.session_id, self.status)
 
-            # Busca QR quando desconectado
-            r2 = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
-            if r2.status_code == 200:
-                d = r2.json()
-                qr = d.get("base64") or d.get("qrcode", {}).get("base64") or ""
-                if qr and not qr.startswith("data:"):
-                    qr = "data:image/png;base64," + qr
-                self.qr_data = qr or None
+            # Busca QR apenas quando explicitamente solicitado pelo front
+            # (evita regenerar QR a cada poll, o que causava instabilidade)
+            if self._qr_requested and self.status == "disconnected":
+                self._qr_requested = False
+                r2 = await client.get(_url(f"instance/connect/{inst}"), headers=_h())
+                if r2.status_code == 200:
+                    d = r2.json()
+                    qr = (
+                        d.get("base64")
+                        or d.get("qrcode", {}).get("base64")
+                        or d.get("qr", "")
+                    )
+                    if qr and not qr.startswith("data:"):
+                        qr = "data:image/png;base64," + qr
+                    self.qr_data = qr or None
+                    logger.info("EvoSession [%s] QR gerado", self.session_id)
 
 
 # ── Manager ───────────────────────────────────────────────────────────────────
@@ -176,7 +201,12 @@ class EvoManager:
 
     def get_qr(self, session_id: str, empresa_id: int) -> Optional[str]:
         sess = self._sessions.get(self._key(empresa_id, session_id))
-        return sess.qr_data if sess else None
+        if not sess:
+            return None
+        # Sinaliza que o front quer o QR — o próximo poll vai buscá-lo
+        if sess.status != "connected":
+            sess.request_qr()
+        return sess.qr_data
 
     def get_status(self, empresa_id: int) -> list:
         prefix = f"{empresa_id}:"
