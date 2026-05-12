@@ -12,6 +12,8 @@ import asyncio
 import base64
 import logging
 import os
+import secrets
+import threading
 from typing import Dict, Optional, Tuple
 
 import httpx
@@ -21,6 +23,11 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 _TIMEOUT = 30.0
+
+# ── Tokens temporários para servir arquivos à Evolution API ──────────────────
+# Mapa token → caminho absoluto do arquivo; limpo após uso ou TTL curto
+_file_tokens: Dict[str, str] = {}
+_file_tokens_lock = threading.Lock()
 
 
 def _url(path: str) -> str:
@@ -208,24 +215,73 @@ class EvoManager:
     ) -> Tuple[bool, Optional[str]]:
         inst = _instance_name(empresa_id, session_id)
         number = phone.strip().lstrip("+").replace(" ", "")
+        ext = os.path.splitext(filename)[1].lower()
+        mtype = _media_type(ext)
+        mime = _mimetype(ext)
+
+        # ── Gera token temporário e URL acessível pela Evolution API ─────────
+        token = secrets.token_urlsafe(24)
+        with _file_tokens_lock:
+            _file_tokens[token] = file_path
+
+        # A Evolution API buscará o arquivo via localhost para evitar problemas
+        # com base64 muito grande no corpo JSON (especialmente para PDFs/docs).
+        serve_url = f"http://127.0.0.1:{settings.port}/api/evo-file/{token}"
+
         try:
-            with open(file_path, "rb") as f:
-                b64 = base64.b64encode(f.read()).decode()
-            ext = os.path.splitext(filename)[1].lower()
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with httpx.AsyncClient(timeout=90.0) as client:
                 r = await client.post(
                     _url(f"message/sendMedia/{inst}"),
                     json={
                         "number": number,
-                        "mediatype": _media_type(ext),
-                        "mimetype": _mimetype(ext),
+                        "mediatype": mtype,
+                        "mimetype": mime,
                         "caption": caption or "",
-                        "media": b64,
+                        "media": serve_url,   # Evolution API faz GET nesta URL
                         "fileName": filename,
                     },
                     headers=_h(),
                 )
             if r.status_code in (200, 201):
+                logger.info("EvoManager send_file OK: %s → %s", filename, number)
+                return True, None
+            # Fallback: tenta via base64 direto
+            logger.warning(
+                "EvoManager send_file URL falhou (%s), tentando base64: %s",
+                r.status_code, r.text[:200],
+            )
+            return await self._send_file_b64(inst, number, file_path, filename, mime, mtype, caption)
+        except Exception as exc:
+            logger.error("EvoManager send_file exc: %s", exc)
+            return await self._send_file_b64(inst, number, file_path, filename, mime, mtype, caption)
+        finally:
+            with _file_tokens_lock:
+                _file_tokens.pop(token, None)
+
+    async def _send_file_b64(
+        self, inst, number, file_path, filename, mime, mtype, caption
+    ) -> Tuple[bool, Optional[str]]:
+        """Fallback: envia o arquivo como base64 com prefixo data URI."""
+        try:
+            with open(file_path, "rb") as f:
+                raw = f.read()
+            b64 = base64.b64encode(raw).decode()
+            data_uri = f"data:{mime};base64,{b64}"
+            async with httpx.AsyncClient(timeout=90.0) as client:
+                r = await client.post(
+                    _url(f"message/sendMedia/{inst}"),
+                    json={
+                        "number": number,
+                        "mediatype": mtype,
+                        "mimetype": mime,
+                        "caption": caption or "",
+                        "media": data_uri,
+                        "fileName": filename,
+                    },
+                    headers=_h(),
+                )
+            if r.status_code in (200, 201):
+                logger.info("EvoManager send_file b64 OK: %s → %s", filename, number)
                 return True, None
             return False, f"HTTP {r.status_code}: {r.text[:200]}"
         except Exception as exc:

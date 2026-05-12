@@ -147,6 +147,17 @@ async def report_endpoint(request: Request):
     return {"ok": True}
 
 
+@fastapi_app.get("/api/evo-file/{token}")
+async def evo_file_serve(token: str):
+    """Serve arquivos temporários para a Evolution API buscar via URL local."""
+    from .services.evolution_service import _file_tokens, _file_tokens_lock
+    with _file_tokens_lock:
+        path = _file_tokens.get(token)
+    if not path or not os.path.exists(path):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(path)
+
+
 # ── Arquivos estáticos ────────────────────────────────────────────────────────
 _static_dir = os.path.join(os.path.dirname(__file__), "static")
 _logo_dir = os.path.join(_static_dir, "logo")
