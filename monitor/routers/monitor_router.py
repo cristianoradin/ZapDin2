@@ -22,6 +22,7 @@ class HeartbeatPayload(BaseModel):
     versao: Optional[str] = None
     porta: Optional[int] = None
     wa_status: Optional[str] = None  # connected | qr_code | disconnected
+    wa_phone: Optional[str] = None   # número conectado (ex: "5511999999999")
 
 
 @router.post("/api/report")
@@ -52,26 +53,26 @@ async def receive_heartbeat(
         )
 
     wa_st = body.wa_status if body.wa_status in ("connected", "qr_code", "disconnected") else "disconnected"
+    wa_phone = body.wa_phone if wa_st == "connected" else None
 
-    # Tenta INSERT com wa_status; se coluna não existir (migration pendente), cai no fallback
+    # Garante colunas wa_status e wa_phone (migration segura)
     try:
         await db.execute(
-            "INSERT INTO heartbeats (cliente_id, versao, ip, wa_status) VALUES (?, ?, ?, ?)",
-            (cliente_id, body.versao, client_ip, wa_st),
+            "ALTER TABLE heartbeats ADD COLUMN IF NOT EXISTS wa_status TEXT DEFAULT 'disconnected'"
         )
     except Exception:
-        # Coluna wa_status ainda não existe — usa INSERT antigo e roda migration agora
-        try:
-            await db.execute(
-                "ALTER TABLE heartbeats ADD COLUMN IF NOT EXISTS wa_status TEXT DEFAULT 'disconnected'"
-            )
-        except Exception:
-            pass
+        pass
+    try:
         await db.execute(
-            "INSERT INTO heartbeats (cliente_id, versao, ip) VALUES (?, ?, ?)",
-            (cliente_id, body.versao, client_ip),
+            "ALTER TABLE heartbeats ADD COLUMN IF NOT EXISTS wa_phone TEXT"
         )
-        logger.warning("Heartbeat sem wa_status — migration aplicada agora")
+    except Exception:
+        pass
+
+    await db.execute(
+        "INSERT INTO heartbeats (cliente_id, versao, ip, wa_status, wa_phone) VALUES (?, ?, ?, ?, ?)",
+        (cliente_id, body.versao, client_ip, wa_st, wa_phone),
+    )
 
     await db.commit()
     return {"ok": True}
@@ -87,7 +88,8 @@ async def get_monitor(
         """SELECT c.id, c.nome, c.cnpj, c.versao_instalada, c.cidade, c.uf,
                   (SELECT created_at FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ping,
                   (SELECT ip        FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1) as ultimo_ip,
-                  COALESCE((SELECT wa_status FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1), 'disconnected') as wa_status
+                  COALESCE((SELECT wa_status FROM heartbeats WHERE cliente_id = c.id ORDER BY created_at DESC LIMIT 1), 'disconnected') as wa_status,
+                  (SELECT wa_phone  FROM heartbeats WHERE cliente_id = c.id AND wa_status = 'connected' ORDER BY created_at DESC LIMIT 1) as wa_phone
            FROM clientes c
            WHERE c.ativo = 1
            ORDER BY c.nome"""

@@ -151,13 +151,54 @@ async def login(body: LoginRequest, response: Response, db=Depends(get_db)):
     if not empresa_id:
         raise HTTPException(status_code=503, detail="Nenhuma empresa ativa. Ative o sistema primeiro.")
 
-    # Busca uid local do usuário (sincronizado via monitor_sync)
+    # ── Puxa menus do monitor (fonte da verdade) e atualiza banco local ──────
+    # O monitor pode ter menus restritos para este usuário. Como o push
+    # (monitor → app) não funciona através de NAT, puxamos a cada login.
+    import json as _json
+    menus_from_monitor = None  # None = todos os menus permitidos
+    try:
+        async with db.execute(
+            "SELECT token FROM empresas WHERE id = ? AND ativo = TRUE", (empresa_id,)
+        ) as c:
+            emp_tok = await c.fetchone()
+        if emp_tok and emp_tok["token"]:
+            async with httpx.AsyncClient(timeout=5) as hc:
+                mr = await hc.get(
+                    f"{monitor_url}/api/auth/usuario-menus/{username}",
+                    params={"client_token": emp_tok["token"]},
+                )
+            if mr.status_code == 200:
+                mdata = mr.json()
+                menus_from_monitor = mdata.get("menus")  # None ou lista
+    except Exception as exc:
+        logger.debug("[login] Não foi possível buscar menus do monitor: %s", exc)
+
+    # Busca uid local do usuário (cria se não existir ainda)
     async with db.execute(
-        "SELECT id FROM usuarios WHERE username = ? AND empresa_id = ?",
+        "SELECT id, password_hash FROM usuarios WHERE username = ? AND empresa_id = ?",
         (username, empresa_id),
     ) as cur:
         row = await cur.fetchone()
-    local_uid = row["id"] if row else 0
+
+    menus_json = _json.dumps(menus_from_monitor) if menus_from_monitor is not None else None
+
+    if row:
+        local_uid = row["id"]
+        # Atualiza menus no banco local (sincroniza com o que o monitor retornou)
+        await db.execute(
+            "UPDATE usuarios SET menus = ? WHERE id = ? AND empresa_id = ?",
+            (menus_json, local_uid, empresa_id),
+        )
+        await db.commit()
+    else:
+        # Usuário ainda não existe localmente — cria sem senha (login via monitor)
+        from ..core.security import hash_password as _hp
+        cur2 = await db.execute(
+            "INSERT INTO usuarios (empresa_id, username, password_hash, menus) VALUES (?, ?, ?, ?)",
+            (empresa_id, username, _hp(""), menus_json),
+        )
+        await db.commit()
+        local_uid = cur2.lastrowid or 0
 
     token = create_session_token(local_uid, username, empresa_id)
     response.set_cookie(

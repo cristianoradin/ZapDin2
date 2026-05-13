@@ -450,11 +450,26 @@ async def change_username(
 
 @router.get("/cliente/{token}")
 async def setup_cliente(token: str, db=Depends(get_db)):
-    """Retorna dados de configuração + usuários vinculados para ativação do app."""
+    """Retorna dados de configuração + usuários vinculados para ativação do app.
+    Aceita tanto o token de heartbeat (token) quanto o token de ativação (activation_token).
+    """
+    # Normaliza: remove hífens e maiúsculas (activation_token é armazenado sem hífens)
+    token_normalized = token.replace("-", "").upper()
+
+    # Tenta primeiro pelo token de heartbeat (formato longo, com hífens)
     async with db.execute(
         "SELECT id, nome, cnpj, token FROM clientes WHERE token = ? AND ativo = 1", (token,)
     ) as cur:
         row = await cur.fetchone()
+
+    # Se não achou, tenta pelo activation_token (formato XXXXXXXXXXXXXX sem hífens)
+    if not row:
+        async with db.execute(
+            "SELECT id, nome, cnpj, token FROM clientes WHERE activation_token = ? AND ativo = 1",
+            (token_normalized,)
+        ) as cur:
+            row = await cur.fetchone()
+
     if not row:
         raise HTTPException(status_code=404, detail="Token não encontrado")
 

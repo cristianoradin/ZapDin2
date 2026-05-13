@@ -1,13 +1,20 @@
+import sys
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Caminho absoluto: app/core/config.py → app/core/ → app/ → app/.env
-# Garante leitura correta independente do cwd de onde o uvicorn é iniciado.
-_ENV_FILE = str(Path(__file__).parent.parent / ".env")
+# Quando frozen pelo PyInstaller, os módulos ficam em _internal/ e __file__ aponta
+# para dentro dessa pasta. O .env real está na pasta do executável (pai de _internal).
+# Em dev, sobe dois níveis a partir de app/core/ → app/ → .env como antes.
+if getattr(sys, "frozen", False):
+    # Frozen: sys.executable = C:\ZapDinApp\ZapDinApp.exe → parent = C:\ZapDinApp\
+    _ENV_FILE = str(Path(sys.executable).parent / ".env")
+else:
+    # Dev: app/core/config.py → app/core/ → app/ → app/.env
+    _ENV_FILE = str(Path(__file__).parent.parent / ".env")
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=_ENV_FILE, env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, env_file_encoding="utf-8-sig", extra="ignore")
 
     secret_key: str = "dev-secret-key-change-in-production"
     session_max_age: int = 86400

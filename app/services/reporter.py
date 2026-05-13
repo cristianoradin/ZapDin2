@@ -25,8 +25,8 @@ async def _read_version() -> str:
         return "1.0.0"
 
 
-def _wa_status_for_empresa(empresa_id: int) -> str:
-    """Retorna status WA apenas das sessões desta empresa."""
+def _wa_info_for_empresa(empresa_id: int) -> dict:
+    """Retorna status e phone WA das sessões desta empresa."""
     try:
         from ..core.config import settings as _settings
         if _settings.use_evolution:
@@ -34,17 +34,23 @@ def _wa_status_for_empresa(empresa_id: int) -> str:
         else:
             from .whatsapp_service import wa_manager
         prefix = f"{empresa_id}:"
-        statuses = {s.status for k, s in wa_manager._sessions.items() if k.startswith(prefix)}
+        sessions = {k: s for k, s in wa_manager._sessions.items() if k.startswith(prefix)}
+        statuses = {s.status for s in sessions.values()}
         logger.debug("[reporter] empresa=%s sessões=%s", empresa_id, statuses or "nenhuma")
         if "connected" in statuses:
-            return "connected"
+            # Pega phone da primeira sessão conectada
+            phone = next(
+                (s.phone for s in sessions.values() if s.status == "connected" and s.phone),
+                None,
+            )
+            return {"wa_status": "connected", "wa_phone": phone}
         if "qr_code" in statuses:
-            return "qr_code"
+            return {"wa_status": "qr_code", "wa_phone": None}
         if statuses:
-            return "disconnected"
+            return {"wa_status": "disconnected", "wa_phone": None}
     except Exception as exc:
-        logger.warning("[reporter] _wa_status_for_empresa(%s) erro: %s", empresa_id, exc)
-    return "disconnected"
+        logger.warning("[reporter] _wa_info_for_empresa(%s) erro: %s", empresa_id, exc)
+    return {"wa_status": "disconnected", "wa_phone": None}
 
 
 async def _send_heartbeat() -> None:
@@ -67,13 +73,14 @@ async def _send_heartbeat() -> None:
             token = emp.get("token") or settings.monitor_client_token
             if not token:
                 continue
-            wa_status = _wa_status_for_empresa(emp.get("id", 0))
+            wa_info = _wa_info_for_empresa(emp.get("id", 0))
             payload = {
                 "nome": emp.get("nome", settings.client_name),
                 "cnpj": emp.get("cnpj", settings.client_cnpj),
                 "versao": version,
                 "porta": settings.port,
-                "wa_status": wa_status,
+                "wa_status": wa_info["wa_status"],
+                "wa_phone": wa_info["wa_phone"],
             }
             try:
                 resp = await client.post(

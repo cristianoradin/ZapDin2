@@ -490,13 +490,16 @@
     }
   }
 
-  function voltarCnpj() { showForm('cnpj'); }
-  function voltarLogin() { showForm('cnpj'); }
+  function voltarCnpj() { showForm('token'); }
+  function voltarLogin() { showForm('token'); }
 
   // Verifica se empresa já está registrada → define tela inicial
   fetch('/api/auth/empresa-info')
     .then(r => r.ok ? r.json() : null)
-    .then(d => { if (!d || !d.cnpj) showForm('token'); })
+    .then(d => {
+      if (!d || !d.cnpj) showForm('token');
+      else { _cnpjValidado = d.cnpj; showForm('login'); }
+    })
     .catch(() => {});
 
   // Etapa 0: Ativar com token
@@ -520,12 +523,12 @@
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        _cnpjValidado = data.cnpj;
+        document.getElementById('form-title').textContent = data.empresa || 'Bem-vindo';
         const sub = document.getElementById('form-sub');
-        sub.textContent = `✓ ${data.empresa} — ${data.usuarios_importados} usuário(s) importado(s)`;
+        sub.textContent = `✓ ${data.empresa} ativada — ${data.usuarios_importados} usuário(s) importado(s)`;
         sub.style.display = 'block';
-        showForm('cnpj');
-        document.getElementById('form-sub').style.display = 'block';
-        document.getElementById('form-sub').textContent = `✓ ${data.empresa} ativada com sucesso!`;
+        showForm('login');  // vai direto para login, sem pedir CNPJ
       } else {
         err.textContent = _fmtErr(data) || 'Token inválido ou monitor inacessível.';
         err.style.display = 'block';
